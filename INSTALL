@@ -1,0 +1,31 @@
+Guided Installation:
+--------------------
+
+REQUIREMENTS
+
+- SDL
+- A C++ Compiler
+
+INSTALLATION
+- type 'make' in the src/ directory
+
+ > !IMPORTANT! <
+
+- create an ~/.mdraw path (this is in your home directory)
+- copy mdraw.config to ~/.mdraw
+- copy allfont.fnt to ~/.mdraw
+- copy font.fnt to ~/.mdraw
+  (you can use any 8x16 console font)
+
+Note: on non unix systems you have to set the environment variable HOME to a directory
+which holds the .mdraw folder.
+  
+Now you can type "mdraw" and start the program. You can copy mdraw to
+any binary directory it only needs the files in the ~/.mdraw directory
+to function properly.
+
+TROUBLESHOOTING
+- If you install MysticDraw 1.6 over an 1.4 version get sure that you use
+  the NEW font file (allfont.fnt). I needed to change the file format a bit.
+  
+Mike

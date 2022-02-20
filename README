@@ -1,0 +1,53 @@
+OoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO
+  Mystic Draw 1.6 readme
+oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOo
+
+Abstract
+Mystic Draw is a full featured ansi editor supporting the ansi, avatar, pcboard
+and binary format (xbin too :)). It has lots features that you don't see in much 
+other ansi drawing tools around like support for TheDrawFont files. Mystic Draw 
+is delivered with over 100 fonts in this format.
+
+License
+All code files are relased under the terms of the GPL license. The font files
+are copyrighted by their authors. As far as I know they're all freeware but
+inform me if that is not the case.
+
+Why Mystic Draw ?
+Mystic Draw was my first C program which I originally wrote 1994 in turbo 
+pascal which I rewrote in C (at the end of 95) when I got my first linux. 
+I've worked on it during 96 a bit but so far no one seemed to use this tool. 
+2003 I've heard that people actually >USED< this tool and I decided to update
+Mystic Draw again ... 
+
+Status
+I've cleanded up the source code a lot and translated the rendering enigne to
+SDL. Now Mystic Draw supports 512 Character modes,16 background color
+mode (blink mode too :)) and a custom palette and custom font. 
+It supports more than 80 columns. 
+The only format which writes the palette and custom characters is xbin which is
+now fully supported.
+What is REALLY needed are some people who redesign the graphics for Mystic Draw,
+please contact me.
+
+Todo
++ Option screen to set the +80 column mode, blink/non blink and a lot more.
++ Optimize the load/save routines (feel free to send me files which Mystic Draw
+  can't load but others do)
+    - xbin compressed save
+	- xbin/bin resize buffer (for more than 80 columns)
++ Get the fontutility doing something useful (maybe edit fonts ?) ... or at least
+  getting it running again (do you need the fontutility to show/edit fonts ?
+  please bug me :))
++ Modularize the whole system a bit more:
+  - Make a command hashtable for the main class which maps commands to a key and transform
+    more functionality into these 'commands' this helps dynamically enabling/disabling commands
+    and the whole system can be used as an 'embedded' ansi drawer (maybe for the fontutility)
+
+Contact
+If you want to contact me feel free to do so:
+
+My E-MAIL : mike@icsharpcode.net
+Homepage  : www.inf.fu-berlin.de/~mkrueger
+
+... I can really need your input

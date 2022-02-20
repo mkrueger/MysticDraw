@@ -1,0 +1,14 @@
+Begin3
+Title:          Mytic Draw
+Version:        1.5
+Entered-date:
+Description:    A cool ansi drawing tool using SDL
+Keywords:       ansi,drawing,console,SDL,thedraw,tdf,xbin
+Author:         Mike Krueger <mike@icsharpcode.net>
+Maintained-by:  Mike Krueger <mike@icsharpcode.net>
+Primary-site:   	
+Home-page:      http://www.inf.fu-berlin.de/~mkrueger/mdraw
+Original-site:
+Platform:       Independend, needs SDL & C++ Compiler
+Copying-policy: GNU Public License
+End

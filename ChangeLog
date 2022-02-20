@@ -1,0 +1,11 @@
+Since 1.5final
++ Mystic Draw now runs under Win32
++ some minor bugfixes.
+
+Since 1.5g
++ Now Mystic Draw renders with SDL instead
+  of the console. Now Mystic Draw should be
+  platform neutral
++ Added XBIN Support (Load/Save)
++ Added font editor (Ctrl+F)
++ Added palette editor (Ctrl+P)
