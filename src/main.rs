@@ -1,28 +1,44 @@
-use std::fs::File;
-use std::io::Read;
 use std::ptr;
 
+use editor::Editor;
 use libadwaita as adw;
 
 use adw::{prelude::*, TabBar, TabView};
 use adw::{ApplicationWindow, HeaderBar};
-use gtk4::{Application, Box, Orientation, ResponseType, FileChooserAction};
+use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType};
 
-use crate::buffer::Buffer;
+use crate::model::Buffer;
 
-mod sauce;
-mod buffer;
 mod editor;
+mod gtk_view;
+mod model;
+mod sauce;
 
-pub static mut DEFAULT_FONT : Vec<u8> = Vec::new();
+pub const DEFAULT_FONT: &[u8] = include_bytes!("../data/font.fnt");
+
+struct Workspace {
+    open_editors: Vec<Editor>,
+}
+
+impl Workspace {
+    pub fn get_editor(id: usize) -> &'static Editor {
+        unsafe { &WORKSPACE.open_editors[id] }
+    }
+    pub fn open_editor(buf: Buffer) -> usize {
+        unsafe {
+            WORKSPACE.open_editors.push(Editor::new(buf));
+            WORKSPACE.open_editors.len() - 1
+        }
+    }
+}
+
+static mut WORKSPACE: Workspace = Workspace {
+    open_editors: Vec::new(),
+};
 
 fn main() {
-    unsafe {
-        DEFAULT_FONT = read_a_file("/home/mkrueger/.mdraw/font.fnt").unwrap();
-    }
-    
-   // Load GL pointers from epoxy (GL context management library used by GTK).
-   {
+    // Load GL pointers from epoxy (GL context management library used by GTK).
+    {
         #[cfg(target_os = "macos")]
         let library = unsafe { libloading::os::unix::Library::new("libepoxy.0.dylib") }.unwrap();
         #[cfg(all(unix, not(target_os = "macos")))]
@@ -37,15 +53,12 @@ fn main() {
         });
     }
 
-
     // Create a new application
-    let app = Application::builder()
-        .application_id("mystic.draw")
-        .build();
-        app.connect_startup(|_| {
+    let app = Application::builder().application_id("mystic.draw").build();
+    app.connect_startup(|_| {
         adw::init();
     });
-    
+
     // Connect to "activate" signal of `app`
     app.connect_activate(build_ui);
 
@@ -53,8 +66,12 @@ fn main() {
     app.run();
 }
 
-static OPEN_BUTTONS : [(&str, ResponseType); 2] = [("_Cancel", ResponseType::Cancel), ("_Open", ResponseType::Ok)];
+static OPEN_BUTTONS: [(&str, ResponseType); 2] = [
+    ("_Cancel", ResponseType::Cancel),
+    ("_Open", ResponseType::Ok),
+];
 
+/*
 fn read_a_file(file: &str) -> std::io::Result<Vec<u8>> {
     let mut file = File::open(file)?;
 
@@ -62,7 +79,7 @@ fn read_a_file(file: &str) -> std::io::Result<Vec<u8>> {
     file.read_to_end(&mut result)?;
 
     Ok(result)
-}
+}*/
 
 fn build_ui(app: &Application) {
     let content = Box::new(Orientation::Vertical, 0);
@@ -71,31 +88,34 @@ fn build_ui(app: &Application) {
         .default_width(350)
         .content(&content)
         .build();
-        
-    let tab_view = TabView::builder()
-        .vexpand(true)
-        .build();
 
-    let title = adw::WindowTitle::builder()
-        .title("Mystic Draw")
+    let tab_view = TabView::builder().vexpand(true).build();
+
+    let title = adw::WindowTitle::builder().title("Mystic Draw").build();
+
+    let hb = HeaderBar::builder()
+        .title_widget(&title)
+        .show_end_title_buttons(true)
         .build();
-    
-    let hb = HeaderBar::builder().title_widget(&title).show_end_title_buttons(true).build();
-    let open_button = gtk4::Button::builder()
-    .label("Open")
-    .build();
-    
+    let open_button = gtk4::Button::builder().label("Open").build();
+
     hb.pack_start(&open_button);
-    hb.pack_start(&gtk4::Button::builder().icon_name("tab-new-symbolic").build());
-
-    hb.pack_end(&gtk4::Button::builder().label("Save").build());
-    hb.pack_end(&gtk4::MenuButton::builder().icon_name("open-menu-symbolic").build());
-
-    content.append(
-        &hb,
+    hb.pack_start(
+        &gtk4::Button::builder()
+            .icon_name("tab-new-symbolic")
+            .build(),
     );
 
-    let tab_bar= TabBar::builder().view(&tab_view).build();
+    hb.pack_end(&gtk4::Button::builder().label("Save").build());
+    hb.pack_end(
+        &gtk4::MenuButton::builder()
+            .icon_name("open-menu-symbolic")
+            .build(),
+    );
+
+    content.append(&hb);
+
+    let tab_bar = TabBar::builder().view(&tab_view).build();
     content.append(&tab_bar);
     content.append(&tab_view);
 
@@ -119,9 +139,8 @@ fn build_ui(app: &Application) {
     }));
 }
 
-fn load_page(tab_view: &TabView, buf: Buffer)
-{
-    let child2 = editor::CharEditorView::new();
+fn load_page(tab_view: &TabView, buf: Buffer) {
+    let child2 = gtk_view::CharEditorView::new();
     let scroller = gtk4::ScrolledWindow::builder()
         .hexpand(true)
         .vexpand(true)
@@ -130,13 +149,15 @@ fn load_page(tab_view: &TabView, buf: Buffer)
 
     let page = tab_view.add_page(&scroller, None);
 
-    let fin =(*buf.file_name).as_path().file_name().ok_or_else(|| panic!("Can't convert file name")).unwrap();
+    let fin = (*buf.file_name)
+        .as_path()
+        .file_name()
+        .ok_or_else(|| panic!("Can't convert file name"))
+        .unwrap();
     page.set_title(fin.to_str().unwrap());
 
-    unsafe {
-        buffer::ALL_BUFFERS.push(buf);
-        child2.set_buffer(buffer::ALL_BUFFERS.len() - 1);
-    }
+    let id = Workspace::open_editor(buf);
+    child2.set_buffer(id);
 
     tab_view.set_selected_page(&page);
 }
