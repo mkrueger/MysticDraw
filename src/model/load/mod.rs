@@ -7,7 +7,7 @@ pub use pcboard::*;
 mod avatar;
 pub use avatar::*;
 
-use super::Position;
+use super::{Position, TextAttribute};
 
 pub struct LoadData {
     // ANSI
@@ -15,7 +15,7 @@ pub struct LoadData {
     pub ans_code: bool,
     pub cur_pos: Position,
     pub saved_pos: Position,
-    pub text_attr: u8,
+    pub text_attr: TextAttribute,
 
     pub ans_numbers: Vec<i32>,
 
@@ -26,10 +26,8 @@ pub struct LoadData {
     pub pcb_pos: i32,
 
     // Avatar
+    pub avt_state: AvatarReadState,
     pub avatar_state: i32,
-    pub avt_color: bool,
-    pub avt_rep: bool,
-    pub avt_command : bool,
     pub avt_repeat_char: u8,
     pub avt_repeat_count: i32
 }
@@ -49,9 +47,7 @@ impl LoadData {
             pcb_pos: 0,
 
             avatar_state: 0,
-            avt_color: false,
-            avt_rep: false,
-            avt_command : false,
+            avt_state: AvatarReadState::Chars,
             avt_repeat_char: 0,
             avt_repeat_count: 0
         }

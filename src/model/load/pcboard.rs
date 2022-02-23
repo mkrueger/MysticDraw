@@ -1,3 +1,5 @@
+use crate::model::TextAttribute;
+
 use super::LoadData;
 
 fn conv_ch(ch: u8) -> u8 {
@@ -25,7 +27,7 @@ pub fn display_PCBoard(data: &mut LoadData, ch: u8) -> u8 {
                 }
                 2 => {
                     data.pcb_value = (data.pcb_value << 4) + conv_ch(ch);
-                    data.text_attr = data.pcb_value;
+                    data.text_attr = TextAttribute::from_u8(data.pcb_value);
                 }
                 _ => {}
             }

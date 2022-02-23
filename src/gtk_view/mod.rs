@@ -14,7 +14,7 @@ glib::wrapper! {
 
 impl Default for CharEditorView {
     fn default() -> Self {
-        Self::new()
+         Self::new()
     }
 }
 
@@ -29,10 +29,10 @@ impl CharEditorView {
         imp.buf.set(buffer_id);
         
         let buffer = &crate::Workspace::get_editor(buffer_id).buf;
-        self.set_size_request(buffer.base_layer.width as i32 * 8, buffer.base_layer.height as i32 * 16);
+        self.set_size_request(buffer.width as i32 * 8, buffer.height as i32 * 16);
 
         if imp.renderer.borrow_mut().as_ref().is_some() {
-            imp.renderer.borrow_mut().as_ref().unwrap().buffer_id.set(buffer_id);
+            imp.renderer.borrow_mut().as_ref().unwrap().editor_id.set(buffer_id);
         }
 
     }

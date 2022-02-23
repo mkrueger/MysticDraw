@@ -16,7 +16,7 @@ struct Vertex {
 implement_vertex!(Vertex, position, color);
 pub struct CharRenderer {
     context: Rc<glium::backend::Context>,
-    pub buffer_id: Cell<usize>,
+    pub editor_id: Cell<usize>,
     textures: Vec<glium::Texture2d>,
 
     width: Cell<i32>,
@@ -53,7 +53,7 @@ impl CharRenderer {
 
         CharRenderer {
             context,
-            buffer_id: Cell::new(buffer_id),
+            editor_id: Cell::new(buffer_id),
             textures: character_textures,
             width: Cell::new(0),
             height: Cell::new(0)
@@ -72,10 +72,11 @@ impl CharRenderer {
             (10 * 8, 10 * 16)
         );
         frame.clear_color(0., 0., 0., 1.);
-        let buffer = &crate::Workspace::get_editor(self.buffer_id.get()).buf;
-        for y in 0..buffer.base_layer.height {
-            for x in 0..buffer.base_layer.width {
-                let ch  = buffer.get_char(&Position::from(x, y));
+        let editor = crate::Workspace::get_editor(self.editor_id.get());
+        let buffer = &editor.buf;
+        for y in 0..buffer.height {
+            for x in 0..buffer.width {
+                let ch  = buffer.get_char(&Position::from(x as i32, y as i32));
 /* 
                 frame.clear(Some(&Rect {
                     left: (x * 8) as u32,
@@ -103,7 +104,7 @@ impl CharRenderer {
                     break;
                 }
                 if ch.char_code > 0 {
-                    let color = ch.attribute & 0b0000_1111;
+                    let color = ch.attribute.get_foreground();
                     let surface = self.textures[color as usize * 256 + ch.char_code as usize].as_surface();
                     surface.blit_whole_color_to(
                         &frame, 
@@ -118,6 +119,17 @@ impl CharRenderer {
             }
 
         }
+
+        let surface = self.textures[15_usize * 256 + b'_' as usize].as_surface();
+        surface.blit_whole_color_to(
+            &frame, 
+            &glium::BlitTarget {
+                left: (editor.cursor.pos.x * 8) as u32,
+                bottom: (self.height.get() as i32 - 16 - (editor.cursor.pos.y * 16)) as u32,
+                width: 8,
+                height: 16,
+            }, 
+            glium::uniforms::MagnifySamplerFilter::Linear);
 
         frame.finish().unwrap();
     }

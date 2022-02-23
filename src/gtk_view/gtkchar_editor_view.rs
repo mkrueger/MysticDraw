@@ -1,8 +1,10 @@
 use gtk4::glib;
 use gtk4::subclass::prelude::*;
 use gtk4::traits::GLAreaExt;
+use gtk4::traits::WidgetExt;
 use std::cell::Cell;
 use std::cell::RefCell;
+
 
 use super::char_renderer::CharRenderer;
 
@@ -14,13 +16,13 @@ pub struct GtkCharEditorView {
 
 impl GtkCharEditorView
 {
-    pub fn set_buffer(&self, buffer_id: usize)
+    pub fn set_editor(&self, editor_id: usize)
     {
         let opt = &*self.renderer.borrow();
         if let Some(r) = opt {
-            r.buffer_id.set(buffer_id);
+            r.editor_id.set(editor_id);
         } else {
-            self.buf.set(buffer_id);
+            self.buf.set(editor_id);
         }
     }
 }
@@ -32,7 +34,31 @@ impl ObjectSubclass for GtkCharEditorView {
     type ParentType = gtk4::GLArea;
 }
 
-impl ObjectImpl for GtkCharEditorView {}
+impl ObjectImpl for GtkCharEditorView {
+
+    fn constructed(&self, obj: &Self::Type) {
+        obj.set_can_focus(true);
+        obj.set_focusable(true);
+        obj.set_focus_on_click(true);
+        
+        let gesture = gtk4::GestureClick::new();
+        // Trigger a transition on click
+        gesture.connect_pressed(glib::clone!(@strong obj as this => move |_, clicks, x, y| {
+            println!("gesture click {}, {}, {}", clicks ,x, y);
+        }));
+        obj.add_controller(&gesture);
+        let id = self.buf.get();
+        let key = gtk4::EventControllerKey::new();
+        key.connect_key_pressed(glib::clone!(@strong obj as this => move |_, key, key_code, modifier| {
+            {
+                crate::Workspace::get_editor(id).handle_key(key, key_code, modifier);
+            }
+            glib::signal::Inhibit(true)
+        }));
+        obj.add_controller(&key);
+
+    }
+}
 
 impl WidgetImpl for GtkCharEditorView {
     fn realize(&self, widget: &Self::Type) {
@@ -44,9 +70,7 @@ impl WidgetImpl for GtkCharEditorView {
         let context =
             unsafe { glium::backend::Context::new(self.instance(), true, Default::default()) }
                 .unwrap();
-                
         *self.renderer.borrow_mut() = Some(CharRenderer::new(self.buf.get(), context));
-        
     }
 
     fn unrealize(&self, widget: &Self::Type) {

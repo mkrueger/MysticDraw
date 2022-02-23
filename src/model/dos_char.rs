@@ -1,5 +1,6 @@
+use super::TextAttribute;
 
-pub const DEFAULT_ATTRIBUTE: u8 = 7;
+
 
 pub const DOS_DEFAULT_PALETTE: [(u8, u8, u8); 16] = [
     (0x00, 0x00, 0x00), // black
@@ -23,14 +24,14 @@ pub const DOS_DEFAULT_PALETTE: [(u8, u8, u8); 16] = [
 #[derive(Clone, Copy, Debug, Default)]
 pub struct DosChar {
     pub char_code: u8,
-    pub attribute: u8,
+    pub attribute: TextAttribute,
 }
 
 impl DosChar {
     pub fn new() -> Self {
         DosChar {
             char_code: 0,
-            attribute: DEFAULT_ATTRIBUTE,
+            attribute: super::DEFAULT_ATTRIBUTE,
         }
     }
 /* 
