@@ -56,7 +56,13 @@ fn main() {
     // Load GL pointers from epoxy (GL context management library used by GTK).
     {
         #[cfg(target_os = "macos")]
-        let library = unsafe { libloading::os::unix::Library::new("libepoxy.0.dylib") }.unwrap();
+        let try_load = unsafe { libloading::os::unix::Library::new("libepoxy.0.dylib") };
+        let library = if try_load.is_ok() {
+            try_load.unwrap()
+        } else {
+            unsafe { libloading::os::unix::Library::new("/opt/homebrew/lib/libepoxy.0.dylib") }.unwrap()
+        };
+
         #[cfg(all(unix, not(target_os = "macos")))]
         let library = unsafe { libloading::os::unix::Library::new("libepoxy.so.0") }.unwrap();
         #[cfg(windows)]
@@ -123,7 +129,7 @@ fn read_a_file(file: &str) -> std::io::Result<Vec<u8>> {
     <fill>
         <char>
         <color fg/bg>
-    
+
     <font mode> - type with thedraw font
         <select font>
         <edit font>
@@ -159,18 +165,18 @@ fn construct_left_toolbar() -> Box
     .valign(gtk4::Align::Start)
     .selection_mode(gtk4::SelectionMode::None)
         .build();
-        
+
     let nb = gtk4::Notebook::builder()
     .show_tabs(false)
     .build();
-    
+
     unsafe {
         let first = add_tool(&flow_box, &nb, WORKSPACE.tools[0]);
         for t in 1..WORKSPACE.tools.len() {
             add_tool(&flow_box, &nb, WORKSPACE.tools[t]).set_group(Some(&first));
         }
     }
-        
+
     nb.set_page(0);
     result.append(&flow_box);
     result.append(&nb);
@@ -190,7 +196,7 @@ fn construct_channels() -> Box
     .build();
 
     result.append(&bg_button);
-    
+
 
     result
 }
@@ -200,15 +206,15 @@ fn construct_right_toolbar() -> Box
     let result = Box::new(Orientation::Vertical, 0);
 
     let stack = gtk4::Stack::new();
-    
+
     let page = stack.add_child(&ui::construct_layer_view());
     page.set_name("page1");
     page.set_title("Layer");
-    
+
     let page = stack.add_child(&construct_channels());
     page.set_name("page2");
     page.set_title("Channels");
-    
+
     result.append(&stack);
 
     result
@@ -235,7 +241,7 @@ fn build_ui(app: &Application) {
 
     let new_window_button = gtk4::Button::builder().icon_name("tab-new-symbolic").build();
     hb.pack_start(&new_window_button);
-        
+
 
     hb.pack_end(&gtk4::Button::builder().label("Save").build());
     hb.pack_end(
@@ -293,7 +299,7 @@ fn build_ui(app: &Application) {
 }
 
 fn load_page(tab_view: &TabView, buf: Buffer) {
-    let child2 = gtk_view::CharEditorView::new();     
+    let child2 = gtk_view::CharEditorView::new();
     let scroller = gtk4::ScrolledWindow::builder()
         .hexpand(true)
         .vexpand(true)
