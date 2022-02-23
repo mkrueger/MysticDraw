@@ -34,20 +34,8 @@ impl DosChar {
             attribute: super::DEFAULT_ATTRIBUTE,
         }
     }
-/* 
-    pub fn get_background_srgb(&self) -> (f32, f32, f32, f32) {
-        let o = ((self.attribute & 0b0111_0000) >> 4) as usize;
-
-        let c = DOS_DEFAULT_PALETTE[o];
-
-        (
-            c.0 as f32 / 255_f32,
-            c.1 as f32 / 255_f32,
-            c.2 as f32 / 255_f32,
-            1_f32,
-        )
-    }*/
 }
+
  /*
 pub fn get_color(color: u8) -> &'static str
 {

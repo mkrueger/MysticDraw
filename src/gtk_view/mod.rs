@@ -1,15 +1,14 @@
 
 use glib::subclass::types::ObjectSubclassIsExt;
-use gtk4::{ glib, traits::{ GLAreaExt, WidgetExt}, gdk};
+use gtk4::{ glib, traits::{WidgetExt}};
 
 use self::gtkchar_editor_view::GtkCharEditorView;
 
-mod char_renderer;
 mod gtkchar_editor_view;
 
 
 glib::wrapper! {
-    pub struct CharEditorView(ObjectSubclass<GtkCharEditorView>) @extends gtk4::GLArea, gtk4::Widget;
+    pub struct CharEditorView(ObjectSubclass<GtkCharEditorView>) @extends gtk4::Widget, gtk4::DrawingArea;
 }
 
 impl Default for CharEditorView {
@@ -26,44 +25,11 @@ impl CharEditorView {
     pub fn set_buffer(&self, buffer_id: usize)
     {
         let imp = self.imp();
-        imp.buf.set(buffer_id);
+        imp.buf.set(Some(buffer_id));
         
         let buffer = &crate::Workspace::get_editor(buffer_id).buf;
-        self.set_size_request(buffer.width as i32 * 8, buffer.height as i32 * 16);
+        let font_dimensions = buffer.get_font_dimensions();
 
-        if imp.renderer.borrow_mut().as_ref().is_some() {
-            imp.renderer.borrow_mut().as_ref().unwrap().editor_id.set(buffer_id);
-        }
-
-    }
-}
-
-unsafe impl glium::backend::Backend for CharEditorView {
-    fn swap_buffers(&self) -> Result<(), glium::SwapBuffersError> {
-        // We're supposed to draw (and hence swap buffers) only inside the `render()` vfunc or
-        // signal, which means that GLArea will handle buffer swaps for us.
-        Ok(())
-    }
-
-    unsafe fn get_proc_address(&self, symbol: &str) -> *const std::ffi::c_void {
-        epoxy::get_proc_addr(symbol)
-    }
-
-    fn get_framebuffer_dimensions(&self) -> (u32, u32) {
-        let scale = self.scale_factor();
-        let width = self.width();
-        let height = self.height();
-        ((width * scale) as u32, (height * scale) as u32)
-    }
-
-    fn is_current(&self) -> bool {
-        match self.context() {
-            Some(context) => gdk::GLContext::current() == Some(context),
-            None => false,
-        }
-    }
-
-    unsafe fn make_current(&self) {
-        GLAreaExt::make_current(self);
+        self.set_size_request(buffer.width as i32 * font_dimensions.x, buffer.height as i32 * font_dimensions.y);
     }
 }

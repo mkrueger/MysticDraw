@@ -7,7 +7,7 @@ use std::{
 };
 use std::ffi::OsStr;
 
-use super::{Layer, read_xbin};
+use super::{Layer, read_xbin, DOS_DEFAULT_PALETTE};
 use crate::sauce::{read_sauce, Sauce, SauceDataType};
 
 #[derive(Debug, Default)]
@@ -27,6 +27,8 @@ pub struct Buffer {
     pub custom_palette: Option<Vec<u8>>,
     pub custom_font: Option<Vec<u8>>,
     pub base_layer: Layer,
+
+    pub font_dimensions: Position,
     pub font: Option<BitFont>,
     pub layers: Vec<Layer>,
     pub sauce: Option<Sauce>,
@@ -41,9 +43,29 @@ impl Buffer {
             custom_palette: None,
             custom_font: None,
             base_layer: Layer::new(),
+            font_dimensions: Position::new(),
             font: None,
             layers: Vec::new(),
             sauce: None,
+        }
+    }
+
+    pub fn get_font_scanline(&self, ch: u8, y: usize) -> u8
+    {
+        if let Some(font) = &self.custom_font {
+            font[ch as usize * self.font_dimensions.y as usize + y]
+        } else {
+            crate::DEFAULT_FONT[ch as usize * 16 + y]
+        }
+    }
+
+    pub fn get_font_dimensions(&self) -> Position
+    {
+        if self.custom_font.is_some() {
+            self.font_dimensions
+        } else {
+            // default font.
+            Position::from(8, 16)
         }
     }
 
@@ -130,11 +152,9 @@ impl Buffer {
                 _ => {}
             }
         }
-        println!("ans{} avt{} pcb{}", parse_ansi, parse_avt, parse_pcb);
         if screen_width == 0 { screen_width = 80; }
         for b in bytes.iter().take(file_size) {
             let mut ch = *b;
-            
             if parse_ansi {
                 ch = display_ans(&mut data, ch);
             }
@@ -189,6 +209,41 @@ impl Buffer {
             }
         }
     }
+
+    pub fn get_rgb_f64(&self, color: u8) -> (f64, f64, f64) {
+        let rgb = self.get_rgb(color);
+        (
+            rgb.0 as f64 / 255_f64,
+            rgb.1 as f64 / 255_f64,
+            rgb.2 as f64 / 255_f64
+        )
+    }
+
+    pub fn get_rgb(&self, color: u8) -> (u8, u8, u8) {
+        debug_assert!(color <= 15);
+
+        if let Some(pal) = &self.custom_palette  {
+            let o = (color * 3) as usize;
+            if o + 2 >= pal.len() {
+                eprintln!("illegal palette color {}, palette is {} colors long.", color, pal.len() / 3);
+                return (255, 0, 0);
+            }
+
+            return (
+                pal[o] << 2,
+                pal[o + 1] << 2,
+                pal[o + 2] << 2
+            );
+        }
+        
+        let c = DOS_DEFAULT_PALETTE[color as usize];
+        (
+            c.0,
+            c.1,
+            c.2
+        )
+    }
+
 }
 
 impl Default for Buffer {

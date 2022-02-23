@@ -1,5 +1,3 @@
-use std::ptr;
-
 use editor::Editor;
 use libadwaita as adw;
 
@@ -53,28 +51,6 @@ pub static mut WORKSPACE: Workspace = Workspace {
 };
 
 fn main() {
-    // Load GL pointers from epoxy (GL context management library used by GTK).
-    {
-        #[cfg(target_os = "macos")]
-        {
-            let try_load = unsafe { libloading::os::unix::Library::new("libepoxy.0.dylib") };
-            let library = if try_load.is_ok() {
-                try_load.unwrap()
-            } else {
-                unsafe { libloading::os::unix::Library::new("/opt/homebrew/lib/libepoxy.0.dylib") }.unwrap()
-            };
-        }
-        #[cfg(all(unix, not(target_os = "macos")))]
-        let library = unsafe { libloading::os::unix::Library::new("libepoxy.so.0") }.unwrap();
-        #[cfg(windows)]
-        let library = libloading::os::windows::Library::open_already_loaded("epoxy-0.dll").unwrap();
-
-        epoxy::load_with(|name| {
-            unsafe { library.get::<_>(name.as_bytes()) }
-                .map(|symbol| *symbol)
-                .unwrap_or(ptr::null())
-        });
-    }
     tool::init_tools();
 
     // Create a new application

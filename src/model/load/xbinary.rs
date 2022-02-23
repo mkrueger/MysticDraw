@@ -15,6 +15,7 @@ pub fn read_xbin(result: &mut Buffer, bytes: &[u8], _file_size: usize, _screen_w
     o += 2;
     result.height = (bytes[o] as u16 + ((bytes[o + 1] as u16) << 8)) as usize;
     o += 2;
+
     let font_size = bytes[o];
     o += 1;
     let flags = bytes[o];
@@ -23,20 +24,21 @@ pub fn read_xbin(result: &mut Buffer, bytes: &[u8], _file_size: usize, _screen_w
     let has_custom_palette    = (flags &  1) == 1;
     let has_custom_font       = (flags &  2) == 2;
     let is_compressed         = (flags &  4) == 4;
-    // let is_blink_mode        = (flags &  8) != 8;
+    let is_blink_mode        = (flags &  8) != 8;
     let is_extended_char_mode = (flags & 16) == 16;
 
-    // println!("xbin {}x{} ", result.width, result.height);
-    // println!("custom palette {}, custom font {}, compressed {}, blink {}, extended char {}", has_custom_palette, has_custom_font, is_compressed, _is_blink_mode, is_extended_char_mode);
+    println!("xbin {}x{} font_size: {} ", result.width, result.height, font_size);
+    println!("custom palette {}, custom font {} , compressed {}, blink {}, extended char {}", has_custom_palette, has_custom_font, is_compressed, is_blink_mode, is_extended_char_mode);
 
     if has_custom_palette {
         result.custom_palette = Some((&bytes[o..(o+48)]).to_vec());
         o += 48;
     }
     if has_custom_font {
-        let font_size = font_size as usize * if is_extended_char_mode { 512 } else { 256 };
-        result.custom_font = Some((&bytes[o..(o+font_size)]).to_vec());
-        o += font_size;
+        let font_length = font_size as usize * if is_extended_char_mode { 512 } else { 256 };
+        result.custom_font = Some((&bytes[o..(o+font_length)]).to_vec());
+        result.font_dimensions = Position::from(8, font_size as i32);
+        o += font_length;
     }
 
     if is_compressed {

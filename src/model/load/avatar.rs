@@ -46,7 +46,6 @@ pub fn display_avt(data: &mut ParseStates, ch: u8) -> (u8, bool) {
             (0, false)
         }
         AvtReadState::ReadCommand => {
-            println!("Command: {}", ch);
             match ch {
                 1 => {
                     data.avt_state = AvtReadState::ReadColor;

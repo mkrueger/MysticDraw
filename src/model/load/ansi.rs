@@ -1,3 +1,5 @@
+use std::cmp::max;
+
 use crate::model::{DEFAULT_ATTRIBUTE, Position};
 
 use super::ParseStates;
@@ -41,11 +43,11 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> u8 {
             b'H' | b'f' => { // Cursor Position + Horizontal Vertical Position ('f')
                 if !data.ans_numbers.is_empty() {
                     if data.ans_numbers[0] > 0 { 
-                        data.cur_pos.y = data.ans_numbers[0] - 1;
+                        data.cur_pos.y =  max(0, data.ans_numbers[0] - 1);
                     }
                     if data.ans_numbers.len() > 1 {
                         if data.ans_numbers[1] > 0 {
-                            data.cur_pos.x = data.ans_numbers[1] - 1;
+                            data.cur_pos.x =  max(0, data.ans_numbers[1] - 1);
                         }
                     } else {
                         data.cur_pos.x = 0;
@@ -65,19 +67,18 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> u8 {
             }
             b'D' => { // Cursor Back 
                 if data.ans_numbers.is_empty() {
-                    data.cur_pos.x = data.cur_pos.x.saturating_sub(1);
+                    data.cur_pos.x = max(0, data.cur_pos.x - 1);
                 } else {
-                    data.cur_pos.x = data.cur_pos.x.saturating_sub(data.ans_numbers[0]);
+                    data.cur_pos.x =  max(0, data.cur_pos.x.saturating_sub(data.ans_numbers[0]));
                 }
                 data.ans_code = false;
                 return 0;
             }
             b'A' => { // Cursor Up 
                 if data.ans_numbers.is_empty() {
-                    data.cur_pos.y = data.cur_pos.y.saturating_sub(1);
+                    data.cur_pos.y =  max(0, data.cur_pos.y - 1);
                 } else {
-                    data.cur_pos.y =
-                        data.cur_pos.y.saturating_sub(data.ans_numbers[0]);
+                    data.cur_pos.y = max(0, data.cur_pos.y.saturating_sub(data.ans_numbers[0]));
                 }
                 data.ans_code = false;
                 return 0;
