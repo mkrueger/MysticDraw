@@ -1,24 +1,23 @@
 use crate::model::{DEFAULT_ATTRIBUTE, Position};
 
-use super::LoadData;
+use super::ParseStates;
 
 const ANSI_CSI: u8 = b'[';
 const ANSI_ESC: u8 = 27;
 
 const COLOR_OFFSETS : [u8; 8] = [ 0, 4, 2, 6, 1, 5, 3, 7 ];
 
-pub fn display_ansi(data: &mut LoadData, ch: u8) -> u8 {
+pub fn display_ans(data: &mut ParseStates, ch: u8) -> u8 {
     if data.ans_esc {
         if ch == ANSI_CSI {
             data.ans_esc = false;
             data.ans_code = true;
             data.ans_numbers.clear();
             return 0;
-        } else {
-            // ignore all other ANSI escape codes
-            data.ans_esc = false;
-            return 0;
         }
+        // ignore all other ANSI escape codes
+        data.ans_esc = false;
+        return 0;
     }
 
     if data.ans_code {
@@ -107,15 +106,14 @@ pub fn display_ansi(data: &mut LoadData, ch: u8) -> u8 {
                 if data.ans_numbers.is_empty() {
                     data.cur_pos = Position::new();
                 } else {
-                    match data.ans_numbers[0] {
+                    match data.ans_numbers.get(0).unwrap() {
                         0 => {} // TODO: clear from cursor to the end of the screen 
-                        2 => {  // clear entire screen
+                        2 |  // clear entire screen
+                        3 // TODO: clear entire screen and delete all lines saved in the scrollback buffer
+                        => {
                             data.cur_pos = Position::new();
                             // TODO: Clear
                         } 
-                        3 => { // TODO: clear entire screen and delete all lines saved in the scrollback buffer
-                            data.cur_pos = Position::new();
-                        }
                         _ => {eprintln!("unknown ANSI J sequence {}", data.ans_numbers[0])}
                     }
                 }
@@ -166,11 +164,11 @@ pub fn display_ansi(data: &mut LoadData, ch: u8) -> u8 {
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
-    use crate::model::Buffer;
+    use crate::model::{Buffer, Position};
 
     #[test]
     fn test_ansi_sequence() {
-        let buf = Buffer::from_bytes(PathBuf::from("test"), b"[0;40;37mFoo-[1mB[0ma[35mr");
+        let buf = Buffer::from_bytes(&PathBuf::from("test"), &None, b"[0;40;37mFoo-[1mB[0ma[35mr");
        
        assert_eq!(1, buf.height);
        assert_eq!(7, buf.width); // 'Foo-Bar'
@@ -194,7 +192,7 @@ mod tests {
 
     #[test]
     fn test_ansi_30() {
-        let buf = Buffer::from_bytes(PathBuf::from("test"), b"[1;35mA[30mB[0mC");
+        let buf = Buffer::from_bytes(&PathBuf::from("test"), &None, b"[1;35mA[30mB[0mC");
        
        let line = &buf.base_layer.lines[0];
        assert_eq!(b'A', line.chars[0].char_code);
@@ -207,7 +205,7 @@ mod tests {
 
     #[test]
     fn test_bg_colorrsequence() {
-        let buf = Buffer::from_bytes(std::path::PathBuf::from("test"), b"[1;30m1[0;34m2[33m3[1;41m4[40m5[43m6[40m7");
+        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test"), &None, b"[1;30m1[0;34m2[33m3[1;41m4[40m5[43m6[40m7");
        
        let line = &buf.base_layer.lines[0];
        assert_eq!(b'1', line.chars[0].char_code);
@@ -228,13 +226,24 @@ mod tests {
 
     #[test]
     fn test_linebreak_bug() {
-        let buf = Buffer::from_bytes(std::path::PathBuf::from("test"), b"[40m[2J[2C[0;34mX   [1;37mX   [0;34mX[31mX[33mXXX[s
-[u[31mXXXXXXXXXXX[33mX[31mX[33mX[31mX[33mXXX[31mX[s
-[uXXXXX[33mX[31mX[33mXXX[31mXXXXXXXXXXXXXXX[33mX[s
-[u[31mXXXX[33mX[31mX[33mXX[31mXXX[33mX[31mX[34mX[s
-[u   X[2;1H  XXXX[1;37mX[0;34mXX[31mX[33mX[34mX[s");
+        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test"), &None, b"XX");
        
-       assert_eq!(2, buf.height);
+        assert_eq!(3, buf.width);
+        assert_eq!(0x16, buf.get_char(Position {x: 1, y: 0}).char_code);
     }
+
+    #[test]
+    fn test_char_missing_bug() {
+        let buf = Buffer::from_bytes(&PathBuf::from("test"), &None, b"[1;35mA[30mB[0mC");
+       
+       let line = &buf.base_layer.lines[0];
+       assert_eq!(b'A', line.chars[0].char_code);
+       assert_eq!(13, line.chars[0].attribute.as_u8());
+       assert_eq!(b'B', line.chars[1].char_code);
+       assert_eq!(8, line.chars[1].attribute.as_u8());
+       assert_eq!(b'C', line.chars[2].char_code);
+       assert_eq!(7, line.chars[2].attribute.as_u8());
+    }
+
 }
 

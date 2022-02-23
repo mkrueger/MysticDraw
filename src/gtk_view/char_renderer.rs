@@ -76,7 +76,7 @@ impl CharRenderer {
         let buffer = &editor.buf;
         for y in 0..buffer.height {
             for x in 0..buffer.width {
-                let ch  = buffer.get_char(&Position::from(x as i32, y as i32));
+                let ch  = buffer.get_char(Position::from(x as i32, y as i32));
 /* 
                 frame.clear(Some(&Rect {
                     left: (x * 8) as u32,

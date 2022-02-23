@@ -5,7 +5,7 @@ use libadwaita as adw;
 
 use adw::{prelude::*, TabBar, TabView};
 use adw::{ApplicationWindow, HeaderBar};
-use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType};
+use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, gio};
 use tool::Tool;
 
 use crate::model::Buffer;
@@ -56,13 +56,14 @@ fn main() {
     // Load GL pointers from epoxy (GL context management library used by GTK).
     {
         #[cfg(target_os = "macos")]
-        let try_load = unsafe { libloading::os::unix::Library::new("libepoxy.0.dylib") };
-        let library = if try_load.is_ok() {
-            try_load.unwrap()
-        } else {
-            unsafe { libloading::os::unix::Library::new("/opt/homebrew/lib/libepoxy.0.dylib") }.unwrap()
-        };
-
+        {
+            let try_load = unsafe { libloading::os::unix::Library::new("libepoxy.0.dylib") };
+            let library = if try_load.is_ok() {
+                try_load.unwrap()
+            } else {
+                unsafe { libloading::os::unix::Library::new("/opt/homebrew/lib/libepoxy.0.dylib") }.unwrap()
+            };
+        }
         #[cfg(all(unix, not(target_os = "macos")))]
         let library = unsafe { libloading::os::unix::Library::new("libepoxy.so.0") }.unwrap();
         #[cfg(windows)]
@@ -275,12 +276,21 @@ fn build_ui(app: &Application) {
 
     open_button.connect_clicked(glib::clone!(@weak window, @weak tab_view => move |_| {
         let file_chooser = gtk4::FileChooserDialog::new(Some("Open ansi file"), Some(&window), FileChooserAction::Open, &OPEN_BUTTONS);
+        
+        unsafe {
+            if let Some(folder) = &LAST_FOLDER {
+                file_chooser.set_current_folder(folder).expect("Can't set current folder.");
+            }
+        }
 
         file_chooser.connect_response(move |d: &gtk4::FileChooserDialog, response: ResponseType| {
             if response == ResponseType::Ok {
                 let file = d.file().expect("Couldn't get file");
                 let filename = file.path().expect("Couldn't get file path");
-                let buffer = Buffer::load_buffer(filename.as_path().to_path_buf());
+                let buffer = Buffer::load_buffer(&filename.as_path().to_path_buf());
+           /*      unsafe {
+                    LAST_FOLDER = Some(d.current_folder());
+                }*/
                 if let Ok(buf) = buffer {
                     load_page(&tab_view, buf);
                 }
@@ -297,6 +307,8 @@ fn build_ui(app: &Application) {
         load_page(&tab_view, buffer);
     }));
 }
+
+static mut LAST_FOLDER: Option<gio::File> = None;
 
 fn load_page(tab_view: &TabView, buf: Buffer) {
     let child2 = gtk_view::CharEditorView::new();

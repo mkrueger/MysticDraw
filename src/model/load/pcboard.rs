@@ -1,6 +1,6 @@
 use crate::model::TextAttribute;
 
-use super::LoadData;
+use super::ParseStates;
 
 fn conv_ch(ch: u8) -> u8 {
     if (b'0'..=b'9').contains(&ch) {
@@ -16,7 +16,7 @@ fn conv_ch(ch: u8) -> u8 {
 }
 
 #[allow(non_snake_case)]
-pub fn display_PCBoard(data: &mut LoadData, ch: u8) -> u8 {
+pub fn display_PCBoard(data: &mut ParseStates, ch: u8) -> u8 {
     if data.pcb_color {
         data.pcb_pos += 1;
         if data.pcb_pos < 3 {

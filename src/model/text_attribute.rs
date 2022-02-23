@@ -10,12 +10,12 @@ impl TextAttribute
         TextAttribute(attr)
     }
 
-    pub fn as_u8(&self) -> u8
+    pub fn as_u8(self) -> u8
     {
         self.0
     }
 
-    pub fn is_bold(&self) -> bool
+    pub fn is_bold(self) -> bool
     {
         self.0 & 0b0000_1000 != 0
     }
@@ -29,7 +29,7 @@ impl TextAttribute
         }
     }
 
-    pub fn is_blink(&self) -> bool
+    pub fn is_blink(self) -> bool
     {
         self.0 & 0b1000_0000 != 0
     }
@@ -43,7 +43,7 @@ impl TextAttribute
         }
     }
 
-    pub fn get_foreground(&self) -> u8
+    pub fn get_foreground(self) -> u8
     {
         self.0 & 0b0000_1111
     }
@@ -60,7 +60,7 @@ impl TextAttribute
         self.0 = (0b1111_1000 & self.0) | color;
     }
 
-    pub fn get_background(&self) -> u8
+    pub fn get_background(self) -> u8
     {
         self.0 >> 4
     }

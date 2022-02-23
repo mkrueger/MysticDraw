@@ -7,9 +7,16 @@ pub use pcboard::*;
 mod avatar;
 pub use avatar::*;
 
+mod bin;
+pub use bin::*;
+
+mod xbinary;
+pub use xbinary::*;
+
 use super::{Position, TextAttribute};
 
-pub struct LoadData {
+#[allow(clippy::struct_excessive_bools)]
+pub struct ParseStates {
     // ANSI
     pub ans_esc: bool,
     pub ans_code: bool,
@@ -26,15 +33,15 @@ pub struct LoadData {
     pub pcb_pos: i32,
 
     // Avatar
-    pub avt_state: AvatarReadState,
+    pub avt_state: AvtReadState,
     pub avatar_state: i32,
     pub avt_repeat_char: u8,
     pub avt_repeat_count: i32
 }
 
-impl LoadData {
+impl ParseStates {
     pub fn new() -> Self {
-        LoadData {
+        ParseStates {
             ans_code: false,
             ans_esc: false,
             cur_pos: Position::new(),
@@ -47,7 +54,7 @@ impl LoadData {
             pcb_pos: 0,
 
             avatar_state: 0,
-            avt_state: AvatarReadState::Chars,
+            avt_state: AvtReadState::Chars,
             avt_repeat_char: 0,
             avt_repeat_count: 0
         }
