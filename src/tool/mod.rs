@@ -6,7 +6,7 @@ pub trait Tool
 {
     fn get_icon_name(&self) -> &'static str;
     fn add_tool_page(&self, parent: &mut gtk4::Box);
-    fn handle_key(&self, editor: &'static mut Editor, key: Key, key_code: u32, modifier: ModifierType) -> bool;
+    fn handle_key(&self, editor: &mut Editor, key: Key, key_code: u32, modifier: ModifierType) -> bool;
 }
 
 mod brush_tool;

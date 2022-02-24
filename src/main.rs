@@ -18,34 +18,18 @@ mod tool;
 pub const DEFAULT_FONT: &[u8] = include_bytes!("../data/font.fnt");
 
 pub struct Workspace {
-    open_editors: Vec<Editor>,
-
     selected_tool: usize,
     tools: Vec<&'static dyn tool::Tool>
 }
 
 impl Workspace {
-    pub fn get_editor(id: usize) -> &'static mut Editor {
-        unsafe { &mut WORKSPACE.open_editors[id] }
-    }
-
     pub fn cur_tool(&self) -> std::boxed::Box<&'static dyn Tool> {
         let t = self.tools[self.selected_tool];
         std::boxed::Box::new(t)
     }
-
-    pub fn open_editor(buf: Buffer) -> usize {
-        unsafe {
-            let editor = Editor::new(WORKSPACE.open_editors.len(), buf);
-            let id = editor.id;
-            WORKSPACE.open_editors.push(editor);
-            id
-        }
-    }
 }
 
 pub static mut WORKSPACE: Workspace = Workspace {
-    open_editors: Vec::new(),
     selected_tool: 0,
     tools: Vec::new()
 };
@@ -294,10 +278,11 @@ fn load_page(tab_view: &TabView, buf: Buffer) {
         .child(&child2)
         .build();
     let page = tab_view.add_page(&scroller, None);
-    let id = Workspace::open_editor(buf);
-    child2.set_buffer(id);
+    let file_name = buf.file_name.clone();
+    let id = Editor::new(0, buf);
+    child2.set_editor(id);
 
-    if let Some(x) = Workspace::get_editor(id).buf.file_name.clone() {
+    if let Some(x) = file_name {
         let fin = x
             .as_path()
             .file_name()

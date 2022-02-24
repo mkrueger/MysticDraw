@@ -13,7 +13,7 @@ impl Tool for ClickTool
         parent.append(&gtk4::Label::builder().label("Click").build());
     }
 
-    fn handle_key(&self, editor: &'static mut Editor, key: Key, _key_code: u32, _modifier: ModifierType) -> bool
+    fn handle_key(&self, editor: &mut Editor, key: Key, _key_code: u32, _modifier: ModifierType) -> bool
     {
         println!("handle key {}", key);
         match key {

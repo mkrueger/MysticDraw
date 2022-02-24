@@ -12,7 +12,7 @@ impl Tool for BrushTool
         parent.append(&gtk4::Label::builder().label("BrushTool").build());
     }
     
-    fn handle_key(&self, _editor: &'static mut Editor, _key: Key, _key_code: u32, _modifier: ModifierType) -> bool
+    fn handle_key(&self, _editor: &mut Editor, _key: Key, _key_code: u32, _modifier: ModifierType) -> bool
     {
         false
     }
