@@ -13,7 +13,6 @@ pub struct GtkCharEditorView {
 }
 
 impl GtkCharEditorView {
-
 }
 
 #[glib::object_subclass]
@@ -29,19 +28,13 @@ impl ObjectImpl for GtkCharEditorView {
         obj.set_can_focus(true);
         obj.set_focusable(true);
         obj.set_focus_on_click(true);
-        
-/*
-        
-*/
     }
 }
 
 impl WidgetImpl for GtkCharEditorView {
-       
       fn realize(&self, widget: &Self::Type) {
         self.parent_realize(widget);
-     
-    }
+      }
 }
 
 
@@ -66,7 +59,7 @@ impl PaintableImpl for GtkCharEditorView {
         borrow.buf.height as i32 * font_dimensions.y
     }*/
 
-    fn snapshot(&self, _paintable: &Self::Type, snapshot: &gdk::Snapshot, width: f64, height: f64) {
+    fn snapshot(&self, _paintable: &Self::Type, _snapshot: &gdk::Snapshot, _width: f64, _height: f64) {
        /* println!("get snapshot!");
         let snapshot = snapshot.downcast_ref::<gtk4::Snapshot>().unwrap();
         snapshot.append_linear_gradient(
@@ -136,3 +129,4 @@ impl PaintableImpl for GtkCharEditorView {
         }*/
     }
 }
+ 

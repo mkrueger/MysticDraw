@@ -244,6 +244,16 @@ impl Buffer {
         )
     }
 
+    pub fn to_screenx(&self, x: i32) -> f64
+    {
+        x as f64 * if self.font_dimensions.x == 0 { 8.0 } else { self.font_dimensions.x as f64 } 
+    }
+
+    pub fn to_screeny(&self, y: i32) -> f64
+    {
+        y as f64 * if self.font_dimensions.y == 0 { 16.0 } else { self.font_dimensions.y as f64 } 
+    }
+
 }
 
 impl Default for Buffer {

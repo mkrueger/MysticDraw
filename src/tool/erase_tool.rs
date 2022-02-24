@@ -1,5 +1,4 @@
-use gtk4::{traits::BoxExt, gdk::{Key, ModifierType}};
-use crate::editor::Editor;
+use gtk4::{traits::BoxExt};
 use super::Tool;
 
 pub struct EraseTool {}
@@ -11,9 +10,4 @@ impl Tool for EraseTool
     {
         parent.append(&gtk4::Label::builder().label("EraseTool").build());
     }
-    fn handle_key(&self, _editor: &mut Editor, _key: Key, _key_code: u32, _modifier: ModifierType) -> bool
-    {
-        false
-    }
-
 }

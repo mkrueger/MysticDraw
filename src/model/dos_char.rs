@@ -1,7 +1,5 @@
 use super::TextAttribute;
 
-
-
 pub const DOS_DEFAULT_PALETTE: [(u8, u8, u8); 16] = [
     (0x00, 0x00, 0x00), // black
     (0x00, 0x00, 0xAA), // blue

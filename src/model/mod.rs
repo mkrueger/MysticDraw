@@ -18,3 +18,45 @@ pub use  buffer::*;
 
 mod load;
 pub use load::*;
+
+#[derive(Copy, Clone, Debug)]
+pub struct Size {
+    pub width: usize,
+    pub height: usize
+}
+
+impl Size 
+{
+    pub fn from(width: usize, height: usize) -> Self
+    {
+        Size { width, height }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct Rectangle
+{
+    pub start: Position,
+    pub size: Size
+}
+
+impl Rectangle 
+{
+    pub fn from(x: i32, y: i32, width: usize, height: usize) -> Self
+    {
+        Rectangle {
+            start: Position::from(x,y), 
+            size: Size::from(width, height) 
+        }
+    }
+
+    pub fn from_pt(p1: Position, p2: Position) -> Self
+    {
+        let start = if p1 < p2 { p1 } else { p2 };
+
+        Rectangle {
+            start, 
+            size: Size::from((p1.x - p2.x).abs() as usize, (p1.y - p2.y).abs() as usize) 
+        }
+    }
+}
