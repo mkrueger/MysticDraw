@@ -14,6 +14,7 @@ mod model;
 mod sauce;
 mod ui;
 mod tool;
+mod font;
 
 pub const DEFAULT_FONT: &[u8] = include_bytes!("../data/font.fnt");
 
@@ -261,9 +262,9 @@ fn build_ui(app: &Application) {
     }));
 
     new_window_button.connect_clicked(glib::clone!(@weak window, @weak tab_view => move |_| {
-        let mut buffer = Buffer::default();
-        buffer.base_layer.width  = 80;
-        buffer.base_layer.height = 25;
+        let mut buffer = Buffer::new();
+        buffer.width  = 80;
+        buffer.height = 200;
         load_page(&tab_view, buffer);
     }));
 }

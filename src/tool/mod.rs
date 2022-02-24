@@ -148,9 +148,13 @@ mod font_tool;
 mod paint_tool;
 mod select_tool;
 
+static mut FONT_TOOL: font_tool::FontTool = font_tool::FontTool { fonts: Vec::new() };
+
 pub fn init_tools()
 {
     unsafe {
+        FONT_TOOL.load_fonts();
+
         WORKSPACE.tools.push(&click_tool::ClickTool {});
         WORKSPACE.tools.push(&select_tool::SelectTool {});
         WORKSPACE.tools.push(&paint_tool::PaintTool{});
@@ -158,6 +162,6 @@ pub fn init_tools()
         WORKSPACE.tools.push(&erase_tool::EraseTool{});
         WORKSPACE.tools.push(&draw_shape_tool::DrawShapeTool{});
         WORKSPACE.tools.push(&fill_tool::FillTool{});
-        WORKSPACE.tools.push(&font_tool::FontTool{});
+        WORKSPACE.tools.push(&FONT_TOOL);
     }
 }
