@@ -1,9 +1,10 @@
-use std::path::{Path};
+use std::path::Path;
 
 use gtk4::{traits::BoxExt, gdk::{Key, ModifierType}};
-use crate::{font::TheDrawFont, editor::{EditorEvent, Editor}, model::Position};
 
-use super::Tool;
+use crate::model::TheDrawFont;
+
+use super::{Tool, Editor, Event, Position};
 
 pub struct FontTool {
     pub fonts: Vec<TheDrawFont>
@@ -13,7 +14,7 @@ impl FontTool
 {
     pub fn load_fonts(&mut self)
     {
-        // self.fonts.push(TheDrawFont::load(Path::new("/home/mkrueger/Dokumente/THEDRAWFONTS/1911.TDF")).unwrap());
+        self.fonts.push(TheDrawFont::load(Path::new("/home/mkrueger/Dokumente/THEDRAWFONTS/1911.TDF")).unwrap());
     }
 }
 
@@ -26,13 +27,13 @@ impl Tool for FontTool
         parent.append(&gtk4::Label::builder().label("FontTool").build());
     }
     
-    fn handle_click(&self, editor: &mut Editor, _button: u32, x: i32, y: i32) -> EditorEvent
+    fn handle_click(&self, editor: &mut Editor, _button: u32, x: i32, y: i32) -> Event
     {
         editor.cursor.pos = Position::from(x, y);
-        EditorEvent::None
+        Event::None
     }
 
-    fn handle_key(&self, editor: &mut Editor, key: Key, _key_code: u32, _modifier: ModifierType) -> EditorEvent
+    fn handle_key(&self, editor: &mut Editor, key: Key, _key_code: u32, _modifier: ModifierType) -> Event
     {
         match key {
             Key::Down => {
@@ -48,10 +49,7 @@ impl Tool for FontTool
                 editor.set_cursor(editor.cursor.pos.x + 1, editor.cursor.pos.y);
             }
             
-            Key::Page_Down => {
-                // TODO
-            }
-            
+            Key::Page_Down |
             Key::Page_Up => {
                 // TODO
             }
@@ -89,7 +87,7 @@ impl Tool for FontTool
                 }
             }
         }
-        EditorEvent::None
+        Event::None
     }
 
 }

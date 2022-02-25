@@ -1,5 +1,6 @@
 use gtk4::{traits::BoxExt};
-use super::Tool;
+use super::{ Tool};
+
 
 pub struct EraseTool {}
 

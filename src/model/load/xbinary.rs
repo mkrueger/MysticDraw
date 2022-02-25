@@ -1,5 +1,6 @@
-use crate::Buffer;
-use crate::model::{DosChar, Position, TextAttribute};
+use crate::model::{Buffer, DosChar};
+
+use super::{ Position, TextAttribute };
 
 pub fn read_xbin(result: &mut Buffer, bytes: &[u8], _file_size: usize, _screen_width: i32)
 {

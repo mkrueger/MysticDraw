@@ -1,6 +1,6 @@
 use std::cmp::{max, min};
 
-use crate::model::{Position, DEFAULT_ATTRIBUTE};
+use crate::model::{Position, DEFAULT_ATTRIBUTE, TextAttribute};
 
 use super::ParseStates;
 
@@ -112,7 +112,7 @@ pub fn display_avt(data: &mut ParseStates, ch: u8) -> (u8, bool) {
             }
         }
         AvtReadState::ReadColor => {
-            data.text_attr = crate::model::TextAttribute::from_u8(ch);
+            data.text_attr = TextAttribute::from_u8(ch);
             data.avt_state = AvtReadState::Chars;
             (0, false)
         }

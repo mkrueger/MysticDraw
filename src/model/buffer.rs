@@ -1,4 +1,3 @@
-use crate::model::{DEFAULT_ATTRIBUTE, display_ans, display_avt, display_PCBoard, DosChar, Line, ParseStates, Position, read_binary};
 use std::{
     cmp::{max, min},
     fs::File,
@@ -7,8 +6,7 @@ use std::{
 };
 use std::ffi::OsStr;
 
-use super::{Layer, read_xbin, DOS_DEFAULT_PALETTE};
-use crate::sauce::{read_sauce, Sauce, SauceDataType};
+use super::{Layer, read_xbin, DOS_DEFAULT_PALETTE, Sauce, read_sauce, SauceDataType, Position, DosChar, Line, ParseStates, read_binary, display_ans, display_PCBoard, DEFAULT_ATTRIBUTE, display_avt};
 
 #[derive(Debug, Default)]
 #[allow(dead_code)]
@@ -34,6 +32,8 @@ pub struct Buffer {
     pub sauce: Option<Sauce>,
 }
 
+const DEFAULT_FONT: &[u8] = include_bytes!("../../data/font.fnt");
+
 impl Buffer {
     pub fn new() -> Self {
         Buffer {
@@ -55,7 +55,7 @@ impl Buffer {
         if let Some(font) = &self.custom_font {
             font[ch as usize * self.font_dimensions.y as usize + y]
         } else {
-            crate::DEFAULT_FONT[ch as usize * 16 + y]
+            DEFAULT_FONT[ch as usize * 16 + y]
         }
     }
 

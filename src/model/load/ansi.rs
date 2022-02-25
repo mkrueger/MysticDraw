@@ -1,6 +1,8 @@
 use std::cmp::max;
 
-use crate::model::{DEFAULT_ATTRIBUTE, Position};
+use crate::model::DEFAULT_ATTRIBUTE;
+
+use super::{ Position };
 
 use super::ParseStates;
 

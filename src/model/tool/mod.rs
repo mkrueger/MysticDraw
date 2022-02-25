@@ -1,5 +1,17 @@
 use gtk4::gdk::{Key, ModifierType};
-use crate::{WORKSPACE, editor::{Editor, EditorEvent}, model::Position};
+
+use crate::WORKSPACE;
+
+pub use super::{Editor, Event, Position};
+
+mod brush_tool;
+mod click_tool;
+mod draw_shape_tool;
+mod erase_tool;
+mod fill_tool;
+mod font_tool;
+mod paint_tool;
+mod select_tool;
 
 
 pub trait Tool
@@ -7,8 +19,7 @@ pub trait Tool
     fn get_icon_name(&self) -> &'static str;
     fn add_tool_page(&self, parent: &mut gtk4::Box);
     
- 
-    fn handle_key(&self, editor: &mut Editor, key: Key, _key_code: u32, _modifier: ModifierType) -> EditorEvent
+    fn handle_key(&self, editor: &mut Editor, key: Key, _key_code: u32, _modifier: ModifierType) -> Event
     {
         match key {
             Key::Down => {
@@ -24,9 +35,7 @@ pub trait Tool
                 editor.set_cursor(editor.cursor.pos.x + 1, editor.cursor.pos.y);
             }
             
-            Key::Page_Down => {
-                // TODO
-            }
+            Key::Page_Down |
             
             Key::Page_Up => {
                 // TODO
@@ -118,35 +127,27 @@ pub trait Tool
                     }
                 */
         }
-        EditorEvent::None
+        Event::None
     }
 
 
-    fn handle_click(&self, _editor: &mut Editor, _button: u32, _x: i32, _y: i32) -> EditorEvent {
-        EditorEvent::None
+    fn handle_click(&self, _editor: &mut Editor, _button: u32, _x: i32, _y: i32) -> Event {
+        Event::None
     }
 
-    fn handle_drag_begin(&self, _editor: &mut Editor, _start: Position, _cur: Position) -> EditorEvent {
-        EditorEvent::None
+    fn handle_drag_begin(&self, _editor: &mut Editor, _start: Position, _cur: Position) -> Event {
+        Event::None
     }
 
-    fn handle_drag(&self, _editor: &mut Editor, _start: Position, _cur: Position) -> EditorEvent {
-        EditorEvent::None
+    fn handle_drag(&self, _editor: &mut Editor, _start: Position, _cur: Position) -> Event {
+        Event::None
     }
 
-    fn handle_drag_end(&self, _editor: &mut Editor, _start: Position, _cur: Position) -> EditorEvent {
-        EditorEvent::None
+    fn handle_drag_end(&self, _editor: &mut Editor, _start: Position, _cur: Position) -> Event {
+        Event::None
     }
 }
 
-mod brush_tool;
-mod click_tool;
-mod draw_shape_tool;
-mod erase_tool;
-mod fill_tool;
-mod font_tool;
-mod paint_tool;
-mod select_tool;
 
 static mut FONT_TOOL: font_tool::FontTool = font_tool::FontTool { fonts: Vec::new() };
 

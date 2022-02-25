@@ -1,5 +1,6 @@
-use crate::Buffer;
-use crate::model::{DosChar, Position, TextAttribute};
+use crate::model::{Buffer, DosChar};
+use super::{ Position, TextAttribute};
+
 
 pub fn read_binary(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_width: i32)
 {

@@ -1,26 +1,19 @@
-use editor::Editor;
 use libadwaita as adw;
 
 use adw::{prelude::*, TabBar, TabView};
 use adw::{ApplicationWindow, HeaderBar};
 use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, gio};
-use tool::Tool;
+use model::{Tool, Buffer, Editor, init_tools};
+use ui::CharEditorView;
 
-use crate::model::Buffer;
-
-mod editor;
-mod gtk_view;
 mod model;
-mod sauce;
 mod ui;
-mod tool;
-mod font;
 
 pub const DEFAULT_FONT: &[u8] = include_bytes!("../data/font.fnt");
 
 pub struct Workspace {
     selected_tool: usize,
-    tools: Vec<&'static dyn tool::Tool>
+    tools: Vec<&'static dyn Tool>
 }
 
 impl Workspace {
@@ -36,7 +29,7 @@ pub static mut WORKSPACE: Workspace = Workspace {
 };
 
 fn main() {
-    tool::init_tools();
+    init_tools();
 
     // Create a new application
     let app = Application::builder().application_id("mystic.draw").build();
@@ -98,7 +91,7 @@ fn read_a_file(file: &str) -> std::io::Result<Vec<u8>> {
         <select outline mode>
 */
 
-fn add_tool(flow_box: &gtk4::FlowBox, nb: &gtk4::Notebook, tool: &dyn tool::Tool) -> gtk4::ToggleButton
+fn add_tool(flow_box: &gtk4::FlowBox, nb: &gtk4::Notebook, tool: &dyn Tool) -> gtk4::ToggleButton
 {
     let button  = gtk4::ToggleButton::builder()
         .icon_name(tool.get_icon_name())
@@ -115,13 +108,14 @@ fn add_tool(flow_box: &gtk4::FlowBox, nb: &gtk4::Notebook, tool: &dyn tool::Tool
         }
         nb.set_page(page_num as i32);
     }));
-
     button
 }
 
 fn construct_left_toolbar() -> Box
 {
     let result = Box::new(Orientation::Vertical, 0);
+
+    result.append(&ui::ColorPicker::new());
 
     let flow_box= gtk4::FlowBox::builder()
     .valign(gtk4::Align::Start)
@@ -168,10 +162,10 @@ fn construct_right_toolbar() -> Box
     let result = Box::new(Orientation::Vertical, 0);
 
     let stack = gtk4::Stack::new();
-
-    let page = stack.add_child(&ui::construct_layer_view());
+/* 
+    let page = stack.add_child(&construct_layer_view());
     page.set_name("page1");
-    page.set_title("Layer");
+    page.set_title("Layer");*/
 
     let page = stack.add_child(&construct_channels());
     page.set_name("page2");
@@ -225,12 +219,9 @@ fn build_ui(app: &Application) {
     .build();
     right_pane.set_position(200);
 
-    let left_pane = gtk4::Paned::builder()
-        .orientation(Orientation::Horizontal)
-        .start_child(&construct_left_toolbar())
-        .end_child(&right_pane)
-        .build();
-        left_pane.set_position(200);
+    let left_pane = Box::new(Orientation::Horizontal, 0);
+    left_pane.append(&construct_left_toolbar());
+    left_pane.append(&right_pane);
     content.append(&left_pane);
 
     window.present();
@@ -272,7 +263,7 @@ fn build_ui(app: &Application) {
 static mut LAST_FOLDER: Option<gio::File> = None;
 
 fn load_page(tab_view: &TabView, buf: Buffer) {
-    let child2 = gtk_view::CharEditorView::new();
+    let child2 = CharEditorView::new();
     let scroller = gtk4::ScrolledWindow::builder()
         .hexpand(true)
         .vexpand(true)

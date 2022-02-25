@@ -4,7 +4,6 @@ use std::fs::File;
 use std::io;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
-use crate::sauce::SauceDataType::{Archive, Audio, BinaryText, Bitmap, Character, Executable, Vector, XBin};
 
 #[derive(Clone, Debug)]
 #[repr(u8)]
@@ -47,14 +46,14 @@ impl SauceDataType
     {
         match b {
             0 => SauceDataType::Undefined,
-            1 => Character,
-            2 => Bitmap,
-            3 => Vector,
-            4 => Audio,
-            5 => BinaryText,
-            6 => XBin,
-            7 => Archive,
-            8 => Executable,
+            1 => SauceDataType::Character,
+            2 => SauceDataType::Bitmap,
+            3 => SauceDataType::Vector,
+            4 => SauceDataType::Audio,
+            5 => SauceDataType::BinaryText,
+            6 => SauceDataType::XBin,
+            7 => SauceDataType::Archive,
+            8 => SauceDataType::Executable,
             _ => {
                 eprintln!("unknown sauce data type {}", b);
                 SauceDataType::Undefined
@@ -83,26 +82,26 @@ pub struct SauceCommentBlock {
 const SAUCE_SIZE : i32 = 128;
 
 /// SAUCE – Standard Architecture for Universal Comment Extensions
-/// http://www.acid.org/info/sauce/sauce.htm
+/// `http://www.acid.org/info/sauce/sauce.htm`
 ///
-/// | Field    | Type | Size | Descritption
-/// |----------|------|------|-------------
-/// | ID       | char | 5    | SAUCE identification. This should be equal to "SAUCE".
-/// | Version  | char | 2    | SAUCE version number, should be "00".
-/// | Title    | char | 35   | The title of the file. 
-/// | Author   | char | 20   | The (nick)name or handle of the creator of the file. 
-/// | Group    | char | 20   | The name of the group or company the creator is employed by. 
-/// | Date     | char | 8    | The format for the date is CCYYMMDD (century, year, month, day).
-/// | FileSize | u32  | 4    | The original file size not including the SAUCE information. 
-/// | DataType | u8   | 1    | Type of data. 
-/// | FileType | u8   | 1    | Type of file. 
-/// | TInfo1   | u16  | 2    | Type dependant numeric information field 1. 
-/// | TInfo2   | u16  | 2    | Type dependant numeric information field 2. 
-/// | TInfo3   | u16  | 2    | Type dependant numeric information field 3. 
-/// | TInfo4   | u16  | 2    | Type dependant numeric information field 4. 
-/// | Comments | u8   | 1    | #lines in the extra SAUCE comment block. 0 indicates no comment block is present. 
-/// | TFlags   | u8   | 1    | Type dependant flags. 
-/// | TINfoS   | zstr | 22   | Type dependant string information field 
+/// | Field      | Type | Size | Descritption
+/// |------------|------|------|-------------
+/// | `ID`       | char | 5    | SAUCE identification. This should be equal to "SAUCE".
+/// | `Version`  | char | 2    | SAUCE version number, should be "00".
+/// | `Title`    | char | 35   | The title of the file. 
+/// | `Author`   | char | 20   | The (nick)name or handle of the creator of the file. 
+/// | `Group`    | char | 20   | The name of the group or company the creator is employed by. 
+/// | `Date`     | char | 8    | The format for the date is CCYYMMDD (century, year, month, day).
+/// | `FileSize` | u32  | 4    | The original file size not including the SAUCE information. 
+/// | `DataType` | u8   | 1    | Type of data. 
+/// | `FileType` | u8   | 1    | Type of file. 
+/// | `TInfo1`   | u16  | 2    | Type dependant numeric information field 1. 
+/// | `TInfo2`   | u16  | 2    | Type dependant numeric information field 2. 
+/// | `TInfo3`   | u16  | 2    | Type dependant numeric information field 3. 
+/// | `TInfo4`   | u16  | 2    | Type dependant numeric information field 4. 
+/// | `Comments` | u8   | 1    | #lines in the extra SAUCE comment block. 0 indicates no comment block is present. 
+/// | `TFlags`   | u8   | 1    | Type dependant flags. 
+/// | `TInfoS`   | zstr | 22   | Type dependant string information field 
 /// 
 /// char type: should be filled with spaces if unused, COULD be terminated with 0
 /// zstr: c like string where all unused space should be filled with 0
@@ -213,7 +212,7 @@ pub fn read_sauce(file: &Path) -> io::Result<Option<Sauce>>
     let t_flags : u8 = sauce_info[o];
     o += 1;
 
-    let t_infos = String::from_utf8(sauce_info[o..].to_vec()).unwrap();
+    let t_info_str: String = String::from_utf8(sauce_info[o..].to_vec()).unwrap();
 
     let comments = if num_comments == 0 {
         None
@@ -249,6 +248,6 @@ pub fn read_sauce(file: &Path) -> io::Result<Option<Sauce>>
         t_info4,
         comments,
         t_flags,
-        t_infos
+        t_infos: t_info_str
     }))
 }

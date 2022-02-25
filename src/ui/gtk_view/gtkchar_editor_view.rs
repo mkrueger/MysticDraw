@@ -4,7 +4,7 @@ use gtk4::{gdk, glib};
 use std::cell::{RefCell};
 use std::rc::Rc;
 
-use crate::editor::Editor;
+use crate::model::Editor;
 
 #[derive(Default)]
 

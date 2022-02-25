@@ -1,6 +1,6 @@
 use std::cmp::{max, min};
 
-use crate::{model::{Buffer, Position, DEFAULT_ATTRIBUTE, TextAttribute, Rectangle}};
+use crate::model::{Buffer, Position, DEFAULT_ATTRIBUTE, TextAttribute, Rectangle};
 
 #[derive(Debug, Default)]
 pub struct Cursor {
@@ -8,7 +8,7 @@ pub struct Cursor {
     pub attr: TextAttribute
 }
 
-pub enum EditorEvent {
+pub enum Event {
     None,
     CursorPositionChange(Position, Position)
 }
@@ -73,47 +73,46 @@ impl Editor
         }
     }
 
-
-    pub fn handle_key(&mut self, key: gtk4::gdk::Key, key_code: u32, modifier: gtk4::gdk::ModifierType) -> EditorEvent
+    pub fn handle_key(&mut self, key: gtk4::gdk::Key, key_code: u32, modifier: gtk4::gdk::ModifierType) -> Event
     {
         unsafe {
             crate::WORKSPACE.cur_tool().handle_key( self, key, key_code, modifier)
         }
     }
 
-    pub fn handle_click(&mut self, button: u32, x: i32, y: i32) -> EditorEvent
+    pub fn handle_click(&mut self, button: u32, x: i32, y: i32) -> Event
     {
         unsafe {
             crate::WORKSPACE.cur_tool().handle_click( self, button, x, y)
         }
     }
 
-    pub fn handle_drag_begin(&mut self, start: Position, cur: Position) -> EditorEvent
+    pub fn handle_drag_begin(&mut self, start: Position, cur: Position) -> Event
     {
         unsafe {
             crate::WORKSPACE.cur_tool().handle_drag_begin( self, start, cur)
         }
     }
 
-    pub fn handle_drag(&mut self, start: Position, cur: Position) -> EditorEvent
+    pub fn handle_drag(&mut self, start: Position, cur: Position) -> Event
     {
         unsafe {
             crate::WORKSPACE.cur_tool().handle_drag( self, start, cur)
         }
     }
 
-    pub fn handle_drag_end(&mut self, start: Position, cur: Position) -> EditorEvent
+    pub fn handle_drag_end(&mut self, start: Position, cur: Position) -> Event
     {
         unsafe {
             crate::WORKSPACE.cur_tool().handle_drag_end( self, start, cur)
         }
     }
     
-    pub fn set_cursor(&mut self, x: i32, y: i32) -> EditorEvent
+    pub fn set_cursor(&mut self, x: i32, y: i32) -> Event
     {
         let old = self.cursor.pos;
         self.cursor.pos.x = min(max(0, x), self.buf.width as i32);
         self.cursor.pos.y = min(max(0, y), self.buf.height as i32);
-        EditorEvent::CursorPositionChange(old, self.cursor.pos)
+        Event::CursorPositionChange(old, self.cursor.pos)
     }
 }

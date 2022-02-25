@@ -1,4 +1,4 @@
-use crate::model::TextAttribute;
+use super::TextAttribute;
 
 use super::ParseStates;
 

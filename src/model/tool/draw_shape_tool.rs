@@ -1,6 +1,6 @@
 use gtk4::{traits::BoxExt};
-use crate::{editor::{Editor, EditorEvent}, model::Position};
-use super::Tool;
+use super::{Editor, Event, Position, Tool};
+
 
 pub struct DrawShapeTool {}
 
@@ -12,10 +12,10 @@ impl Tool for DrawShapeTool
         parent.append(&gtk4::Label::builder().label("DrawShapeTool").build());
     }
 
-    fn handle_click(&self, editor: &mut Editor, _button: u32, x: i32, y: i32) -> EditorEvent
+    fn handle_click(&self, editor: &mut Editor, _button: u32, x: i32, y: i32) -> Event
     {
         editor.cursor.pos = Position::from(x, y);
-        EditorEvent::None
+        Event::None
     }
 
 }

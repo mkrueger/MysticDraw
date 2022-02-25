@@ -19,6 +19,18 @@ pub use  buffer::*;
 mod load;
 pub use load::*;
 
+mod tdf_font;
+pub use tdf_font::*;
+
+mod sauce_handling;
+pub use sauce_handling::*;
+
+mod editor;
+pub use editor::*;
+
+mod tool;
+pub use tool::*;
+
 #[derive(Copy, Clone, Debug)]
 pub struct Size {
     pub width: usize,

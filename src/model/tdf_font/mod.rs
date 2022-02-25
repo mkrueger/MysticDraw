@@ -1,6 +1,6 @@
 use std::{path::Path, fs::File, io::{Read}};
 
-use crate::model::{Buffer, Position, TextAttribute, DosChar};
+use super::{Buffer, Position, TextAttribute, DosChar};
 
 #[derive(Copy, Clone, Debug)]
 enum TheDrawFontType {
@@ -66,7 +66,7 @@ impl TheDrawFont
         o += 2;
 
         let mut char_table= Vec::new();
-    	for i in 0..94 {
+    	for _ in 0..94 {
             let cur_char = bytes[o] as u16 | ((bytes[o + 1] as u16) << 8);
             // println!("{}:{:>04X}", char::from_u32((i as u32 ) + (b' ' as u32) + 1).unwrap(),  cur_char);
             char_table.push(cur_char);
@@ -111,13 +111,10 @@ impl TheDrawFont
         }
         let max_x = self.font_data[char_offset];
         char_offset += 1;
-        let max_y = self.font_data[char_offset];
-
-        
+        // let max_y = self.font_data[char_offset];
         char_offset += 1;
         let mut x = pos.x;
         let mut y = pos.y;
-        let o = char_offset;
         loop {
             let ch = self.font_data[char_offset];
             char_offset += 1;
