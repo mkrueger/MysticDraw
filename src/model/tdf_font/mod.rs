@@ -50,6 +50,7 @@ impl TheDrawFont
         }
         let name = String::from_utf8_lossy(&bytes[o..(o + font_name_len)]).to_string();
         o = 41;
+        #[allow(clippy::match_on_vec_items)]
         let font_type = match bytes[o] {
             0 => TheDrawFontType::Outline,
             1 => TheDrawFontType::Block,

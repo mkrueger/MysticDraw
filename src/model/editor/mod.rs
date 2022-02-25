@@ -1,6 +1,6 @@
 use std::cmp::{max, min};
 
-use crate::model::{Buffer, Position, DEFAULT_ATTRIBUTE, TextAttribute, Rectangle};
+use crate::model::{Buffer, Position, TextAttribute, Rectangle};
 
 #[derive(Debug, Default)]
 pub struct Cursor {
@@ -68,7 +68,7 @@ impl Editor
         Editor {
             id,
             buf, 
-            cursor: Cursor { pos: Position::new(), attr: DEFAULT_ATTRIBUTE },
+            cursor: Cursor { pos: Position::new(), attr: TextAttribute::DEFAULT },
             cur_selection: Selection::new()
         }
     }

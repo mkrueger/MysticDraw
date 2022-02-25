@@ -1,6 +1,6 @@
 use std::cmp::max;
 
-use crate::model::DEFAULT_ATTRIBUTE;
+use crate::model::TextAttribute;
 
 use super::{ Position };
 
@@ -29,7 +29,7 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> u8 {
             b'm' => { // Select Graphic Rendition 
                 for n in &data.ans_numbers {
                     match n {
-                        0 => data.text_attr = DEFAULT_ATTRIBUTE, // Reset or normal 
+                        0 => data.text_attr = TextAttribute::DEFAULT, // Reset or normal 
                         1 => data.text_attr.set_bold(true),      // Bold or increased intensity 
                         5 => data.text_attr.set_blink(true),                                 // Slow blink 
                         // set foreaground color

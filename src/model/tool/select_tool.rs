@@ -48,8 +48,11 @@ impl Tool for SelectTool
         Event::None
     }
 
-    fn handle_drag(&self, editor: &mut Editor, start: Position, cur: Position) -> Event
+    fn handle_drag(&self, editor: &mut Editor, start: Position, mut cur: Position) -> Event
     {
+        if start < cur {
+            cur = cur + Position::from(1, 1);
+        }
         editor.cur_selection.rectangle = crate::model::Rectangle::from_pt(start, cur);
         editor.cur_selection.is_preview = true;
         editor.cur_selection.is_active = true;

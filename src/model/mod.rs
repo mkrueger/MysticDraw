@@ -2,6 +2,8 @@
 #![allow(clippy::cast_sign_loss, clippy::cast_possible_truncation, clippy::cast_possible_wrap, clippy::too_many_lines, clippy::cast_lossless, clippy::cast_precision_loss)]
 
 mod text_attribute;
+use std::cmp::{min};
+
 pub use text_attribute::*;
 
 mod dos_char;
@@ -64,7 +66,7 @@ impl Rectangle
 
     pub fn from_pt(p1: Position, p2: Position) -> Self
     {
-        let start = if p1 < p2 { p1 } else { p2 };
+        let start =Position::from(min(p1.x, p2.x), min(p1.y, p2.y));
 
         Rectangle {
             start, 

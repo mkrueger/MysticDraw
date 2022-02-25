@@ -1,6 +1,6 @@
 use std::cmp::{max, min};
 
-use crate::model::{Position, DEFAULT_ATTRIBUTE, TextAttribute};
+use crate::model::{Position, TextAttribute};
 
 use super::ParseStates;
 
@@ -30,7 +30,7 @@ pub fn display_avt(data: &mut ParseStates, ch: u8) -> (u8, bool) {
             match ch {
                 AVT_CLR => {
                     data.cur_pos = Position::new();
-                    data.text_attr = DEFAULT_ATTRIBUTE;
+                    data.text_attr = TextAttribute::DEFAULT;
                 }
                 AVT_REP => {
                     data.avt_state = AvtReadState::RepeatChars;

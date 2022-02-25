@@ -1,10 +1,16 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, ops::{Add, Sub}};
 
 
 #[derive(Copy, Clone, Debug)]
 pub struct Position {
     pub x: i32,
     pub y: i32,
+}
+
+impl std::fmt::Display for Position {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(x: {}, y: {})", self.x, self.y)
+    }
 }
 
 impl Position {
@@ -19,6 +25,22 @@ impl Position {
 impl Default for Position {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Add<Position> for Position {
+    type Output = Position;
+
+    fn add(self, rhs: Position) -> Position {
+        Position { x: self.x + rhs.x, y: self.y + rhs.y }
+    }
+}
+
+impl Sub<Position> for Position {
+    type Output = Position;
+
+    fn sub(self, rhs: Position) -> Position {
+        Position { x: self.x - rhs.x, y: self.y - rhs.y }
     }
 }
 

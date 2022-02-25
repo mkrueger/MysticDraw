@@ -1,9 +1,12 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use libadwaita as adw;
 
 use adw::{prelude::*, TabBar, TabView};
 use adw::{ApplicationWindow, HeaderBar};
 use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, gio};
-use model::{Tool, Buffer, Editor, init_tools};
+use model::{Tool, Buffer, Editor, init_tools, TextAttribute};
 use ui::CharEditorView;
 
 mod model;
@@ -13,6 +16,7 @@ pub const DEFAULT_FONT: &[u8] = include_bytes!("../data/font.fnt");
 
 pub struct Workspace {
     selected_tool: usize,
+    selected_attribute: TextAttribute,
     tools: Vec<&'static dyn Tool>
 }
 
@@ -25,8 +29,19 @@ impl Workspace {
 
 pub static mut WORKSPACE: Workspace = Workspace {
     selected_tool: 0,
+    selected_attribute: TextAttribute::DEFAULT,
     tools: Vec::new()
 };
+
+pub fn sync_workbench_state(editor: &mut Editor)
+{
+    // quite lame but unfortunately I don't see a sane way to really work 
+    // with the same state accross everything I'm not able to get any mutable data strucutures out of Gtk
+    // and working with weird RefCell/Cell/Rc makes things worse than doing a manualy sync.
+    unsafe {
+        editor.cursor.attr = WORKSPACE.selected_attribute;
+    }
+}
 
 fn main() {
     init_tools();
@@ -271,8 +286,11 @@ fn load_page(tab_view: &TabView, buf: Buffer) {
         .build();
     let page = tab_view.add_page(&scroller, None);
     let file_name = buf.file_name.clone();
-    let id = Editor::new(0, buf);
-    child2.set_editor(id);
+    let editor = Editor::new(0, buf);
+    
+    let handle = Rc::new(RefCell::new(editor));
+
+    child2.set_editor_handle(handle);
 
     if let Some(x) = file_name {
         let fin = x

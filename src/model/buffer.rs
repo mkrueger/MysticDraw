@@ -6,7 +6,7 @@ use std::{
 };
 use std::ffi::OsStr;
 
-use super::{Layer, read_xbin, DOS_DEFAULT_PALETTE, Sauce, read_sauce, SauceDataType, Position, DosChar, Line, ParseStates, read_binary, display_ans, display_PCBoard, DEFAULT_ATTRIBUTE, display_avt};
+use super::{Layer, read_xbin, Sauce, read_sauce, SauceDataType, Position, DosChar, Line, ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute};
 
 #[derive(Debug, Default)]
 #[allow(dead_code)]
@@ -187,7 +187,7 @@ impl Buffer {
                 12 => {
                     data.cur_pos.x = 0;
                     data.cur_pos.y = 1;
-                    data.text_attr = DEFAULT_ATTRIBUTE;
+                    data.text_attr = TextAttribute::DEFAULT;
                 }
                 13 => {
                     data.cur_pos.x = 0;
@@ -219,6 +219,25 @@ impl Buffer {
         )
     }
 
+    pub const DOS_DEFAULT_PALETTE: [(u8, u8, u8); 16] = [
+        (0x00, 0x00, 0x00), // black
+        (0x00, 0x00, 0xAA), // blue
+        (0x00, 0xAA, 0x00), // green
+        (0x00, 0xAA, 0xAA), // cyan
+        (0xAA, 0x00, 0x00), // red
+        (0xAA, 0x00, 0xAA), // magenta
+        (0xAA, 0x55, 0x00), // brown
+        (0xAA, 0xAA, 0xAA), // lightgray
+        (0x55, 0x55, 0x55), // darkgray
+        (0x55, 0x55, 0xFF), // lightblue
+        (0x55, 0xFF, 0x55), // lightgreen
+        (0x55, 0xFF, 0xFF), // lightcyan
+        (0xFF, 0x55, 0x55), // lightred
+        (0xFF, 0x55, 0xFF), // lightmagenta
+        (0xFF, 0xFF, 0x55), // yellow
+        (0xFF, 0xFF, 0xFF), // white
+    ];
+    
     pub fn get_rgb(&self, color: u8) -> (u8, u8, u8) {
         debug_assert!(color <= 15);
 
@@ -236,7 +255,7 @@ impl Buffer {
             );
         }
         
-        let c = DOS_DEFAULT_PALETTE[color as usize];
+        let c = Buffer::DOS_DEFAULT_PALETTE[color as usize];
         (
             c.0,
             c.1,

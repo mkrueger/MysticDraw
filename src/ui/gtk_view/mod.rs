@@ -3,7 +3,7 @@ use std::{ str::FromStr, rc::Rc, cell::RefCell, cmp::{max, min} };
 
 use gtk4::{ glib, traits::{WidgetExt, GestureExt, GestureSingleExt, GestureDragExt}, gdk::{Paintable, self}, prelude::{DrawingAreaExtManual, GdkCairoContextExt}, cairo::Operator};
 
-use crate::{model::{Position, Editor}};
+use crate::{model::{Position, Editor}, sync_workbench_state};
 
 use self::gtkchar_editor_view::GtkCharEditorView;
 mod gtkchar_editor_view;
@@ -18,45 +18,46 @@ impl Default for CharEditorView {
          Self::new()
     }
 }
+
+/*
 struct Dialog {
     payload: Editor,
  }
+*/
+
 
 impl CharEditorView {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create a AnsiEditorArea")
     }
 
-    fn calc_xy(c: &Rc<RefCell<Dialog>>, xy: (f64, f64)) -> Position
+    fn calc_xy(c: &Rc<RefCell<Editor>>, xy: (f64, f64)) -> Position
     {
-        let dim = c.borrow().payload.buf.font_dimensions;
-        let x = xy.0 as i32;
-        let y = xy.1 as i32;
-        if dim.x == 0 || dim.y == 0 {
-            // -> fall back to default font.
-            Position::from(x / 8, y / 16) 
+        let dim = c.borrow().buf.font_dimensions;
+        let x = xy.0;
+        let y = xy.1;
+        if dim.x == 0 || dim.y == 0 { // -> fall back to default font.
+            Position::from((x / 8.0) as i32, (y / 16.0) as i32) 
         } else {
-            Position::from(x / dim.x, y / dim.y)
+            Position::from((x / dim.x as f64) as i32, (y / dim.y as f64) as i32)
         }
     }
 
-    pub fn set_editor(&self, editor: Editor)
+    pub fn set_editor_handle(&self, handle: Rc<RefCell<Editor>>)
     {
-        let buffer = &editor.buf;
+        let buffer = &handle.borrow().buf;
         let font_dimensions = buffer.get_font_dimensions();
         self.set_size_request(buffer.width as i32 * font_dimensions.x, buffer.height as i32 * font_dimensions.y);
 
-        let rgba = gdk::RGBA::from_str("black").unwrap();
         let mut char_img =
         gtk4::cairo::ImageSurface::create(gtk4::cairo::Format::ARgb32, 8, 16).unwrap();
-        let dialog = Dialog { payload: editor };
-
-        let handle = Rc::new(RefCell::new(dialog));
+       // let dialog = Dialog { payload: editor };
 
         let drag = gtk4::GestureDrag::new();
         let handle1 = handle.clone();
 
         drag.connect_begin(glib::clone!(@strong self as this => move |gst_drag, _| {
+            sync_workbench_state(&mut handle1.borrow_mut());
             let start = gst_drag.start_point();
             let cur   = gst_drag.offset();
             if start.is_none() || cur.is_none() {
@@ -64,13 +65,14 @@ impl CharEditorView {
             }
             let start = CharEditorView::calc_xy(&handle1, start.unwrap());
             let end   = CharEditorView::calc_xy(&handle1, cur.unwrap());
-            handle1.borrow_mut().payload.handle_drag_begin(start, end);
+            handle1.borrow_mut().handle_drag_begin(start, end);
             this.queue_draw();
             this.grab_focus();
         })); 
 
         let handle1 = handle.clone();
         drag.connect_end(glib::clone!(@strong self as this => move |gst_drag, _| {
+            sync_workbench_state(&mut handle1.borrow_mut());
             let start = gst_drag.start_point();
             let cur   = gst_drag.offset();
             if start.is_none() || cur.is_none() {
@@ -78,22 +80,25 @@ impl CharEditorView {
             }
             let start = CharEditorView::calc_xy(&handle1, start.unwrap());
             let end   = CharEditorView::calc_xy(&handle1, cur.unwrap());
-            handle1.borrow_mut().payload.handle_drag_end(start, end);
+            handle1.borrow_mut().handle_drag_end(start, end);
             this.queue_draw();
             this.grab_focus();
         })); 
         
         let handle1 = handle.clone();
         drag.connect_update(glib::clone!(@strong self as this => move |gst_drag, _| {
+            sync_workbench_state(&mut handle1.borrow_mut());
             let start = gst_drag.start_point();
             let cur   = gst_drag.offset();
             if start.is_none() || cur.is_none() {
                 return;
             }
-            let start = CharEditorView::calc_xy(&handle1, start.unwrap());
-            let end   = CharEditorView::calc_xy(&handle1, cur.unwrap());
-
-            handle1.borrow_mut().payload.handle_drag(start, end);
+            let start = start.unwrap();
+            let cur = cur.unwrap();
+            let cur = (start.0 + cur.0, start.1 + cur.1);
+            let start = CharEditorView::calc_xy(&handle1, start);
+            let end   = CharEditorView::calc_xy(&handle1, cur);
+            handle1.borrow_mut().handle_drag(start, end);
             this.queue_draw();
             this.grab_focus();
         }));
@@ -102,9 +107,10 @@ impl CharEditorView {
         let gesture = gtk4::GestureClick::new();
         let handle1 = handle.clone();
         gesture.connect_pressed(glib::clone!(@strong self as this => move |e, _clicks, x, y| {
-            let x = min(handle1.borrow().payload.buf.width as i32, max(0, x as i32 / font_dimensions.x));
-            let y = min(handle1.borrow().payload.buf.height as i32, max(0, y as i32 / font_dimensions.y));
-            handle1.borrow_mut().payload.handle_click(e.button(), x, y);
+            sync_workbench_state(&mut handle1.borrow_mut());
+            let x = min(handle1.borrow().buf.width as i32, max(0, x as i32 / font_dimensions.x));
+            let y = min(handle1.borrow().buf.height as i32, max(0, y as i32 / font_dimensions.y));
+            handle1.borrow_mut().handle_click(e.button(), x, y);
             this.queue_draw();
             this.grab_focus();
         }));
@@ -113,8 +119,9 @@ impl CharEditorView {
         let handle1 = handle.clone();
         let key = gtk4::EventControllerKey::new();
         key.connect_key_pressed(glib::clone!(@strong self as this => move |_, key, key_code, modifier| {
+            sync_workbench_state(&mut handle1.borrow_mut());
             {
-                handle1.borrow_mut().payload.handle_key(key, key_code, modifier);
+                handle1.borrow_mut().handle_key(key, key_code, modifier);
                 this.queue_draw();
             }
             glib::signal::Inhibit(true)
@@ -122,12 +129,13 @@ impl CharEditorView {
         self.add_controller(&key);
 
 
-        let handle1 = handle;
+        let handle1 = handle.clone();
+        let background_rgba = gdk::RGBA::from_str("white").unwrap();
         self.set_draw_func(move |_, cr, _width, _height| {
-            GdkCairoContextExt::set_source_rgba(cr, &rgba);
+            GdkCairoContextExt::set_source_rgba(cr, &background_rgba);
             cr.paint().expect("Invalid cairo surface state");
 
-            let editor = &handle1.borrow().payload;
+            let editor = &handle1.borrow();
             let buffer = &editor.buf;
 
             let font_dimensions = buffer.get_font_dimensions();

@@ -1,10 +1,17 @@
-pub const DEFAULT_ATTRIBUTE: TextAttribute = TextAttribute(7);
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct TextAttribute(u8);
 
+impl std::fmt::Display for TextAttribute {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(Attr: {:X}, fg {}, bg {}, blink {})", self.as_u8(), self.get_foreground(), self.get_background(), self.is_blink())
+    }
+}
+
 impl TextAttribute
 {
+    pub const DEFAULT : TextAttribute = TextAttribute(7);
+
     pub fn from_u8(attr: u8) -> Self
     {
         TextAttribute(attr)

@@ -46,7 +46,7 @@ impl ParseStates {
             ans_esc: false,
             cur_pos: Position::new(),
             saved_pos: Position::new(),
-            text_attr: super::DEFAULT_ATTRIBUTE,
+            text_attr: super::TextAttribute::DEFAULT,
             ans_numbers: Vec::new(),
             pcb_code: false,
             pcb_color: false,
