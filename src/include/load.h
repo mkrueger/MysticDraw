@@ -215,7 +215,7 @@ struct FileDescriptor
 {
    string name;
    bool   isDirectory;
-   
+
    // sauce information
    string title;
    string artist;
@@ -230,14 +230,14 @@ void load()
 	struct dirent *direntp;
 	Sauce sauce;
 	DIR *dirp;
-
+  const char* file_name;
 	ansout << gotoxy(0, 0);
 	for (int x = 0; x <= 1950; x++) {
 		if (LoadAnsi[x<<1]==0) {
 			LoadAnsi[x<<1]= ' ';
 		}
 		ansout << textattr(LoadAnsi[(x<<1)+1]) << LoadAnsi[x<<1];
-		if (COLS>80 && (x + 1) % 80 == 0) { 
+		if (COLS>80 && (x + 1) % 80 == 0) {
 			ansout << endl;
 		}
 	}
@@ -260,12 +260,13 @@ void load()
 					FileDescriptor newDescriptor;
 					newDescriptor.name = string(direntp->d_name);
 					errno=0;
-					
+          if (strcmp(direntp->d_name, ".") == 0)
+            continue; 
 					fp = fopen(direntp->d_name, "rb");
 					bool sauceRead = sauce.ReadSauce(fp);
 					if (errno==EISDIR || fp == NULL) {
 						newDescriptor.isDirectory = true;
-						files.push_back(newDescriptor);	
+						files.push_back(newDescriptor);
 					} else {
 						newDescriptor.isDirectory = false;
 						if (sauceRead) {
@@ -274,7 +275,7 @@ void load()
 							newDescriptor.group  = string((const char*)sauce.Group);
 						}
 						fclose(fp);
-						files.push_back(newDescriptor);	
+						files.push_back(newDescriptor);
 					}
 				}
 			}
@@ -284,12 +285,12 @@ void load()
 			if (x + z < files.size()) {
 				ansout << gotoxy(2, 13 + x);
 				ansout << textattr(15 + (y == x ? 16 : 0));
-				if (files[x + z].isDirectory) { 
+				if (files[x + z].isDirectory) {
 					ansout << textattr(7 + (y == x ? 16 : 0));
 				}
 				ansout << setw(12) << files[x + z].name;
 				ansout << gotoxy(14, 13 + x) << ' ';
-				if (!files[x + z].isDirectory) {	      
+				if (!files[x + z].isDirectory) {
 					ansout << textattr(7 + (y == x ? 16 : 0));
 					ansout << (char)250;
 					ansout << textattr(15 + (y == x ? 16 : 0));
@@ -305,8 +306,8 @@ void load()
 				} else {
 					ansout << textattr(8 + (y == x ? 16 : 0));
 					ansout << " <DiRECTORY>                                                    ";
-				}   
-			} else { 
+				}
+			} else {
 				ansout << gotoxy(2, 13 + x) << textattr(7) << "                                                                             ";
 			}
 		}
@@ -318,14 +319,19 @@ void load()
 							case SDLK_ESCAPE:
 							done = true;
 							break;
-						case SDLK_RETURN:
-							if (files[y+z].isDirectory) {
-								chdir(files[y+z].name.c_str());
-								readnew=1;
-							} else {
-								MysticDrawMain::getInstance().getCurrentBuffer()->load((char*)files[y+z].name.c_str());
-								done = true;
-							}	 
+						case SDLK_RETURN: {
+                file_name = files[y+z].name.c_str();
+                printf("file name: %s %d\n", file_name, strcmp("..", file_name));
+  							if (files[y+z].isDirectory || strcmp("..", file_name) == 0) {
+                  printf("chdir '%s'", file_name);
+  								chdir(file_name);
+  								readnew=1;
+  							} else {
+                  printf("try to open file: %s\n", file_name);
+  								MysticDrawMain::getInstance().getCurrentBuffer()->load((char*)file_name);
+  								done = true;
+  							}
+              }
 							break;
 						case SDLK_PAGEUP:
 							y=0;
@@ -338,11 +344,11 @@ void load()
 						case SDLK_PAGEDOWN:
 							y=8;
 							z+=8;
-							if (z + 9 > files.size()) z = files.size() - 9;	
+							if (z + 9 > files.size()) z = files.size() - 9;
 							if (y + 1 > files.size()) {
 								y = files.size() - 1;
 								z = 0;
-							}	 
+							}
 							break;
 						case SDLK_UP:
 							if  (y >= 1) {
@@ -356,9 +362,9 @@ void load()
 							if (y>8) {
 								y=8;
 								if (z + 9 < files.size()) z++;
-							}	 
+							}
 							if (y + 1 > files.size())  y = files.size() - 1;
-							break;	 
+							break;
 						default:
 							break;
 					}

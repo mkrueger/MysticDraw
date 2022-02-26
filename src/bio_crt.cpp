@@ -31,22 +31,22 @@ ostream& operator<<(ostream& os, const clrscrn& clrscrn)
 //////////
 SDL_Surface* screen;
 Uint8       defaultPaletteData[] = {
-	   0x00, 0x00, 0x00, // black
-	   0x00, 0x00, 0x2A, // blue
-	   0x00, 0x2A, 0x00, // green
-	   0x00, 0x2A, 0x2A, // cyan
-	   0x2A, 0x00, 0x00, // red
-	   0x2A, 0x00, 0x2A, // magenta
-	   0x2A, 0x15, 0x00, // brown
-	   0x2A, 0x2A, 0x2A, // lightgray
-	   0x15, 0x15, 0x15, // darkgray
-	   0x15, 0x15, 0x3F, // lightblue
-	   0x15, 0x3F, 0x15, // lightgreen
-	   0x15, 0x3F, 0x3F, // lightcyan
-	   0x3F, 0x15, 0x15, // lightred
-	   0x3F, 0x15, 0x3F, // lightmagenta
-	   0x15, 0x3F, 0x15, // yellow
-	   0x3F, 0x3F, 0x3F  // white
+	0x00, 0x00, 0x00, // black
+	0x00, 0x00, 0xAA, // blue
+	0x00, 0xAA, 0x00, // green
+	0x00, 0xAA, 0xAA, // cyan
+	0xAA, 0x00, 0x00, // red
+	0xAA, 0x00, 0xAA, // magenta
+	0xAA, 0x55, 0x00, // brown
+	0xAA, 0xAA, 0xAA, // lightgray
+	0x55, 0x55, 0x55, // darkgray
+	0x55, 0x55, 0xFF, // lightblue
+	0x55, 0xFF, 0x55, // lightgreen
+	0x55, 0xFF, 0xFF, // lightcyan
+	0xFF, 0x55, 0x55, // lightred
+	0xFF, 0x55, 0xFF, // lightmagenta
+	0xFF, 0xFF, 0x55, // yellow
+	0xFF, 0xFF, 0xFF, // white
 };
 
 Uint8* ScreenEngine::getDefaultPalette()
@@ -59,23 +59,23 @@ Uint32 ScreenEngine::getpixel(SDL_Surface *surface, int x, int y)
 	int bpp = surface->format->BytesPerPixel;
 	/* Here p is the address to the pixel we want to retrieve */
 	Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
-	
+
 	switch(bpp) {
 		case 1:
 			return *p;
-		
+
 		case 2:
 			return *(Uint16 *)p;
-		
+
 		case 3:
 			if(SDL_BYTEORDER == SDL_BIG_ENDIAN)
 				return p[0] << 16 | p[1] << 8 | p[2];
 			else
 				return p[0] | p[1] << 8 | p[2] << 16;
-		
+
 		case 4:
 			return *(Uint32 *)p;
-			
+
 		default:
 			return 0;       /* shouldn't happen, but avoids warnings */
 	}
@@ -84,10 +84,10 @@ Uint32 ScreenEngine::getpixel(SDL_Surface *surface, int x, int y)
 void ScreenEngine::putpixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 {
 	int bpp = surface->format->BytesPerPixel;
-	
+
 	// Here p is the address to the pixel we want to set
 	Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
-	
+
 	switch(bpp) {
 		case 1:
 			*p = pixel;
@@ -114,11 +114,11 @@ void ScreenEngine::putpixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 
 /*
      attribute byte table:
-     
+
      			 foreground      background
              /-------------\ /-------------\
-     value:   1   2   4   8  16  32  64 128 
-     #byte:   0   1   2   3   4   5   6   7 
+     value:   1   2   4   8  16  32  64 128
+     #byte:   0   1   2   3   4   5   6   7
                           ^               ^
                   font selector       blink
                  (512 font mode)  (blinkmode)
@@ -131,19 +131,19 @@ void ScreenEngine::printChar(int xPos, int yPos, unsigned char ch, unsigned char
 	if (ret == 0) {
 		Uint32 fOffs = 3 * (attr & (extendedFontMode ? 7 : 15));
 		Uint32 bOffs = 3 * ((attr & (blinkMode ? 112 : 240)) >> 4);
-		
-		Uint32 foreground = SDL_MapRGB(screen->format, palette[fOffs]     * 4, 
+
+		Uint32 foreground = SDL_MapRGB(screen->format, palette[fOffs]     * 4,
 		                                               palette[fOffs + 1] * 4,
 		                                               palette[fOffs + 2] * 4);
-		Uint32 background = SDL_MapRGB(screen->format, palette[bOffs] * 4, 
-		                                               palette[bOffs + 1] * 4, 
+		Uint32 background = SDL_MapRGB(screen->format, palette[bOffs] * 4,
+		                                               palette[bOffs + 1] * 4,
 		                                               palette[bOffs + 2] * 4);
-		
+
 		// handle blink mode
 		if (blinkOn && blinkMode && (attr & 128) == 128) {
 			foreground = background;
 		}
-		
+
 		for (Uint32 y = 0; y < 16; ++y) {
 			Uint8 line = *(font_data + ch * 16 + y + (extendedFontMode && (attr & 8) == 8 ? 256 * 16 : 0));
 			for (Uint32 x = 0; x < 8; ++x) {
@@ -154,7 +154,7 @@ void ScreenEngine::printChar(int xPos, int yPos, unsigned char ch, unsigned char
 				}
 			}
 		}
-		
+
 		SDL_UnlockSurface(screen);
 	}
 }
@@ -170,37 +170,37 @@ void ScreenEngine::LoadFont(char* args[])
 #endif
 	char* fontFile = (char*)malloc(strlen(homeDir) + strlen(relFontDir) + 1);
 	sprintf(fontFile, "%s%s", homeDir, relFontDir);
-	
+
 	font_data = default_font_data = new Uint8[4096];
-	
+
 	FILE* fp = fopen(fontFile, "rb");
 	fread(font_data, 4096, 1, fp);
 	fclose(fp);
-	free(fontFile);	
+	free(fontFile);
 }
-	
+
 ScreenEngine::ScreenEngine()
 {
 	width  = 80;
 	height = 25;
 	lineLength = width * 2;
-	
+
 	palette = getDefaultPalette();
 	screen_data = new Uint8[height * lineLength];
-	
+
 	for (Uint32 y = 0; y < height; ++y) {
 		for (Uint32 x = 0; x < width; ++x) {
 			getCharacterXY(x, y) = ' ';
 			getAttributeXY(x, y) = 7;
 		}
 	}
-	
-	
+
+
 	extendedFontMode = false;
 	blinkMode        = false;
 	blinkOn          = false;
-	
-	
+
+
 	curAttr = 0x7;
 	caretX  = 0;
 	caretY  = 0;
@@ -257,23 +257,23 @@ void ScreenEngine::xorCaret()
 	if (!caretVisible) {
 		return;
 	}
-	
+
 	Uint32 drawPosX = caretX * 8;
 	Uint32 drawPosY = caretY * 16;
-	
+
 	int ret = SDL_LockSurface(screen);
 	if (ret == 0) {
 		Uint32 fOffs = 3 * (getAttributeXY(caretX, caretY) & (extendedFontMode ? 7 : 15));
-		Uint32 foreground = SDL_MapRGB(screen->format, (int)palette[fOffs]     * 4, 
-		                                               (int)palette[fOffs + 1] * 4,
-		                                               (int)palette[fOffs + 2] * 4);
-		
+		Uint32 foreground = SDL_MapRGB(screen->format, (int)palette[fOffs],
+		                                               (int)palette[fOffs + 1],
+		                                               (int)palette[fOffs + 2]);
+
 		for (Uint32 y = 14; y < 16; ++y) {
 			for (Uint32 x = 0; x < 8; ++x) {
 				putpixel(screen, x + drawPosX, y + drawPosY, foreground);
 			}
 		}
-		//getpixel(screen, x + drawPosX, y + drawPosY) ^ 
+		//getpixel(screen, x + drawPosX, y + drawPosY) ^
 		SDL_UnlockSurface(screen);
 	}
 }
@@ -288,7 +288,7 @@ void ScreenEngine::update()
 			next_blink = now;
 		}
 	}
-	
+
 	Uint32 now = SDL_GetTicks();
 	if (now - caretBlink > 500) {
 		caretVisible = !caretVisible;
@@ -323,9 +323,9 @@ void init_bio_crt()
 		cerr << "Can't init SDL: " << SDL_GetError() << endl;
         exit(1);
     }
-    atexit(SDL_Quit); 
+    atexit(SDL_Quit);
     screen = SDL_SetVideoMode(640, 400, 32, SDL_HWSURFACE | SDL_FULLSCREEN);
-	
+
 	if (screen == NULL) {
         cerr << "Can't set video mode: " << SDL_GetError() << endl;
         exit(1);
@@ -344,7 +344,7 @@ char *inputfield(char *Str, unsigned int length, int x1, int y)
 	ansout << gotoxy(x1, y) << textattr(7);
 	sprintf(nul,"%s",Str);
 	ansout << gotoxy(x1, y) << nul;
-	
+
 	bool done = false;
 	SDL_Event event;
 	do {
@@ -380,7 +380,7 @@ char *inputfield(char *Str, unsigned int length, int x1, int y)
 							}
 							break;
 						case SDLK_BACKSPACE:
-							if (pos>0) {   
+							if (pos>0) {
 								memcpy(&nul[pos-1],&nul[pos],200-pos);
 								pos--;
 								ansout  << gotoxy(x1, y) << nul;
@@ -391,7 +391,7 @@ char *inputfield(char *Str, unsigned int length, int x1, int y)
 							unsigned char ch = event.key.keysym.unicode;
 							if ((pos<length)&(ch>=32)&(ch<=127)) {
 								if (pos==strlen(nul)) {
-									sprintf(nul,"%s%c",nul,(ch&255)); 
+									sprintf(nul,"%s%c",nul,(ch&255));
 								} else {
 									nul[pos]=ch;
 								}
@@ -402,7 +402,7 @@ char *inputfield(char *Str, unsigned int length, int x1, int y)
 							break;
 					}
 			}
-		} 
+		}
 	} while (!done);
 	return nul;
 }
@@ -476,10 +476,10 @@ extern int chooser(int col, int first, ...)
 		optionList.push_back(ptr);
 	}
 	va_end(ap);
-	
+
 	// retrieve keyboard shortcuts
 	vector<pair<int, char> > keyboardShortcuts;
-	
+
 	for (unsigned int i = 0; i < optionList.size(); ++i) {
 		char ch  = '\0';
 		int  pos = 0;
@@ -495,11 +495,11 @@ extern int chooser(int col, int first, ...)
 		if (*ptr == 0) {
 			pos = -1;
 		}
-		
+
 		keyboardShortcuts.push_back(pair<int, char>(pos, ch));
 	}
 	unsigned int selectedItem = first - 1;
-	
+
 	SDL_Event event;
 	bool done = false;
 	do {
@@ -521,7 +521,7 @@ extern int chooser(int col, int first, ...)
 		}
 		screenEngine.showScreen();
 		SDL_Delay(50);
-		
+
 		while (SDL_PollEvent(&event)) {
 			switch (event.type){
 				case SDL_QUIT:
@@ -553,7 +553,7 @@ extern int chooser(int col, int first, ...)
 									return i + 1;
 								}
 							}
-							
+
 							break;
 					}
 			}
@@ -617,13 +617,13 @@ void mouse_update()  {
 }
 
 
-int mouse_init() { 
+int mouse_init() {
 	int status=0;
 	Gpm_Connect conn;
 	conn.eventMask=~0;
 	conn.defaultMask=0;
 	conn.maxMod=~0;
-	conn.minMod=0;   
+	conn.minMod=0;
 	if (Gpm_Open(&conn,0)==-1) {
 		status=-1;
 	}
