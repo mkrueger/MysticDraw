@@ -3,7 +3,7 @@ use std::{ str::FromStr, rc::Rc, cell::RefCell, cmp::{max, min} };
 
 use gtk4::{ glib, traits::{WidgetExt, GestureExt, GestureSingleExt, GestureDragExt}, gdk::{Paintable, self}, prelude::{DrawingAreaExtManual, GdkCairoContextExt}, cairo::Operator};
 
-use crate::{model::{Position, Editor}, sync_workbench_state};
+use crate::{model::{Position, Editor, Size}, sync_workbench_state};
 
 use self::gtkchar_editor_view::GtkCharEditorView;
 mod gtkchar_editor_view;
@@ -33,21 +33,17 @@ impl CharEditorView {
 
     fn calc_xy(c: &Rc<RefCell<Editor>>, xy: (f64, f64)) -> Position
     {
-        let dim = c.borrow().buf.font_dimensions;
+        let dim = c.borrow().buf.get_font_dimensions();
         let x = xy.0;
         let y = xy.1;
-        if dim.x == 0 || dim.y == 0 { // -> fall back to default font.
-            Position::from((x / 8.0) as i32, (y / 16.0) as i32) 
-        } else {
-            Position::from((x / dim.x as f64) as i32, (y / dim.y as f64) as i32)
-        }
+        Position::from((x / dim.width as f64) as i32, (y / dim.height as f64) as i32)
     }
 
     pub fn set_editor_handle(&self, handle: Rc<RefCell<Editor>>)
     {
         let buffer = &handle.borrow().buf;
         let font_dimensions = buffer.get_font_dimensions();
-        self.set_size_request(buffer.width as i32 * font_dimensions.x, buffer.height as i32 * font_dimensions.y);
+        self.set_size_request((buffer.width * font_dimensions.width) as i32, (buffer.height * font_dimensions.height) as i32);
 
         let mut char_img =
         gtk4::cairo::ImageSurface::create(gtk4::cairo::Format::ARgb32, 8, 16).unwrap();
@@ -109,8 +105,8 @@ impl CharEditorView {
         gesture.set_button(1);
         gesture.connect_pressed(glib::clone!(@strong self as this => move |e, _clicks, x, y| {
             sync_workbench_state(&mut handle1.borrow_mut());
-            let x = min(handle1.borrow().buf.width as i32, max(0, x as i32 / font_dimensions.x));
-            let y = min(handle1.borrow().buf.height as i32, max(0, y as i32 / font_dimensions.y));
+            let x = min(handle1.borrow().buf.width as i32, max(0, x as i32 / font_dimensions.width as i32));
+            let y = min(handle1.borrow().buf.height as i32, max(0, y as i32 / font_dimensions.height as i32));
             handle1.borrow_mut().handle_click(e.button(), x, y);
             this.queue_draw();
             this.grab_focus();
@@ -122,8 +118,8 @@ impl CharEditorView {
         gesture.set_button(3);
         gesture.connect_pressed(glib::clone!(@strong self as this => move |e, _clicks, x, y| {
             sync_workbench_state(&mut handle1.borrow_mut());
-            let x = min(handle1.borrow().buf.width as i32, max(0, x as i32 / font_dimensions.x));
-            let y = min(handle1.borrow().buf.height as i32, max(0, y as i32 / font_dimensions.y));
+            let x = min(handle1.borrow().buf.width as i32, max(0, x as i32 / font_dimensions.width as i32));
+            let y = min(handle1.borrow().buf.height as i32, max(0, y as i32 / font_dimensions.height as i32));
             handle1.borrow_mut().handle_click(e.button(), x, y);
             this.queue_draw();
             this.grab_focus();
@@ -159,10 +155,10 @@ impl CharEditorView {
                     let ch = buffer.get_char(Position::from(x as i32, y as i32));
                     
                     cr.rectangle(
-                        x as f64 * font_dimensions.x as f64, 
-                        y as f64 * font_dimensions.y as f64, 
-                        font_dimensions.x as f64,
-                        font_dimensions.y as f64);
+                        x as f64 * font_dimensions.width as f64, 
+                        y as f64 * font_dimensions.height as f64, 
+                        font_dimensions.width as f64,
+                        font_dimensions.height as f64);
                     let bg = buffer.get_rgb_f64(ch.attribute.get_background());
                     cr.set_source_rgba(bg.0, bg.1, bg.2, 1f64);
                     cr.fill().expect("error while calling fill.");
@@ -173,7 +169,7 @@ impl CharEditorView {
                         let ptr = data.as_mut_ptr();
                         render_char(buffer, ch.char_code, ptr, fg);
                     }
-                    cr.set_source_surface(&char_img, (x as i32 * font_dimensions.x) as f64, (y as i32 * font_dimensions.y) as f64)
+                    cr.set_source_surface(&char_img, (x as i32 * font_dimensions.width as i32) as f64, (y as i32 * font_dimensions.height as i32) as f64)
                         .expect("error while calling fill.");
                         cr.paint()
                         .expect("error while calling fill.");
@@ -206,10 +202,10 @@ impl CharEditorView {
     }
 }
 
-fn draw_caret(cursor_pos: Position, cr: &gtk4::cairo::Context, font_dimensions: Position) {
+fn draw_caret(cursor_pos: Position, cr: &gtk4::cairo::Context, font_dimensions: Size) {
     let x = cursor_pos.x;
     let y = cursor_pos.y;
-    cr.rectangle((x as i32 * font_dimensions.x) as f64, (y as i32 * font_dimensions.y) as f64, font_dimensions.x as f64, font_dimensions.y as f64);
+    cr.rectangle((x as i32 * font_dimensions.width as i32) as f64, (y as i32 * font_dimensions.height as i32) as f64, font_dimensions.width as f64, font_dimensions.height as f64);
     cr.set_source_rgb(0x7F as f64 / 255.0, 0x7F as f64 / 255.0, 0x7F as f64 / 255.0);
     cr.set_operator(Operator::Difference);
     cr.fill().expect("error while calling fill.");
@@ -218,9 +214,9 @@ fn draw_caret(cursor_pos: Position, cr: &gtk4::cairo::Context, font_dimensions: 
 unsafe fn render_char(buffer: &crate::model::Buffer, ch: u8, ptr: *mut u8, fg: (u8, u8, u8)) {
     let font_dimensions = buffer.get_font_dimensions();
     let mut i = 0;
-    for y in 0..font_dimensions.y {
+    for y in 0..font_dimensions.height {
         let line = buffer.get_font_scanline(ch, y as usize);
-        for x in 0..font_dimensions.x {
+        for x in 0..font_dimensions.width {
             if (line & (128 >> x)) != 0 {
                 *ptr.add(i) = fg.2;
                 i += 1;

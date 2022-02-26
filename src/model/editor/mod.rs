@@ -1,8 +1,6 @@
 use std::{cmp::{max, min}, path::Path, io::Write, fs::File, ffi::OsStr};
 
-use gtk4::prelude::OutputStreamExtManual;
-
-use crate::model::{Buffer, Position, TextAttribute, Rectangle, convert_to_ansi, convert_to_ascii, convert_to_avatar, convert_to_bin, convert_to_pcboard, convert_to_xbin};
+use crate::model::{Buffer, Position, TextAttribute, Rectangle, convert_to_ans, convert_to_asc, convert_to_avt, convert_to_binary, convert_to_pcb, convert_to_xb};
 
 #[derive(Debug, Default)]
 pub struct Cursor {
@@ -130,18 +128,18 @@ impl Editor
                 self.get_file_content("")
             };
         
-        f.write_all(&content);
+        f.write_all(&content).expect("Can't write file.");
     }
 
     pub fn get_file_content(&self, extension: &str) -> Vec<u8>
     {
         match extension {
-            "bin" => convert_to_bin(self),
-            "xb" => convert_to_xbin(self),
-            "ans" => convert_to_ansi(self),
-            "avt" => convert_to_avatar(self),
-            "pcb" => convert_to_pcboard(self),
-            _ => convert_to_ascii(self)
+            "bin" => convert_to_binary(&self.buf),
+            "xb" => convert_to_xb(&self.buf),
+            "ans" => convert_to_ans(&self.buf),
+            "avt" => convert_to_avt(&self.buf),
+            "pcb" => convert_to_pcb(&self.buf),
+            _ => convert_to_asc(&self.buf)
         }
     }
 }

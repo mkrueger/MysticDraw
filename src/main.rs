@@ -248,6 +248,14 @@ fn build_ui(app: &Application) {
         filter.add_pattern("*.nfo");
         filter.add_pattern("*.diz");
 
+        filter.add_pattern("*.ANS");
+        filter.add_pattern("*.AVT");
+        filter.add_pattern("*.BIN");
+        filter.add_pattern("*.XB");
+        filter.add_pattern("*.PCB");
+        filter.add_pattern("*.ASC");
+        filter.add_pattern("*.NFO");
+        filter.add_pattern("*.DIZ");
         let file_chooser = gtk4::FileChooserDialog::builder()
             .title("Open file")
             .action(FileChooserAction::Open)
@@ -301,9 +309,18 @@ fn save_as(window: &ApplicationWindow, tab_view: &'static TabView) {
     filter.add_pattern("*.nfo");
     filter.add_pattern("*.diz");
 
+    filter.add_pattern("*.ANS");
+    filter.add_pattern("*.AVT");
+    filter.add_pattern("*.BIN");
+    filter.add_pattern("*.XB");
+    filter.add_pattern("*.PCB");
+    filter.add_pattern("*.ASC");
+    filter.add_pattern("*.NFO");
+    filter.add_pattern("*.DIZ");
+
     let file_chooser = gtk4::FileChooserDialog::builder()
         .title("Save file")
-        .action(FileChooserAction::Open)
+        .action(FileChooserAction::Save)
         .filter(&filter)
         .transient_for(window)
         .width_request(640)

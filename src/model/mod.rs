@@ -36,7 +36,7 @@ pub use editor::*;
 mod tool;
 pub use tool::*;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Size {
     pub width: usize,
     pub height: usize

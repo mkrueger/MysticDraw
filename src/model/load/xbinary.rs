@@ -1,8 +1,8 @@
-use crate::model::{Buffer, DosChar};
+use crate::model::{Buffer, DosChar, BitFont, Size};
 
 use super::{ Position, TextAttribute };
 
-pub fn read_xbin(result: &mut Buffer, bytes: &[u8], _file_size: usize, _screen_width: i32)
+pub fn read_xb(result: &mut Buffer, bytes: &[u8], _file_size: usize, _screen_width: i32)
 {
     if b"XBIN" != &bytes[0..4] {
         eprintln!("no valid xbin.");
@@ -37,8 +37,10 @@ pub fn read_xbin(result: &mut Buffer, bytes: &[u8], _file_size: usize, _screen_w
     }
     if has_custom_font {
         let font_length = font_size as usize * if is_extended_char_mode { 512 } else { 256 };
-        result.custom_font = Some((&bytes[o..(o+font_length)]).to_vec());
-        result.font_dimensions = Position::from(8, font_size as i32);
+        result.font = Some(BitFont {
+            size: Size::from(8, font_size as usize),
+            data: bytes[o..(o+font_length)].iter().map(|x| *x as u32).collect()
+        });
         o += font_length;
     }
 
@@ -148,7 +150,7 @@ fn read_data_uncompressed(result: &mut Buffer, bytes: &[u8])
 {
     let mut pos = Position::new();
     let mut o = 0;
-    while  o + 2 < bytes.len() {
+    while o + 2 <= bytes.len() {
         result.set_char(pos, DosChar { 
             char_code: bytes[o], 
             attribute: TextAttribute::from_u8(bytes[o + 1])

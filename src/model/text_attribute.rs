@@ -55,6 +55,11 @@ impl TextAttribute
         self.0 & 0b0000_1111
     }
 
+    pub fn get_foreground_without_bold(self) -> u8
+    {
+        self.0 & 0b0000_0111
+    }
+
     pub fn set_foreground(&mut self, color: u8) 
     {
         assert!(color < 0b1_0000);
@@ -69,6 +74,11 @@ impl TextAttribute
 
     pub fn get_background(self) -> u8
     {
+        (self.0 >> 4) & 0b0111
+    }
+
+    pub fn get_background_ice(self) -> u8
+    {
         self.0 >> 4
     }
 
@@ -76,5 +86,12 @@ impl TextAttribute
     {
         assert!(color < 0b1000, "color was: {}", color);
         self.0 = (0b1000_1111 & self.0) | (color << 4);
+    }
+}
+
+
+impl PartialEq for TextAttribute {
+    fn eq(&self, other: &TextAttribute) -> bool {
+        self.0 == other.0
     }
 }

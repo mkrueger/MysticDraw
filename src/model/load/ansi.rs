@@ -171,7 +171,7 @@ mod tests {
 
     #[test]
     fn test_ansi_sequence() {
-        let buf = Buffer::from_bytes(&PathBuf::from("test"), &None, b"[0;40;37mFoo-[1mB[0ma[35mr");
+        let buf = Buffer::from_bytes(&PathBuf::from("test"), &None, b"\x1B[0;40;37mFoo-\x1B[1mB\x1B[0ma\x1B[35mr");
        
        assert_eq!(1, buf.height);
        assert_eq!(7, buf.width); // 'Foo-Bar'
@@ -195,7 +195,7 @@ mod tests {
 
     #[test]
     fn test_ansi_30() {
-        let buf = Buffer::from_bytes(&PathBuf::from("test"), &None, b"[1;35mA[30mB[0mC");
+        let buf = Buffer::from_bytes(&PathBuf::from("test"), &None, b"\x1B[1;35mA\x1B[30mB\x1B[0mC");
        
        let line = &buf.base_layer.lines[0];
        assert_eq!(b'A', line.chars[0].char_code);
@@ -208,7 +208,7 @@ mod tests {
 
     #[test]
     fn test_bg_colorrsequence() {
-        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test"), &None, b"[1;30m1[0;34m2[33m3[1;41m4[40m5[43m6[40m7");
+        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test"), &None, b"\x1B[1;30m1\x1B[0;34m2\x1B[33m3\x1B[1;41m4\x1B[40m5\x1B[43m6\x1B[40m7");
        
        let line = &buf.base_layer.lines[0];
        assert_eq!(b'1', line.chars[0].char_code);
@@ -237,7 +237,7 @@ mod tests {
 
     #[test]
     fn test_char_missing_bug() {
-        let buf = Buffer::from_bytes(&PathBuf::from("test"), &None, b"[1;35mA[30mB[0mC");
+        let buf = Buffer::from_bytes(&PathBuf::from("test"), &None, b"\x1B[1;35mA\x1B[30mB\x1B[0mC");
        
        let line = &buf.base_layer.lines[0];
        assert_eq!(b'A', line.chars[0].char_code);

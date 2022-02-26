@@ -13,8 +13,23 @@ impl DosChar {
             attribute: super::TextAttribute::DEFAULT,
         }
     }
+
+    pub fn is_transparent(self) -> bool {
+        (self.char_code == 0 || self.char_code == b' ') && self.attribute.get_background() == 0
+    }
 }
 
+impl PartialEq for DosChar {
+    fn eq(&self, other: &DosChar) -> bool {
+        self.char_code == other.char_code && self.attribute == other.attribute
+    }
+}
+
+impl std::fmt::Display for DosChar {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(Char: {}/0x{0:X} '{}', Attr: {})", self.char_code, char::from_u32(self.char_code as u32).unwrap(),  self.attribute)
+    }
+}
  /*
 pub fn get_color(color: u8) -> &'static str
 {

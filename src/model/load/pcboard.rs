@@ -7,10 +7,10 @@ fn conv_ch(ch: u8) -> u8 {
         return ch - b'0';
     }
     if (b'a'..=b'f').contains(&ch) {
-        return ch - b'a';
+        return 10 + ch - b'a';
     }
     if (b'A'..=b'F').contains(&ch) {
-        return ch - b'A';
+        return 10 + ch - b'A';
     }
     0
 }

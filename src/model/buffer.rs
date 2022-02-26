@@ -6,14 +6,13 @@ use std::{
 };
 use std::ffi::OsStr;
 
-use super::{Layer, read_xbin, Sauce, read_sauce, SauceDataType, Position, DosChar, Line, ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute};
+use super::{Layer, read_xb, Sauce, read_sauce, SauceDataType, Position, DosChar, Line, ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size};
 
 #[derive(Debug, Default)]
 #[allow(dead_code)]
 pub struct BitFont {
-    pub width: usize,
-    pub height: usize,
-    pub data: Vec<u16>,
+    pub size: Size,
+    pub data: Vec<u32>,
 }
 
 #[derive(Debug)]
@@ -23,10 +22,8 @@ pub struct Buffer {
     pub width: usize,
     pub height: usize,
     pub custom_palette: Option<Vec<u8>>,
-    pub custom_font: Option<Vec<u8>>,
     pub base_layer: Layer,
 
-    pub font_dimensions: Position,
     pub font: Option<BitFont>,
     pub layers: Vec<Layer>,
     pub sauce: Option<Sauce>,
@@ -41,31 +38,29 @@ impl Buffer {
             width: 0,
             height: 0,
             custom_palette: None,
-            custom_font: None,
             base_layer: Layer::new(),
-            font_dimensions: Position::new(),
             font: None,
             layers: Vec::new(),
             sauce: None,
         }
     }
 
-    pub fn get_font_scanline(&self, ch: u8, y: usize) -> u8
+    pub fn get_font_scanline(&self, ch: u8, y: usize) -> u32
     {
-        if let Some(font) = &self.custom_font {
-            font[ch as usize * self.font_dimensions.y as usize + y]
+        if let Some(font) = &self.font {
+            font.data[ch as usize * font.size.height as usize + y]
         } else {
-            DEFAULT_FONT[ch as usize * 16 + y]
+            DEFAULT_FONT[ch as usize * 16 + y] as u32
         }
     }
 
-    pub fn get_font_dimensions(&self) -> Position
+    pub fn get_font_dimensions(&self) -> Size
     {
-        if self.custom_font.is_some() {
-            self.font_dimensions
+        if let Some(font) = &self.font {
+            font.size
         } else {
             // default font.
-            Position::from(8, 16)
+            Size::from(8, 16)
         }
     }
 
@@ -143,7 +138,7 @@ impl Buffer {
                 }
                 "xb" => {
                     if screen_width == 0 { screen_width = 160; }
-                    read_xbin(&mut result, bytes, file_size, screen_width);
+                    read_xb(&mut result, bytes, file_size, screen_width);
                     return result;
                 }
                 "ans" => { parse_ansi = true; }
@@ -153,6 +148,8 @@ impl Buffer {
             }
         }
         if screen_width == 0 { screen_width = 80; }
+
+        result.width = screen_width as usize;
         for b in bytes.iter().take(file_size) {
             let mut ch = *b;
             if parse_ansi {
@@ -176,6 +173,8 @@ impl Buffer {
                 Buffer::output_char(&mut result, screen_width, &mut data, ch);
             }
         }
+
+        println!("buffer load with width : {}", result.width);
         result
     }
 
@@ -267,14 +266,29 @@ impl Buffer {
 
     pub fn to_screenx(&self, x: i32) -> f64
     {
-        x as f64 * if self.font_dimensions.x == 0 { 8.0 } else { self.font_dimensions.x as f64 } 
+        let font_dimensions = self.get_font_dimensions();
+        x as f64 * font_dimensions.width as f64
     }
 
     pub fn to_screeny(&self, y: i32) -> f64
     {
-        y as f64 * if self.font_dimensions.y == 0 { 16.0 } else { self.font_dimensions.y as f64 } 
+        let font_dimensions = self.get_font_dimensions();
+        y as f64 * font_dimensions.height as f64 
     }
 
+    pub fn get_line_length(&self, line: i32) -> i32
+    {
+        let mut length = 0;
+        let mut pos = Position::from(0, line);
+        for x in 0..(self.width as i32) {
+            pos.x = x;
+            let ch = self.get_char(pos);
+            if !ch.is_transparent() {
+                length = x + 1;
+            }
+        }
+        length
+    }
 }
 
 impl Default for Buffer {
