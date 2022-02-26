@@ -3,7 +3,7 @@ use std::{path::Path, fs::File, io::{Read}};
 use super::{Buffer, Position, TextAttribute, DosChar};
 
 #[derive(Copy, Clone, Debug)]
-enum TheDrawFontType {
+pub enum TheDrawFontType {
     Outline,
     Block,
     Color
@@ -12,8 +12,8 @@ enum TheDrawFontType {
 #[allow(dead_code)]
 pub struct TheDrawFont
 {
-    name: String,
-    font_type: TheDrawFontType,
+    pub name: String,
+    pub font_type: TheDrawFontType,
     pub spaces: i32,
     char_table: Vec<u16>,
     font_data: Vec<u8>

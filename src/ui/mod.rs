@@ -6,3 +6,6 @@ pub use color_picker::*;
 
 mod gtk_view;
 pub use gtk_view::*;
+
+mod tool;
+pub use tool::*;

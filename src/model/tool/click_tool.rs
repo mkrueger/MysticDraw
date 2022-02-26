@@ -1,4 +1,6 @@
 use gtk4::{traits::BoxExt};
+use libadwaita::ApplicationWindow;
+
 use super::{Editor, Event, Position, Tool};
 
 
@@ -8,7 +10,7 @@ impl Tool for ClickTool
 {
     fn get_icon_name(&self) -> &'static str { "edit-select" }
 
-    fn add_tool_page(&self, parent: &mut gtk4::Box)
+    fn add_tool_page(&self, window: &ApplicationWindow,parent: &mut gtk4::Box)
     {
         parent.append(&gtk4::Label::builder().label("Click").build());
     }

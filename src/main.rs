@@ -11,7 +11,7 @@ use model::{init_tools, Buffer, Editor, TextAttribute, Tool};
 use ui::CharEditorView;
 
 mod model;
-mod ui;
+pub mod ui;
 
 pub const DEFAULT_FONT: &[u8] = include_bytes!("../data/font.fnt");
 
@@ -110,13 +110,13 @@ fn read_a_file(file: &str) -> std::io::Result<Vec<u8>> {
         <select outline mode>
 */
 
-fn add_tool(flow_box: &gtk4::FlowBox, nb: &gtk4::Notebook, tool: &dyn Tool) -> gtk4::ToggleButton {
+fn add_tool(window: &ApplicationWindow, flow_box: &gtk4::FlowBox, nb: &gtk4::Notebook, tool: &dyn Tool) -> gtk4::ToggleButton {
     let button = gtk4::ToggleButton::builder()
         .icon_name(tool.get_icon_name())
         .build();
     flow_box.insert(&button, -1);
     let mut page_content = Box::new(Orientation::Vertical, 0);
-    tool.add_tool_page(&mut page_content);
+    tool.add_tool_page(window, &mut page_content);
 
     let page_num = nb.append_page(&page_content, Option::<&gtk4::Widget>::None);
 
@@ -129,7 +129,7 @@ fn add_tool(flow_box: &gtk4::FlowBox, nb: &gtk4::Notebook, tool: &dyn Tool) -> g
     button
 }
 
-fn construct_left_toolbar() -> Box {
+fn construct_left_toolbar(window: &ApplicationWindow) -> Box {
     let result = Box::new(Orientation::Vertical, 0);
 
     result.append(&ui::ColorPicker::new());
@@ -142,9 +142,9 @@ fn construct_left_toolbar() -> Box {
     let nb = gtk4::Notebook::builder().show_tabs(false).build();
 
     unsafe {
-        let first = add_tool(&flow_box, &nb, WORKSPACE.tools[0]);
+        let first = add_tool(window, &flow_box, &nb, WORKSPACE.tools[0]);
         for t in 1..WORKSPACE.tools.len() {
-            add_tool(&flow_box, &nb, WORKSPACE.tools[t]).set_group(Some(&first));
+            add_tool(window, &flow_box, &nb, WORKSPACE.tools[t]).set_group(Some(&first));
         }
     }
 
@@ -232,7 +232,7 @@ fn build_ui(app: &Application) {
         right_pane.set_position(200);
 
         let left_pane = Box::new(Orientation::Horizontal, 0);
-        left_pane.append(&construct_left_toolbar());
+        left_pane.append(&construct_left_toolbar(&window));
         left_pane.append(&right_pane);
         content.append(&left_pane);
 

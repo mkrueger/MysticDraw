@@ -1,4 +1,5 @@
-use gtk4::gdk::{Key, ModifierType};
+use gtk4::{gdk::{Key, ModifierType}};
+use libadwaita::ApplicationWindow;
 
 use crate::WORKSPACE;
 
@@ -13,11 +14,10 @@ mod font_tool;
 mod paint_tool;
 mod select_tool;
 
-
 pub trait Tool
 {
     fn get_icon_name(&self) -> &'static str;
-    fn add_tool_page(&self, parent: &mut gtk4::Box);
+    fn add_tool_page(&self, window: &ApplicationWindow,parent: &mut gtk4::Box);
     
     fn handle_key(&self, editor: &mut Editor, key: Key, _key_code: u32, _modifier: ModifierType) -> Event
     {
@@ -149,7 +149,7 @@ pub trait Tool
 }
 
 
-static mut FONT_TOOL: font_tool::FontTool = font_tool::FontTool { fonts: Vec::new() };
+pub static mut FONT_TOOL: font_tool::FontTool = font_tool::FontTool { fonts: Vec::new(), selected_font: -1  };
 
 pub fn init_tools()
 {
