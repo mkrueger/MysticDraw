@@ -1,6 +1,8 @@
-use std::cmp::{max, min};
+use std::{cmp::{max, min}, path::Path, io::Write, fs::File, ffi::OsStr};
 
-use crate::model::{Buffer, Position, TextAttribute, Rectangle};
+use gtk4::prelude::OutputStreamExtManual;
+
+use crate::model::{Buffer, Position, TextAttribute, Rectangle, convert_to_ansi, convert_to_ascii, convert_to_avatar, convert_to_bin, convert_to_pcboard, convert_to_xbin};
 
 #[derive(Debug, Default)]
 pub struct Cursor {
@@ -114,5 +116,32 @@ impl Editor
         self.cursor.pos.x = min(max(0, x), self.buf.width as i32);
         self.cursor.pos.y = min(max(0, y), self.buf.height as i32);
         Event::CursorPositionChange(old, self.cursor.pos)
+    }
+
+    pub fn save_content(&self, file_name: &Path)
+    {
+        let mut f = File::create(file_name).expect("Can't create file.");
+
+        let content = 
+            if let Some(ext) = file_name.extension() {
+                let ext = OsStr::to_str(ext).unwrap().to_lowercase();
+                self.get_file_content(ext.as_str())
+            } else {
+                self.get_file_content("")
+            };
+        
+        f.write_all(&content);
+    }
+
+    pub fn get_file_content(&self, extension: &str) -> Vec<u8>
+    {
+        match extension {
+            "bin" => convert_to_bin(self),
+            "xb" => convert_to_xbin(self),
+            "ans" => convert_to_ansi(self),
+            "avt" => convert_to_avatar(self),
+            "pcb" => convert_to_pcboard(self),
+            _ => convert_to_ascii(self)
+        }
     }
 }

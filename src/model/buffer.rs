@@ -165,12 +165,14 @@ impl Buffer {
             if parse_avt {
                 let mut avt_result = display_avt(&mut data, ch);
                 let ch = avt_result.0;
+                if ch == 26 { break; }
                 Buffer::output_char(&mut result, screen_width, &mut data, ch);
                 while avt_result.1 {
                     avt_result = display_avt(&mut data, 0);
                     Buffer::output_char(&mut result, screen_width, &mut data, avt_result.0);
                 }
             } else {
+                if ch == 26 { break; }
                 Buffer::output_char(&mut result, screen_width, &mut data, ch);
             }
         }

@@ -42,9 +42,13 @@ impl Tool for SelectTool
         Event::None
     }
 
-    fn handle_click(&self, editor: &mut Editor, _button: u32, x: i32, y: i32) -> Event
+    fn handle_click(&self, editor: &mut Editor, button: u32, x: i32, y: i32) -> Event
     {
-        editor.cursor.pos = Position::from(x, y);
+        if button == 3 {
+            editor.cur_selection.is_active = false;
+        } else {
+            editor.cursor.pos = Position::from(x, y);
+        }
         Event::None
     }
 

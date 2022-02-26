@@ -106,6 +106,20 @@ impl CharEditorView {
 
         let gesture = gtk4::GestureClick::new();
         let handle1 = handle.clone();
+        gesture.set_button(1);
+        gesture.connect_pressed(glib::clone!(@strong self as this => move |e, _clicks, x, y| {
+            sync_workbench_state(&mut handle1.borrow_mut());
+            let x = min(handle1.borrow().buf.width as i32, max(0, x as i32 / font_dimensions.x));
+            let y = min(handle1.borrow().buf.height as i32, max(0, y as i32 / font_dimensions.y));
+            handle1.borrow_mut().handle_click(e.button(), x, y);
+            this.queue_draw();
+            this.grab_focus();
+        }));
+        self.add_controller(&gesture);
+
+        let gesture = gtk4::GestureClick::new();
+        let handle1 = handle.clone();
+        gesture.set_button(3);
         gesture.connect_pressed(glib::clone!(@strong self as this => move |e, _clicks, x, y| {
             sync_workbench_state(&mut handle1.borrow_mut());
             let x = min(handle1.borrow().buf.width as i32, max(0, x as i32 / font_dimensions.x));
