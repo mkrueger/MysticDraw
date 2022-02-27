@@ -273,10 +273,10 @@ impl Buffer {
                 eprintln!("illegal palette color {}, palette is {} colors long.", color, pal.len() / 3);
                 return 0;
             }
-
-            return (pal[o] as u32) << 24 |
-            (pal[o + 1] as u32) << 16 |
-            (pal[o + 2] as u32) << 8 |
+            // need to << 2 all palette data - custom palette is 0..63 and not 0..255
+            return (pal[o] as u32) << 26 |
+            (pal[o + 1] as u32) << 18 |
+            (pal[o + 2] as u32) << 10 |
             0xFF;
         }
         

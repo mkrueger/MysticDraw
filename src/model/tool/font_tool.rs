@@ -1,6 +1,6 @@
 use crate::model::TheDrawFont;
 
-use super::{Tool, Editor, Event, Position};
+use super::{Tool};
 use walkdir::{DirEntry, WalkDir};
 pub struct FontTool {
     pub selected_font: i32,
@@ -12,8 +12,7 @@ impl FontTool
     fn is_hidden(entry: &DirEntry) -> bool {
         entry.file_name()
              .to_str()
-             .map(|s| s.starts_with("."))
-             .unwrap_or(false)
+             .map_or(false, |s| s.starts_with('.'))
     }
         
     pub fn load_fonts(&mut self)

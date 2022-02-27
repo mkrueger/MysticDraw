@@ -1,17 +1,22 @@
 
 use std::{rc::Rc, cell::RefCell};
 
-use druid::{Widget, WindowDesc, LocalizedString, AppLauncher, Data, Env, WindowId, Menu, widget::{Flex, Tabs, TabsPolicy, TabInfo, Label, Axis, TabsEdge, TabsTransition}, WidgetExt };
+use druid::{Widget, WindowDesc, LocalizedString, AppLauncher, Data, Env, WindowId, Menu, widget::{Flex, Tabs, TabsPolicy, TabInfo, Label, Axis, TabsEdge, TabsTransition}, WidgetExt, Lens };
 
 use crate::model::{Buffer, Editor};
 
+use self::color_picker::ColorPicker;
+
 mod ansi_widget;
 mod app_delegate;
+mod color_picker;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Lens)]
 struct AppState {
     pub editor: Vec<Rc<RefCell<Editor>>>,
+    pub cur_editor: i64,
     pub cur_tool: usize,
+    layers: im::Vector<i32>,
 }
 
 impl Data for AppState {
@@ -96,13 +101,48 @@ impl TabsPolicy for NumberedTabs {
     }
 }
 
+fn build_tool_pane() -> impl Widget<AppState> {
+    let mut col= Flex::column();
+    col.set_main_axis_alignment(druid::widget::MainAxisAlignment::Start);
+    col.add_child(ColorPicker::new());
+    col.expand_height()
+}
+
+/* 
+fn build_right_pane() -> impl Widget<()> {
+    let mut col= Flex::row()
+    .cross_axis_alignment(CrossAxisAlignment::Start);
+/* 
+    col.add_flex_child(
+        List::new(|| {
+            Label::new(|data: &i32, _: &_| format!("List item: {}", data))
+                .center()
+                .background(Color::hlc(230.0, 50.0, 50.0))
+                .fix_height(40.0)
+                .expand_width()
+        }).scroll(),
+        1.0,
+    );
+*/
+    col    
+}*/
+
 fn build_widget() -> impl Widget<AppState> {
     let dyn_tabs = Tabs::for_policy(NumberedTabs)
     .with_axis(Axis::Horizontal)
     .with_edge(TabsEdge::Leading)
     .with_transition(TabsTransition::Instant)
-    ;
-    dyn_tabs
+    .on_click(| _ctx, _state, _evt| {
+//        state.selected_editor = evt.p.index;
+    });
+
+    let mut col= Flex::row();
+    col.add_child(build_tool_pane());
+    col.add_flex_child(dyn_tabs, 1.0);
+   // col.add_child(build_right_pane());
+
+
+    col
 }
 
 pub fn start_druid_app() {
@@ -112,7 +152,9 @@ pub fn start_druid_app() {
 
     let mut state = AppState {
         editor: Vec::new(),
-        cur_tool: 0
+        cur_editor: 0,
+        cur_tool: 0,
+        layers: im::Vector::new()
     };
 
     let buffer = Buffer::load_buffer(std::path::Path::new("/home/mkrueger/Downloads/test.xb")).unwrap();
@@ -137,3 +179,23 @@ fn build_widget2() -> impl Widget<AppState> {
     col.add_child( widget);
     col.scroll()
 }*/
+
+
+// Images: 
+
+/*fn build_widget(state: &AppState) -> Box<dyn Widget<AppState>> {
+    let png_data = ImageBuf::from_data(include_bytes!("./assets/PicWithAlpha.png")).unwrap();
+
+    let mut img = Image::new(png_data).fill_mode(state.fill_strat);
+    if state.interpolate {
+        img.set_interpolation_mode(state.interpolation_mode)
+    }
+    let mut sized = SizedBox::new(img);
+    if state.fix_width {
+        sized = sized.fix_width(state.width)
+    }
+    if state.fix_height {
+        sized = sized.fix_height(state.height)
+    }
+    sized.border(Color::grey(0.6), 2.0).center().boxed()
+} */

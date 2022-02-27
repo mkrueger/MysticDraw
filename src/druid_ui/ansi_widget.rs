@@ -2,13 +2,13 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use druid::piet::{ImageFormat, InterpolationMode, CairoImage};
+use druid::piet::{ImageFormat, InterpolationMode };
 use druid::widget::{prelude::*};
 use druid::{
-    Rect, Color, MouseButton, Point
+    Rect, Color, MouseButton, Point, KbKey
 };
 
-use crate::model::{ Position, Editor, TOOLS};
+use crate::model::{ Position, Editor, TOOLS, MKey, MModifiers};
 
 use super::AppState;
 
@@ -16,7 +16,8 @@ pub struct AnsiWidget
 {
     editor: Rc<RefCell<Editor>>,
     chars: Vec<Vec<u8>>,
-    hash: HashMap<(u8, u8), CairoImage>
+    #[cfg(target_os = "linux")]
+    hash: HashMap<(u8, u8), druid::piet::CairoImage>
 }
 
 impl AnsiWidget
@@ -28,10 +29,7 @@ impl AnsiWidget
             hash: HashMap::new()
         }
     }
-}
 
-impl AnsiWidget
-{
     pub fn initialize(&mut self) {
         let buffer = &(self.editor.borrow_mut()).buf;
         let font_dimensions = buffer.get_font_dimensions();
@@ -88,7 +86,7 @@ impl AnsiWidget
 }
 
 impl Widget<AppState> for AnsiWidget {
-
+    
     fn event(&mut self, _ctx: &mut EventCtx, event: &Event, _data: &mut AppState, _env: &Env)
     {
         match event {
@@ -107,6 +105,7 @@ impl Widget<AppState> for AnsiWidget {
                         }
                     }
                 }
+                _ctx.request_focus();
                 _ctx.request_paint();
             }
             Event::MouseMove(_e) => {
@@ -115,11 +114,19 @@ impl Widget<AppState> for AnsiWidget {
             Event::MouseUp(_e) => {
 
             }
-            Event::KeyDown(_e) => {
+            Event::KeyDown(e) => {
+                unsafe {
+                    println!("key down!");
+                    if let Some(key) = transform_key(&e.key) {
+                        println!("handle!");
+                        TOOLS[_data.cur_tool].handle_key(self.editor.clone(), key,   transform_mod(e.mods));
+                    }
+                    _ctx.request_paint();
 
+                }
             }
             _ => {}
-        } 
+        }
     }
 
     fn lifecycle(
@@ -202,5 +209,80 @@ impl Widget<AppState> for AnsiWidget {
             ((y + 1) * font_dimensions.height) as f64 + 0.5);
         
         ctx.fill(rect, &Color::WHITE);
+    }
+
+    fn id(&self) -> Option<WidgetId> {
+        None
+    }
+
+    fn type_name(&self) -> &'static str {
+        std::any::type_name::<Self>()
+    }
+
+    fn short_type_name(&self) -> &'static str {
+        let name = self.type_name();
+        name.split('<')
+            .next()
+            .unwrap_or(name)
+            .split("::")
+            .last()
+            .unwrap_or(name)
+    }
+
+    fn debug_state(&self, data: &AppState) -> druid::debug_state::DebugState {
+        #![allow(unused_variables)]
+        druid::debug_state::DebugState {
+            display_name: self.short_type_name().to_string(),
+            ..Default::default()
+        }
+    }
+}
+
+fn transform_mod(mods: druid::Modifiers) -> MModifiers {
+    match mods {
+        druid::Modifiers::ALT => MModifiers::Alt,
+        druid::Modifiers::SHIFT => MModifiers::Shift,
+        druid::Modifiers::CONTROL => MModifiers::Control,
+        _ => { MModifiers::None }
+    }
+}
+
+fn transform_key(key: &KbKey) -> Option<MKey>
+{
+    match key {
+        druid::keyboard_types::Key::Character(c) => {
+            let bytes  = c.as_bytes();
+            if bytes.len() != 1 { return None; }
+            Some(MKey::Character(bytes[0]))
+        },
+        druid::keyboard_types::Key::Enter => Some(MKey::Return),
+        druid::keyboard_types::Key::Tab => Some(MKey::Tab),
+        druid::keyboard_types::Key::ArrowDown => Some(MKey::Down),
+        druid::keyboard_types::Key::ArrowLeft => Some(MKey::Left),
+        druid::keyboard_types::Key::ArrowRight => Some(MKey::Right),
+        druid::keyboard_types::Key::ArrowUp => Some(MKey::Up),
+        druid::keyboard_types::Key::End => Some(MKey::End),
+        druid::keyboard_types::Key::Home => Some(MKey::Home),
+        druid::keyboard_types::Key::PageDown => Some(MKey::PageDown),
+        druid::keyboard_types::Key::PageUp => Some(MKey::PageUp),
+        druid::keyboard_types::Key::Backspace => Some(MKey::Backspace),
+        druid::keyboard_types::Key::Delete => Some(MKey::Delete),
+        druid::keyboard_types::Key::Insert => Some(MKey::Insert),
+        druid::keyboard_types::Key::Escape => Some(MKey::Escape),
+
+        druid::keyboard_types::Key::F1 => Some(MKey::F1),
+        druid::keyboard_types::Key::F2 => Some(MKey::F2),
+        druid::keyboard_types::Key::F3 => Some(MKey::F3),
+        druid::keyboard_types::Key::F4 => Some(MKey::F4),
+        druid::keyboard_types::Key::F5 => Some(MKey::F5),
+        druid::keyboard_types::Key::F6 => Some(MKey::F6),
+        druid::keyboard_types::Key::F7 => Some(MKey::F7),
+        druid::keyboard_types::Key::F8 => Some(MKey::F8),
+        druid::keyboard_types::Key::F9 => Some(MKey::F9),
+        druid::keyboard_types::Key::F10 => Some(MKey::F10),
+        druid::keyboard_types::Key::F11 => Some(MKey::F11),
+        druid::keyboard_types::Key::F12 => Some(MKey::F12),
+        
+        _ => None
     }
 }

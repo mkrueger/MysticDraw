@@ -18,7 +18,6 @@ impl Tool for ClickTool
 
 
     fn handle_click(&self, editor: Rc<RefCell<Editor>>, button: u32, pos: Position) -> Event {
-
         if button == 1 {
             editor.borrow_mut().cursor.pos = pos;
         }

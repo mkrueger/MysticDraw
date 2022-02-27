@@ -1,4 +1,4 @@
-use super::{Editor, Event, Position, Tool};
+use super::{ Tool};
 
 pub struct BrushTool {}
 

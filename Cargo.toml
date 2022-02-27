@@ -9,3 +9,4 @@ edition = "2021"
 walkdir = "2"
 
 druid = { git = "https://github.com/linebender/druid.git" }
+im = { version = "15.0.0" }

@@ -22,16 +22,22 @@ impl AppDelegate<AppState> for Delegate {
         if cmd.is(druid::commands::NEW_FILE) {
             let buffer = Buffer::new();
             let editor = crate::model::Editor::new(0, buffer);
+            // TODO: Need to sync tabs & index
+            data.cur_editor = data.editor.len() as i64;
             data.editor.push(Rc::new(RefCell::new(editor)));
             Handled::Yes
         } else  if let Some(info) = cmd.get(druid::commands::OPEN_FILE) {
             let buffer = Buffer::load_buffer(info.path()).unwrap();
             let editor = crate::model::Editor::new(0, buffer);
+            // TODO: Need to sync tabs & index
+            data.cur_editor = data.editor.len() as i64;
             data.editor.push(Rc::new(RefCell::new(editor)));
             Handled::Yes
-        } else /*if cmd.is(druid::commands::SAVE_FILE) {
+        } else if cmd.is(druid::commands::SAVE_FILE) {
+            println!("save file");
             Handled::Yes
-        } else */if let Some(_info) = cmd.get(druid::commands::SAVE_FILE_AS) {
+        } else if let Some(_info) = cmd.get(druid::commands::SAVE_FILE_AS) {
+            println!("save file as");
             Handled::Yes
         } else {
             Handled::No
