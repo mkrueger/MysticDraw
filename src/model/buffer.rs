@@ -22,7 +22,6 @@ pub struct Buffer {
     pub width: usize,
     pub height: usize,
     pub custom_palette: Option<Vec<u8>>,
-    pub base_layer: Layer,
 
     pub font: Option<BitFont>,
     pub layers: Vec<Layer>,
@@ -35,12 +34,11 @@ impl Buffer {
     pub fn new() -> Self {
         Buffer {
             file_name: None,
-            width: 0,
-            height: 0,
+            width: 80,
+            height: 25,
             custom_palette: None,
-            base_layer: Layer::new(),
             font: None,
-            layers: Vec::new(),
+            layers: vec!(Layer::new()),
             sauce: None,
         }
     }
@@ -65,25 +63,27 @@ impl Buffer {
     }
 
     pub fn set_char(&mut self, pos: Position, dos_char: DosChar) {
-        if pos.y >= self.base_layer.lines.len() as i32 {
-            self.base_layer.lines.resize(pos.y as usize + 1, Line::new());
+        let cur_layer  = &mut self.layers[0];
+        if pos.y >= cur_layer.lines.len() as i32 {
+            cur_layer.lines.resize(pos.y as usize + 1, Line::new());
             self.height = max(self.height, pos.y as usize + 1);
-            self.base_layer.height = self.height;
+            cur_layer.height = self.height;
         }
         self.width = max(self.width, pos.x as usize + 1);
-        self.base_layer.width = self.width;
+        cur_layer.width = self.width;
 
-        let cur_line = &mut self.base_layer.lines[pos.y as usize];
+        let cur_line = &mut cur_layer.lines[pos.y as usize];
         cur_line.chars.resize(pos.x as usize + 1, DosChar::new());
         cur_line.chars[pos.x as usize] = dos_char;
     }
 
     pub fn get_char(&self, pos: Position) -> DosChar {
-        if pos.y >= self.base_layer.lines.len() as i32 {
+        let cur_layer  = &self.layers[0];
+        if pos.y >= cur_layer.lines.len() as i32 {
             return DosChar::new();
         }
 
-        let cur_line = &self.base_layer.lines[pos.y as usize];
+        let cur_line = &cur_layer.lines[pos.y as usize];
         if pos.x >= cur_line.chars.len() as i32 {
             DosChar::new()
         } else {

@@ -22,7 +22,7 @@ pub struct Layer {
 impl Layer {
     pub fn new() -> Self {
         Layer {
-            name: "LayerName".to_string(),
+            name: "Background".to_string(),
             width: 0,
             height: 0,
             lines: Vec::new(),

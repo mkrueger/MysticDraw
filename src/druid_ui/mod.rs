@@ -1,15 +1,16 @@
 
 use std::{rc::Rc, cell::RefCell};
 
-use druid::{Widget, WindowDesc, LocalizedString, AppLauncher, Data, Env, WindowId, Menu, widget::{Flex, Tabs, TabsPolicy, TabInfo, Label, Axis, TabsEdge, TabsTransition}, WidgetExt, Lens };
+use druid::{Widget, WindowDesc, LocalizedString, AppLauncher, Data, Env, WindowId, Menu, widget::{Flex, Tabs, TabsPolicy, TabInfo, Label, Axis, TabsEdge, TabsTransition, CrossAxisAlignment}, WidgetExt, Lens };
 
 use crate::model::{Buffer, Editor};
 
-use self::color_picker::ColorPicker;
+use self::{color_picker::ColorPicker, layer_view::LayerView};
 
 mod ansi_widget;
 mod app_delegate;
 mod color_picker;
+mod layer_view;
 
 #[derive(Debug, Clone, Default, Lens)]
 struct AppState {
@@ -108,24 +109,13 @@ fn build_tool_pane() -> impl Widget<AppState> {
     col.expand_height()
 }
 
-/* 
-fn build_right_pane() -> impl Widget<()> {
+fn build_right_pane() -> impl Widget<AppState> {
     let mut col= Flex::row()
     .cross_axis_alignment(CrossAxisAlignment::Start);
-/* 
-    col.add_flex_child(
-        List::new(|| {
-            Label::new(|data: &i32, _: &_| format!("List item: {}", data))
-                .center()
-                .background(Color::hlc(230.0, 50.0, 50.0))
-                .fix_height(40.0)
-                .expand_width()
-        }).scroll(),
-        1.0,
-    );
-*/
-    col    
-}*/
+    col.add_child(LayerView::new());
+    
+    col.scroll()
+}
 
 fn build_widget() -> impl Widget<AppState> {
     let dyn_tabs = Tabs::for_policy(NumberedTabs)
@@ -139,8 +129,7 @@ fn build_widget() -> impl Widget<AppState> {
     let mut col= Flex::row();
     col.add_child(build_tool_pane());
     col.add_flex_child(dyn_tabs, 1.0);
-   // col.add_child(build_right_pane());
-
+    col.add_child(build_right_pane());
 
     col
 }
