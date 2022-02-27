@@ -150,7 +150,7 @@ pub static mut TOOLS: Vec<&dyn Tool> = Vec::new();
 
 pub fn init_tools()
 {
-    unsafe {
+   /*  unsafe {
         FONT_TOOL.load_fonts();
         TOOLS.push(&click_tool::ClickTool {});
         TOOLS.push(&select_tool::SelectTool {});
@@ -160,5 +160,5 @@ pub fn init_tools()
         TOOLS.push(&draw_shape_tool::DrawShapeTool{});
         TOOLS.push(&fill_tool::FillTool{});
         TOOLS.push(&FONT_TOOL);
-    }
+    }*/
 }

@@ -7,5 +7,9 @@ edition = "2021"
 
 [dependencies]
 walkdir = "2"
+eframe = "0.17.0" # Gives us egui, epi and web+native backends
+serde = { version = "1", features = ["derive"], optional = true }
 
-druid = { git = "https://github.com/linebender/druid.git" }
+[features]
+default = []
+persistence = ["eframe/persistence", "serde"] # Enable if you want to persist app state on shutdown
