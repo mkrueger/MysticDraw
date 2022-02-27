@@ -1,26 +1,37 @@
 
 use std::{rc::Rc, cell::RefCell};
 
-use druid::{Widget, WindowDesc, LocalizedString, AppLauncher, Data, Env, WindowId, Menu, widget::{Flex, Padding, Tabs, TabsPolicy, TabInfo, Label, Axis, TabsEdge, TabsTransition}, WidgetExt, AppDelegate, DelegateCtx, Target, Command, Handled};
+use druid::{Widget, WindowDesc, LocalizedString, AppLauncher, Data, Env, WindowId, Menu, widget::{Flex, Tabs, TabsPolicy, TabInfo, Label, Axis, TabsEdge, TabsTransition}, WidgetExt };
 
-use crate::model::{Buffer, Editor, Tool};
+use crate::model::{Buffer, Editor};
 
 mod ansi_widget;
 mod app_delegate;
 
 #[derive(Debug, Clone, Default)]
 struct AppState {
-    pub editor: Vec<Rc<Editor>>,
-    pub tools: Vec<i32>
+    pub editor: Vec<Rc<RefCell<Editor>>>,
+    pub cur_tool: usize,
 }
 
 impl Data for AppState {
     fn same(&self, other: &Self) -> bool {
-        self.editor.len() == other.editor.len()
+        if self.editor.len() != other.editor.len() || self.cur_tool != other.cur_tool {
+            return false;
+        }
+
+        for i in 0..self.editor.len() {
+            let e1 = self.editor[i].borrow();
+            let e2 = other.editor[i].borrow();
+            if e1.cursor != e2.cursor {
+                return false;
+            }
+        }
+        true
     }
 }
 
-fn make_menu(_: Option<WindowId>, state: &AppState, _: &Env) -> Menu<AppState> {
+fn make_menu(_: Option<WindowId>, _state: &AppState, _: &Env) -> Menu<AppState> {
     let mut base = Menu::empty();
     #[cfg(target_os = "macos")]
     {
@@ -101,12 +112,12 @@ pub fn start_druid_app() {
 
     let mut state = AppState {
         editor: Vec::new(),
-        tools: Vec::new()
+        cur_tool: 0
     };
 
     let buffer = Buffer::load_buffer(std::path::Path::new("/home/mkrueger/Downloads/test.xb")).unwrap();
     let editor = crate::model::Editor::new(0, buffer);
-    state.editor.push(Rc::new(editor));
+    state.editor.push(Rc::new(RefCell::new(editor)));
 
     AppLauncher::with_window(window)
         .delegate(app_delegate::Delegate {})

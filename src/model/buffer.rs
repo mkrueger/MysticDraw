@@ -264,6 +264,26 @@ impl Buffer {
         )
     }
 
+    pub fn get_rgba_u32(&self, color: u8) -> u32 {
+        debug_assert!(color <= 15);
+
+        if let Some(pal) = &self.custom_palette  {
+            let o = (color * 3) as usize;
+            if o + 2 >= pal.len() {
+                eprintln!("illegal palette color {}, palette is {} colors long.", color, pal.len() / 3);
+                return 0;
+            }
+
+            return (pal[o] as u32) << 24 |
+            (pal[o + 1] as u32) << 16 |
+            (pal[o + 2] as u32) << 8 |
+            0xFF;
+        }
+        
+        let c = Buffer::DOS_DEFAULT_PALETTE[color as usize];
+        (c.0 as u32) << 24 | (c.1 as u32) << 16 | (c.2 as u32) << 8 | 0xFF
+    }
+
     pub fn to_screenx(&self, x: i32) -> f64
     {
         let font_dimensions = self.get_font_dimensions();

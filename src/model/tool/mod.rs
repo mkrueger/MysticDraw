@@ -1,3 +1,5 @@
+use std::{rc::Rc, cell::RefCell};
+
 pub use super::{Editor, Event, Position};
 
 mod brush_tool;
@@ -125,11 +127,11 @@ pub trait Tool
         Event::None
     }
 
-
-    fn handle_click(&self, _editor: &mut Editor, _button: u32, _x: i32, _y: i32) -> Event {
-        Event::None
-    }
-
+*/
+fn handle_click(&self, _editor: Rc<RefCell<Editor>>, _button: u32, _pos: Position) -> Event {
+    Event::None
+}
+/* 
     fn handle_drag_begin(&self, _editor: &mut Editor, _start: Position, _cur: Position) -> Event {
         Event::None
     }

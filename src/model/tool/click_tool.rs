@@ -1,4 +1,6 @@
 
+use std::{rc::Rc, cell::RefCell};
+
 use super::{Editor, Event, Position, Tool};
 
 
@@ -12,10 +14,14 @@ impl Tool for ClickTool
     {
         parent.append(&gtk4::Label::builder().label("Click").build());
     }
+*/
 
-    fn handle_click(&self, editor: &mut Editor, _button: u32, x: i32, y: i32) -> Event
-    {
-        editor.cursor.pos = Position::from(x, y);
+
+    fn handle_click(&self, editor: Rc<RefCell<Editor>>, button: u32, pos: Position) -> Event {
+
+        if button == 1 {
+            editor.borrow_mut().cursor.pos = pos;
+        }
         Event::None
-    }*/
+    }
 }

@@ -8,6 +8,12 @@ pub struct Cursor {
     pub attr: TextAttribute
 }
 
+impl PartialEq for Cursor {
+    fn eq(&self, other: &Cursor) -> bool {
+        self.pos == other.pos && self.attr == other.attr
+    }
+}
+
 pub enum Event {
     None,
     CursorPositionChange(Position, Position)
@@ -50,8 +56,8 @@ impl Default for Selection {
 pub struct Editor {
     pub id: usize,
     pub buf: Buffer,
+    
     pub cursor: Cursor,
-
     pub cur_selection: Selection
 }
 

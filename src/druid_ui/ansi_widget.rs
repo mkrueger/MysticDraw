@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -7,20 +8,20 @@ use druid::{
     Rect, Color, MouseButton, Point
 };
 
-use crate::model::{ Position, Editor};
+use crate::model::{ Position, Editor, TOOLS};
 
 use super::AppState;
 
 pub struct AnsiWidget
 {
-    editor: Rc<Editor>,
+    editor: Rc<RefCell<Editor>>,
     chars: Vec<Vec<u8>>,
     hash: HashMap<(u8, u8), CairoImage>
 }
 
 impl AnsiWidget
 {
-    pub fn new(editor: Rc<Editor>) -> Self {
+    pub fn new(editor: Rc<RefCell<Editor>>) -> Self {
         AnsiWidget {
             editor,
             chars: Vec::new(),
@@ -32,7 +33,7 @@ impl AnsiWidget
 impl AnsiWidget
 {
     pub fn initialize(&mut self) {
-        let buffer = &self.editor.buf;
+        let buffer = &(self.editor.borrow_mut()).buf;
         let font_dimensions = buffer.get_font_dimensions();
         for color in 0..16 {
             let fg = buffer.get_rgb(color);
@@ -72,7 +73,7 @@ impl AnsiWidget
         if p.x < 0.0 || p.y < 0.0 {
             return None;
         }
-        let buffer = &self.editor.buf;
+        let buffer = &(self.editor.borrow_mut()).buf;
 
         let font_dimensions = buffer.get_font_dimensions();
 
@@ -92,12 +93,21 @@ impl Widget<AppState> for AnsiWidget {
     {
         match event {
             Event::MouseDown(e) => {
-                if e.button == MouseButton::Left {
+                let button = match e.button {
+                    MouseButton::Left => 1,
+                    MouseButton::Middle => 2,
+                    MouseButton::Right => 3,
+                    _ => 0
+                };
+                if button > 0 {
                     let pos_opt = self.get_buffer_pos(e.pos);
                     if let Some(pos) = pos_opt {
-                        
+                        unsafe {
+                            TOOLS[_data.cur_tool].handle_click(self.editor.clone(), button, pos);
+                        }
                     }
                 }
+                _ctx.request_paint();
             }
             Event::MouseMove(_e) => {
 
@@ -130,49 +140,60 @@ impl Widget<AppState> for AnsiWidget {
         _data: &AppState,
         _env: &Env,
     ) -> Size {
-        let buffer = &self.editor.buf;
+        let buffer = &(self.editor.borrow_mut()).buf;
         let font_dimensions = buffer.get_font_dimensions();
         Size::new((buffer.width * font_dimensions.width) as f64, (buffer.height * font_dimensions.height) as f64)
     }
 
     fn paint(&mut self, ctx: &mut PaintCtx, _data: &AppState, _env: &Env) {
-        let buffer = &self.editor.buf;
+        let editor = self.editor.borrow_mut();
+        let buffer = &editor.buf;
         let font_dimensions = buffer.get_font_dimensions();
-        for y in 0..buffer.height {
-            for x in 0..buffer.width {
-                let rect  = Rect::new(
-                    (x * font_dimensions.width) as f64 + 0.5,  
-                    (y * font_dimensions.height) as f64 + 0.5, 
-                    ((x + 1) * font_dimensions.width) as f64 + 0.5, 
-                    ((y + 1) * font_dimensions.height) as f64 + 0.5);
-                if !ctx.region().intersects(rect) {
-                    continue;
-                }
-                let ch = buffer.get_char(Position::from(x as i32, y as i32));
-                let bg = buffer.get_rgb(ch.attribute.get_background());
-                let mut rgba = 0;
-                rgba |= bg.0 as u32;
-                rgba <<=8;
-                rgba |= bg.1 as u32;
-                rgba <<=8;
-                rgba |= bg.2 as u32;
-                rgba <<=8;
-                rgba |=  0xFF;
-                ctx.fill(rect, &Color::from_rgba32_u32(rgba));
+        let mut rects = Vec::new();
+        {
+            let paint_rects = ctx.region().rects();
+            if paint_rects.is_empty() {
+                return;
+            }
+            // for some reason this gets filled with duplicates - sometimes >200, so draw only the first rect.
+            rects.push(paint_rects[0]);
+            /* 
+            for r in  paint_rects {
+                rects.push(*r);
+            }*/
+        }
 
-                let key = (ch.char_code, ch.attribute.as_u8());
-                if let std::collections::hash_map::Entry::Vacant(e) = self.hash.entry(key) {
-                    let image_data = &self.chars[ch.attribute.get_foreground() as usize * 256 + ch.char_code as usize];
-                    let image = ctx
-                        .make_image(font_dimensions.width, font_dimensions.height, image_data, ImageFormat::RgbaSeparate)
-                        .unwrap();
-                    e.insert(image);
+        for r in rects {
+            let x1 = (r.x0 as usize) / font_dimensions.width;
+            let x2 = (r.x1 as usize) / font_dimensions.width + 1;
+            let y1 = (r.y0 as usize) / font_dimensions.height;
+            let y2 = (r.y1 as usize) / font_dimensions.height + 1;
+
+            for y in y1..=y2 {
+                for x in x1..=x2 {
+                    let rect  = Rect::new(
+                        (x * font_dimensions.width) as f64 + 0.5,  
+                        (y * font_dimensions.height) as f64 + 0.5, 
+                        ((x + 1) * font_dimensions.width) as f64 + 0.5, 
+                        ((y + 1) * font_dimensions.height) as f64 + 0.5);
+                    let ch = buffer.get_char(Position::from(x as i32, y as i32));
+                    let bg = buffer.get_rgba_u32(ch.attribute.get_background());
+                    ctx.fill(rect, &Color::from_rgba32_u32(bg));
+
+                    let key = (ch.char_code, ch.attribute.as_u8());
+                    if let std::collections::hash_map::Entry::Vacant(e) = self.hash.entry(key) {
+                        let image_data = &self.chars[ch.attribute.get_foreground() as usize * 256 + ch.char_code as usize];
+                        let image = ctx
+                            .make_image(font_dimensions.width, font_dimensions.height, image_data, ImageFormat::RgbaSeparate)
+                            .unwrap();
+                        e.insert(image);
+                    }
+                    ctx.draw_image(self.hash.get(&key).unwrap(), rect, InterpolationMode::Bilinear);
                 }
-                ctx.draw_image(self.hash.get(&key).unwrap(), rect, InterpolationMode::Bilinear);
             }
         }
-        let x = self.editor.cursor.pos.x as usize;
-        let y = self.editor.cursor.pos.y as usize;
+        let x = editor.cursor.pos.x as usize;
+        let y = editor.cursor.pos.y as usize;
         
         let rect  = Rect::new(
             (x * font_dimensions.width) as f64 + 0.5,  
