@@ -13,11 +13,13 @@ pub enum Event {
     CursorPositionChange(Position, Position)
 }
 
+#[derive(Debug)]
 pub enum Shape {
     Rectangle,
     Elipse
 }
 
+#[derive(Debug)]
 pub struct Selection
 {
     pub shape: Shape,
@@ -44,7 +46,7 @@ impl Default for Selection {
     }
 }
 
-//#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Editor {
     pub id: usize,
     pub buf: Buffer,
@@ -72,7 +74,7 @@ impl Editor
             cur_selection: Selection::new()
         }
     }
-
+/* 
     pub fn handle_key(&mut self, key: gtk4::gdk::Key, key_code: u32, modifier: gtk4::gdk::ModifierType) -> Event
     {
         unsafe {
@@ -107,7 +109,7 @@ impl Editor
             crate::WORKSPACE.cur_tool().handle_drag_end( self, start, cur)
         }
     }
-    
+    */
     pub fn set_cursor(&mut self, x: i32, y: i32) -> Event
     {
         let old = self.cursor.pos;

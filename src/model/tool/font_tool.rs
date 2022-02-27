@@ -1,6 +1,3 @@
-use gtk4::{traits::BoxExt, gdk::{Key, ModifierType}};
-use libadwaita::ApplicationWindow;
-
 use crate::model::TheDrawFont;
 
 use super::{Tool, Editor, Event, Position};
@@ -49,7 +46,7 @@ impl FontTool
 impl Tool for FontTool
 {
     fn get_icon_name(&self) -> &'static str { "edit-select" }
-
+/*
     fn add_tool_page(&self, window: &ApplicationWindow,parent: &mut gtk4::Box)
     {
         crate::ui::add_font_tool_page(window, parent);
@@ -120,6 +117,6 @@ impl Tool for FontTool
             }
         }
         Event::None
-    }
+    }*/
 
 }

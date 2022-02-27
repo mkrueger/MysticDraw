@@ -1,8 +1,3 @@
-use gtk4::{gdk::{Key, ModifierType}};
-use libadwaita::ApplicationWindow;
-
-use crate::WORKSPACE;
-
 pub use super::{Editor, Event, Position};
 
 mod brush_tool;
@@ -16,9 +11,9 @@ mod select_tool;
 
 pub trait Tool
 {
-    fn get_icon_name(&self) -> &'static str;
+    fn get_icon_name(&self) -> &'static str;/* 
     fn add_tool_page(&self, window: &ApplicationWindow,parent: &mut gtk4::Box);
-    
+
     fn handle_key(&self, editor: &mut Editor, key: Key, _key_code: u32, _modifier: ModifierType) -> Event
     {
         match key {
@@ -145,24 +140,23 @@ pub trait Tool
 
     fn handle_drag_end(&self, _editor: &mut Editor, _start: Position, _cur: Position) -> Event {
         Event::None
-    }
+    }*/
 }
 
-
 pub static mut FONT_TOOL: font_tool::FontTool = font_tool::FontTool { fonts: Vec::new(), selected_font: -1  };
+pub static mut TOOLS: Vec<&dyn Tool> = Vec::new();
 
 pub fn init_tools()
 {
     unsafe {
         FONT_TOOL.load_fonts();
-
-        WORKSPACE.tools.push(&click_tool::ClickTool {});
-        WORKSPACE.tools.push(&select_tool::SelectTool {});
-        WORKSPACE.tools.push(&paint_tool::PaintTool{});
-        WORKSPACE.tools.push(&brush_tool::BrushTool{});
-        WORKSPACE.tools.push(&erase_tool::EraseTool{});
-        WORKSPACE.tools.push(&draw_shape_tool::DrawShapeTool{});
-        WORKSPACE.tools.push(&fill_tool::FillTool{});
-        WORKSPACE.tools.push(&FONT_TOOL);
+        TOOLS.push(&click_tool::ClickTool {});
+        TOOLS.push(&select_tool::SelectTool {});
+        TOOLS.push(&paint_tool::PaintTool{});
+        TOOLS.push(&brush_tool::BrushTool{});
+        TOOLS.push(&erase_tool::EraseTool{});
+        TOOLS.push(&draw_shape_tool::DrawShapeTool{});
+        TOOLS.push(&fill_tool::FillTool{});
+        TOOLS.push(&FONT_TOOL);
     }
 }
