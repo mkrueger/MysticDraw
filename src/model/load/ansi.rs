@@ -176,7 +176,7 @@ mod tests {
        assert_eq!(1, buf.height);
        assert_eq!(7, buf.width); // 'Foo-Bar'
         
-       let line = &buf.base_layer.lines[0];
+       let line = &buf.layers[0].lines[0];
        assert_eq!(b'F', line.chars[0].char_code);
        assert_eq!(7, line.chars[0].attribute.as_u8());
        assert_eq!(b'o', line.chars[1].char_code);
@@ -197,7 +197,7 @@ mod tests {
     fn test_ansi_30() {
         let buf = Buffer::from_bytes(&PathBuf::from("test"), &None, b"\x1B[1;35mA\x1B[30mB\x1B[0mC");
        
-       let line = &buf.base_layer.lines[0];
+       let line = &buf.layers[0].lines[0];
        assert_eq!(b'A', line.chars[0].char_code);
        assert_eq!(13, line.chars[0].attribute.as_u8());
        assert_eq!(b'B', line.chars[1].char_code);
@@ -210,7 +210,7 @@ mod tests {
     fn test_bg_colorrsequence() {
         let buf = Buffer::from_bytes(&std::path::PathBuf::from("test"), &None, b"\x1B[1;30m1\x1B[0;34m2\x1B[33m3\x1B[1;41m4\x1B[40m5\x1B[43m6\x1B[40m7");
        
-       let line = &buf.base_layer.lines[0];
+       let line = &buf.layers[0].lines[0];
        assert_eq!(b'1', line.chars[0].char_code);
        assert_eq!(8, line.chars[0].attribute.as_u8());
        assert_eq!(b'2', line.chars[1].char_code);
@@ -239,7 +239,7 @@ mod tests {
     fn test_char_missing_bug() {
         let buf = Buffer::from_bytes(&PathBuf::from("test"), &None, b"\x1B[1;35mA\x1B[30mB\x1B[0mC");
        
-       let line = &buf.base_layer.lines[0];
+       let line = &buf.layers[0].lines[0];
        assert_eq!(b'A', line.chars[0].char_code);
        assert_eq!(13, line.chars[0].attribute.as_u8());
        assert_eq!(b'B', line.chars[1].char_code);

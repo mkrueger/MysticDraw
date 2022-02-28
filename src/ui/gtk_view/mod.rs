@@ -1,12 +1,14 @@
 
 use std::{ str::FromStr, rc::Rc, cell::RefCell, cmp::{max, min} };
 
-use gtk4::{ glib, traits::{WidgetExt, GestureExt, GestureSingleExt, GestureDragExt}, gdk::{Paintable, self}, prelude::{DrawingAreaExtManual, GdkCairoContextExt}, cairo::Operator};
+use gtk4::{ glib, traits::{WidgetExt, GestureExt, GestureSingleExt, GestureDragExt}, gdk::{Paintable, self, Key, ModifierType}, prelude::{DrawingAreaExtManual, GdkCairoContextExt}, cairo::Operator};
 
-use crate::{model::{Position, Editor, Size}, sync_workbench_state};
+use crate::{model::{Position, Editor, Size, MKey, MModifiers}, sync_workbench_state};
 
 use self::gtkchar_editor_view::GtkCharEditorView;
 mod gtkchar_editor_view;
+use crate::model::TOOLS;
+use crate::WORKSPACE;
 
 
 glib::wrapper! {
@@ -38,6 +40,62 @@ impl CharEditorView {
         let y = xy.1;
         Position::from((x / dim.width as f64) as i32, (y / dim.height as f64) as i32)
     }
+    
+    fn translate_key(key: Key) -> Option<MKey>
+    {
+        match key {
+            Key::Down => Some(MKey::Down),
+            Key::Up => Some(MKey::Up),
+            Key::Left => Some(MKey::Left),
+            Key::Right => Some(MKey::Right),
+            Key::Page_Down => Some(MKey::PageDown),
+            Key::Page_Up => Some(MKey::PageUp),
+
+            Key::Home | Key::KP_Home => Some(MKey::Home),
+            Key::End | Key::KP_End => Some(MKey::End),
+            Key::Return | Key::KP_Enter => Some(MKey::Return),
+            Key::Delete | Key::KP_Delete => Some(MKey::Delete),
+            Key::Insert | Key::KP_Insert => Some(MKey::Insert),
+            Key::BackSpace => Some(MKey::Backspace),
+            Key::Tab => Some(MKey::Tab),
+            Key::Escape => Some(MKey::Escape),
+
+
+            Key::F1 => Some(MKey::F1),
+            Key::F2 => Some(MKey::F2),
+            Key::F3 => Some(MKey::F3),
+            Key::F4 => Some(MKey::F4),
+            Key::F5 => Some(MKey::F5),
+            Key::F6 => Some(MKey::F6),
+            Key::F7 => Some(MKey::F7),
+            Key::F8 => Some(MKey::F8),
+            Key::F9 => Some(MKey::F9),
+            Key::F10 => Some(MKey::F10),
+            Key::F11 => Some(MKey::F11),
+            Key::F12 => Some(MKey::F12),
+
+            _ => {
+                if let Some(key) = key.to_unicode() {
+                    if key.len_utf8() == 1 {
+                        let mut dst = [0];
+                        key.encode_utf8(&mut dst);
+                        return Some(MKey::Character(dst[0]));
+                    }
+                }
+                None
+            }
+        }
+    }
+
+    fn translate_modifier(modifier: gdk::ModifierType) -> MModifiers
+    {
+        match modifier {
+            ModifierType::SHIFT_MASK => MModifiers::Shift,
+            ModifierType::ALT_MASK => MModifiers::Alt,
+            ModifierType::CONTROL_MASK => MModifiers::Control,
+            _ => MModifiers::None
+        }
+    }
 
     pub fn set_editor_handle(&self, handle: Rc<RefCell<Editor>>)
     {
@@ -61,7 +119,9 @@ impl CharEditorView {
             }
             let start = CharEditorView::calc_xy(&handle1, start.unwrap());
             let end   = CharEditorView::calc_xy(&handle1, cur.unwrap());
-            handle1.borrow_mut().handle_drag_begin(start, end);
+            unsafe {
+                TOOLS[WORKSPACE.selected_tool].handle_drag_begin(handle1.clone(), start, end);
+            }
             this.queue_draw();
             this.grab_focus();
         })); 
@@ -76,7 +136,9 @@ impl CharEditorView {
             }
             let start = CharEditorView::calc_xy(&handle1, start.unwrap());
             let end   = CharEditorView::calc_xy(&handle1, cur.unwrap());
-            handle1.borrow_mut().handle_drag_end(start, end);
+            unsafe {
+                TOOLS[WORKSPACE.selected_tool].handle_drag_end(handle1.clone(), start, end);
+            }
             this.queue_draw();
             this.grab_focus();
         })); 
@@ -94,7 +156,9 @@ impl CharEditorView {
             let cur = (start.0 + cur.0, start.1 + cur.1);
             let start = CharEditorView::calc_xy(&handle1, start);
             let end   = CharEditorView::calc_xy(&handle1, cur);
-            handle1.borrow_mut().handle_drag(start, end);
+            unsafe {
+                TOOLS[WORKSPACE.selected_tool].handle_drag(handle1.clone(), start, end);
+            }
             this.queue_draw();
             this.grab_focus();
         }));
@@ -107,7 +171,9 @@ impl CharEditorView {
             sync_workbench_state(&mut handle1.borrow_mut());
             let x = min(handle1.borrow().buf.width as i32, max(0, x as i32 / font_dimensions.width as i32));
             let y = min(handle1.borrow().buf.height as i32, max(0, y as i32 / font_dimensions.height as i32));
-            handle1.borrow_mut().handle_click(e.button(), x, y);
+            unsafe {
+                TOOLS[WORKSPACE.selected_tool].handle_click(handle1.clone(), e.button(),Position::from(x, y));
+            }
             this.queue_draw();
             this.grab_focus();
         }));
@@ -120,7 +186,9 @@ impl CharEditorView {
             sync_workbench_state(&mut handle1.borrow_mut());
             let x = min(handle1.borrow().buf.width as i32, max(0, x as i32 / font_dimensions.width as i32));
             let y = min(handle1.borrow().buf.height as i32, max(0, y as i32 / font_dimensions.height as i32));
-            handle1.borrow_mut().handle_click(e.button(), x, y);
+            unsafe {
+                TOOLS[WORKSPACE.selected_tool].handle_click(handle1.clone(), e.button(), Position::from(x, y));
+            }
             this.queue_draw();
             this.grab_focus();
         }));
@@ -128,11 +196,15 @@ impl CharEditorView {
 
         let handle1 = handle.clone();
         let key = gtk4::EventControllerKey::new();
-        key.connect_key_pressed(glib::clone!(@strong self as this => move |_, key, key_code, modifier| {
+        key.connect_key_pressed(glib::clone!(@strong self as this => move |_, key, _, modifier| {
             sync_workbench_state(&mut handle1.borrow_mut());
             {
-                handle1.borrow_mut().handle_key(key, key_code, modifier);
-                this.queue_draw();
+                if let Some(key)= CharEditorView::translate_key(key) {
+                    unsafe {
+                        TOOLS[WORKSPACE.selected_tool].handle_key(handle1.clone(), key, CharEditorView::translate_modifier(modifier));
+                    }
+                    this.queue_draw();
+                }
             }
             glib::signal::Inhibit(true)
         }));

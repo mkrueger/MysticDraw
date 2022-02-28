@@ -1,42 +1,39 @@
-use gtk4::{traits::BoxExt, gdk::{Key, ModifierType}};
-use libadwaita::ApplicationWindow;
 
-use super::{Editor, Event, Position, Tool};
+use std::{rc::Rc, cell::RefCell};
+
+use super::{ Tool, MKey, MModifiers, Editor, Event, Position};
 
 pub struct SelectTool {}
 
 impl Tool for SelectTool
 {
     fn get_icon_name(&self) -> &'static str { "edit-select" }
-    fn add_tool_page(&self, window: &ApplicationWindow,parent: &mut gtk4::Box)
-    {
-        parent.append(&gtk4::Label::builder().label("Select").build());
-    }
 
-    fn handle_key(&self, editor: &mut Editor, key: Key, _key_code: u32, _modifier: ModifierType) -> Event
+    fn handle_key(&self, editor: Rc<RefCell<Editor>>, key: MKey, _modifier: MModifiers) -> Event
     {
+        let mut editor = editor.borrow_mut();
         match key {
-            Key::Down => {
+            MKey::Down => {
                 if editor.cur_selection.is_active {
                     editor.cur_selection.rectangle.start.y += 1;
                 }
             }
-            Key::Up => {
+            MKey::Up => {
                 if editor.cur_selection.is_active {
                     editor.cur_selection.rectangle.start.y -= 1;
                 }
             }
-            Key::Left => {
+            MKey::Left => {
                 if editor.cur_selection.is_active {
                     editor.cur_selection.rectangle.start.x -= 1;
                 }
             }
-            Key::Right => {
+            MKey::Right => {
                 if editor.cur_selection.is_active {
                     editor.cur_selection.rectangle.start.x += 1;
                 }
             }
-            Key::Escape => {
+            MKey::Escape => {
                 editor.cur_selection.is_active = false;
             }
             _ => {}
@@ -44,18 +41,18 @@ impl Tool for SelectTool
         Event::None
     }
 
-    fn handle_click(&self, editor: &mut Editor, button: u32, x: i32, y: i32) -> Event
+    fn handle_click(&self, editor: Rc<RefCell<Editor>>, button: u32, cur: Position) -> Event
     {
+        let mut editor = editor.borrow_mut();
         if button == 3 {
             editor.cur_selection.is_active = false;
-        } else {
-            editor.cursor.pos = Position::from(x, y);
         }
         Event::None
     }
 
-    fn handle_drag(&self, editor: &mut Editor, start: Position, mut cur: Position) -> Event
+    fn handle_drag(&self, editor: Rc<RefCell<Editor>>, start: Position, mut cur: Position) -> Event
     {
+        let mut editor = editor.borrow_mut();
         if start < cur {
             cur = cur + Position::from(1, 1);
         }
@@ -66,7 +63,8 @@ impl Tool for SelectTool
         Event::None
     }
 
-    fn handle_drag_end(&self, editor: &mut Editor, _start: Position, _cur: Position) -> Event {
+    fn handle_drag_end(&self, editor: Rc<RefCell<Editor>>, _start: Position, _cur: Position) -> Event {
+        let mut editor = editor.borrow_mut();
         editor.cur_selection.is_preview = false;
         editor.cur_selection.is_active = true;
 

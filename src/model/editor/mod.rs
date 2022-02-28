@@ -8,16 +8,24 @@ pub struct Cursor {
     pub attr: TextAttribute
 }
 
+impl PartialEq for Cursor {
+    fn eq(&self, other: &Cursor) -> bool {
+        self.pos == other.pos && self.attr == other.attr
+    }
+}
+
 pub enum Event {
     None,
     CursorPositionChange(Position, Position)
 }
 
+#[derive(Debug)]
 pub enum Shape {
     Rectangle,
     Elipse
 }
 
+#[derive(Debug)]
 pub struct Selection
 {
     pub shape: Shape,
@@ -44,12 +52,12 @@ impl Default for Selection {
     }
 }
 
-//#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Editor {
     pub id: usize,
     pub buf: Buffer,
+    
     pub cursor: Cursor,
-
     pub cur_selection: Selection
 }
 
@@ -72,7 +80,7 @@ impl Editor
             cur_selection: Selection::new()
         }
     }
-
+/* 
     pub fn handle_key(&mut self, key: gtk4::gdk::Key, key_code: u32, modifier: gtk4::gdk::ModifierType) -> Event
     {
         unsafe {
@@ -107,7 +115,7 @@ impl Editor
             crate::WORKSPACE.cur_tool().handle_drag_end( self, start, cur)
         }
     }
-    
+    */
     pub fn set_cursor(&mut self, x: i32, y: i32) -> Event
     {
         let old = self.cursor.pos;

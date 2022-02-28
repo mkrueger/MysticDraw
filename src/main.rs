@@ -7,7 +7,7 @@ use libadwaita as adw;
 use adw::{prelude::*, TabBar, TabView};
 use adw::{ApplicationWindow, HeaderBar};
 use gtk4::{Application, Box, FileChooserAction, FileFilter, Orientation, ResponseType};
-use model::{init_tools, Buffer, Editor, TextAttribute, Tool};
+use model::{init_tools, Buffer, Editor, TextAttribute, Tool, TOOLS};
 use ui::CharEditorView;
 
 mod model;
@@ -18,15 +18,16 @@ pub const DEFAULT_FONT: &[u8] = include_bytes!("../data/font.fnt");
 pub struct Workspace {
     selected_tool: usize,
     selected_attribute: TextAttribute,
-    tools: Vec<&'static dyn Tool>,
     editors: Vec<Rc<RefCell<Editor>>>,
     tab_view: Option<TabView>,
 }
 
 impl Workspace {
     pub fn cur_tool(&self) -> std::boxed::Box<&'static dyn Tool> {
-        let t = self.tools[self.selected_tool];
-        std::boxed::Box::new(t)
+        unsafe {
+            let t = TOOLS[self.selected_tool];
+            std::boxed::Box::new(t)
+        }
     }
 
     pub fn get_tab_view(&self) -> &TabView {
@@ -40,7 +41,6 @@ impl Workspace {
 pub static mut WORKSPACE: Workspace = Workspace {
     selected_tool: 0,
     selected_attribute: TextAttribute::DEFAULT,
-    tools: Vec::new(),
     editors: Vec::new(),
     tab_view: None,
 };
@@ -116,7 +116,7 @@ fn add_tool(window: &ApplicationWindow, flow_box: &gtk4::FlowBox, nb: &gtk4::Not
         .build();
     flow_box.insert(&button, -1);
     let mut page_content = Box::new(Orientation::Vertical, 0);
-    tool.add_tool_page(window, &mut page_content);
+   // tool.add_tool_page(window, &mut page_content);
 
     let page_num = nb.append_page(&page_content, Option::<&gtk4::Widget>::None);
 
@@ -142,9 +142,9 @@ fn construct_left_toolbar(window: &ApplicationWindow) -> Box {
     let nb = gtk4::Notebook::builder().show_tabs(false).build();
 
     unsafe {
-        let first = add_tool(window, &flow_box, &nb, WORKSPACE.tools[0]);
-        for t in 1..WORKSPACE.tools.len() {
-            add_tool(window, &flow_box, &nb, WORKSPACE.tools[t]).set_group(Some(&first));
+        let first = add_tool(window, &flow_box, &nb, TOOLS[0]);
+        for t in 1..TOOLS.len() {
+            add_tool(window, &flow_box, &nb, TOOLS[t]).set_group(Some(&first));
         }
     }
 
