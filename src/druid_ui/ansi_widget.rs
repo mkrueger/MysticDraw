@@ -17,7 +17,9 @@ pub struct AnsiWidget
     editor: Rc<RefCell<Editor>>,
     chars: Vec<Vec<u8>>,
     #[cfg(target_os = "linux")]
-    hash: HashMap<(u8, u8), druid::piet::CairoImage>
+    hash: HashMap<(u8, u8), druid::piet::CairoImage>,
+    #[cfg(target_os = "macos")]
+    hash: HashMap<(u8, u8), druid::piet::CoreGraphicsImage>,
 }
 
 impl AnsiWidget

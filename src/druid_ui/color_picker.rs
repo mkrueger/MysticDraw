@@ -25,8 +25,7 @@ impl Widget<AppState> for ColorPicker {
             let col = (e.pos.x as i32) / (width / 8);
             let row = (e.pos.y as i32) / (height / 2);
             let color = (col + row * 8) as u8;
-            if state.cur_editor >= 0 {
-                let editor = &state.editor[state.cur_editor as usize];
+            if let Some(editor) = state.get_current_editor()  {
                 if e.button == MouseButton::Left {
                     editor.borrow_mut().cursor.attr.set_foreground(color);
                 } else {
@@ -72,23 +71,20 @@ impl Widget<AppState> for ColorPicker {
                     ((x + 1) * width / 8) as f64 + 0.5,
                     ((y + 1) * height / 2) as f64 + 0.5,
                 );
-
-                let bg = if state.cur_editor < 0 {
+                let bg = if let Some(editor) = state.get_current_editor()  {
+                    editor.borrow_mut().buf.get_rgba_u32((x + y * 8) as u8)
+                } else {
                     let col = Buffer::DOS_DEFAULT_PALETTE[(x + y * 8) as usize];
                     (col.0 as u32) << 24 | (col.1 as u32) << 16 | (col.2 as u32) << 8 | 0xFF
-                } else {
-                    let e = &state.editor[state.cur_editor as usize];
-                    e.borrow_mut().buf.get_rgba_u32((x + y * 8) as u8)
                 };
 
                 ctx.fill(rect, &Color::from_rgba32_u32(bg));
             }
         }
-        let attr = if state.cur_editor < 0 {
-            TextAttribute::DEFAULT
+        let attr = if let Some(editor) = state.get_current_editor()  {
+            editor.borrow_mut().cursor.attr
         } else {
-            let e = &state.editor[state.cur_editor as usize];
-            e.borrow_mut().cursor.attr
+            TextAttribute::DEFAULT
         };
 
         let marker_width = 6f64;

@@ -69,8 +69,8 @@ impl Widget<AppState> for LayerView {
 
         let mut height = 100.0;
 
-        if _data.cur_editor >= 0  {
-            height = (1 + _data.editor[_data.cur_editor as usize].borrow().buf.layers.len()) as f64 * 50.0;
+        if let Some(editor) = _data.get_current_editor()  {
+            height = (1 + editor.borrow().buf.layers.len()) as f64 * 50.0;
         }
 
         Size::new(300.0, height)
@@ -80,8 +80,8 @@ impl Widget<AppState> for LayerView {
         let paint_rects = ctx.region().rects()[0];
         ctx.fill(paint_rects, &Color::WHITE);
 
-        if _data.cur_editor >= 0  {
-            let layers = &_data.editor[_data.cur_editor as usize].borrow().buf.layers;
+        if let Some(editor) = _data.get_current_editor()  {
+            let layers = &editor.borrow().buf.layers;
 
             let fill_color = Color::rgba8(0x00, 0x00, 0x00, 0x7F);
             let mut layout = TextLayout::<String>::from_text("");

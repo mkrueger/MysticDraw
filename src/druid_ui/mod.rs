@@ -14,10 +14,25 @@ mod layer_view;
 
 #[derive(Debug, Clone, Default, Lens)]
 struct AppState {
-    pub editor: Vec<Rc<RefCell<Editor>>>,
-    pub cur_editor: i64,
+    editor: Vec<Rc<RefCell<Editor>>>,
+    cur_editor: i64,
     pub cur_tool: usize,
     layers: im::Vector<i32>,
+}
+
+impl AppState 
+{
+    pub fn get_current_editor(&self) -> Option<Rc<RefCell<Editor>>>
+    {
+        if self.cur_editor < 0 {
+            return None;
+        }
+        if let Some(x) = self.editor.get(self.cur_editor as usize) {
+            Some(x.clone())
+        } else {
+            None
+        }
+    }
 }
 
 impl Data for AppState {
@@ -141,15 +156,15 @@ pub fn start_druid_app() {
 
     let mut state = AppState {
         editor: Vec::new(),
-        cur_editor: 0,
+        cur_editor: -1,
         cur_tool: 0,
         layers: im::Vector::new()
     };
-
+/*
     let buffer = Buffer::load_buffer(std::path::Path::new("/home/mkrueger/Downloads/test.xb")).unwrap();
     let editor = crate::model::Editor::new(0, buffer);
     state.editor.push(Rc::new(RefCell::new(editor)));
-
+*/
     AppLauncher::with_window(window)
         .delegate(app_delegate::Delegate {})
         .log_to_console()
