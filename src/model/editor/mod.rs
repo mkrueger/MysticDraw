@@ -61,7 +61,10 @@ pub struct Editor {
     pub buf: Buffer,
     
     pub cursor: Cursor,
-    pub cur_selection: Selection
+    pub cur_selection: Selection,
+
+    pub cur_outline: i32,
+    // TODO: Custom Outline.
 }
 
 impl Default for Editor 
@@ -80,7 +83,8 @@ impl Editor
             id,
             buf, 
             cursor: Cursor { pos: Position::new(), attr: TextAttribute::DEFAULT, insert_mode: false },
-            cur_selection: Selection::new()
+            cur_selection: Selection::new(),
+            cur_outline: 0
         }
     }
 
@@ -144,4 +148,50 @@ impl Editor
             _ => convert_to_asc(&self.buf)
         }
     }
+
+    pub fn get_outline_char_code(&self, i: i32) -> Result<u8, &str>
+    {
+        if self.cur_outline < 0 || self.cur_outline >= DEFAULT_OUTLINE_TABLE.len() as i32 {
+            return Err("current outline out of range.");
+        }
+        if !(0..=10).contains(&i) {
+            return Err("outline char# out of range.");
+        }
+        
+        Ok(DEFAULT_OUTLINE_TABLE[self.cur_outline as usize][i as usize])
+    }
+
+    pub fn type_key(&mut self, char_code: u8) {
+        let pos = self.cursor.pos;
+        if self.cursor.insert_mode {
+            for i in (self.buf.width as i32 - 1)..=pos.x {
+                let next = self.buf.get_char( Position::from(i - 1, pos.y));
+                self.buf.set_char(Position::from(i, pos.y), next);
+            }
+        }
+
+        self.buf.set_char(pos, crate::model::DosChar {
+            char_code,
+            attribute: self.cursor.attr,
+        });
+        self.set_cursor(pos.x + 1, pos.y);
+    }
 }
+
+const DEFAULT_OUTLINE_TABLE: [[u8;10];15] = [
+    [218, 191, 192, 217, 196, 179, 195, 180, 193, 194 ],
+    [201, 187, 200, 188, 205, 186, 204, 185, 202, 203 ],
+    [213, 184, 212, 190, 205, 179, 198, 181, 207, 209 ],
+    [214, 183, 211, 189, 196, 186, 199, 182, 208, 210 ],
+    [197, 206, 216, 215, 232, 233, 155, 156, 153, 239 ],
+    [176, 177, 178, 219, 223, 220, 221, 222, 254, 250 ],
+    [1, 2, 3, 4, 5, 6, 240, 127, 14, 15 ],
+    [24, 25, 30, 31, 16, 17, 18, 29, 20, 21 ],
+    [174, 175, 242, 243, 169, 170, 253, 246, 171, 172 ],
+    [227, 241, 244, 245, 234, 157, 228, 248, 251, 252 ],
+    [224, 225, 226, 229, 230, 231, 235, 236, 237, 238 ],
+    [128, 135, 165, 164, 152, 159, 247, 249, 173, 168 ],
+    [131, 132, 133, 160, 166, 134, 142, 143, 145, 146 ],
+    [136, 137, 138, 130, 144, 140, 139, 141, 161, 158 ],
+    [147, 148, 149, 162, 167, 150, 129, 151, 163, 154 ]
+];

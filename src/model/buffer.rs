@@ -190,6 +190,8 @@ impl Buffer {
                 10 => {
                     data.cur_pos.x = 0;
                     data.cur_pos.y += 1;
+                    println!("],");
+                    print!("[");
                 }
                 12 => {
                     data.cur_pos.x = 0;
@@ -200,6 +202,7 @@ impl Buffer {
                     data.cur_pos.x = 0;
                 }
                 _ => {
+                    print!("{}, ", ch);
                     result.set_char(
                         data.cur_pos,
                         DosChar {

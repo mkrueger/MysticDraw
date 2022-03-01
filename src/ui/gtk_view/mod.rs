@@ -3,7 +3,7 @@ use std::{ str::FromStr, rc::Rc, cell::RefCell, cmp::{max, min} };
 
 use gtk4::{ glib, traits::{WidgetExt, GestureExt, GestureSingleExt, GestureDragExt}, gdk::{Paintable, self, Key, ModifierType}, prelude::{DrawingAreaExtManual, GdkCairoContextExt}, cairo::Operator};
 
-use crate::{model::{Position, Editor, Size, MKey, MModifiers}, sync_workbench_state};
+use crate::{model::{Position, Editor, Size, MKey, MModifiers, MKeyCode}, sync_workbench_state};
 
 use self::gtkchar_editor_view::GtkCharEditorView;
 mod gtkchar_editor_view;
@@ -96,7 +96,17 @@ impl CharEditorView {
             _ => MModifiers::None
         }
     }
-
+    fn translate_key_code(key_code: u32) -> MKeyCode
+    {
+        println!("key code: {}", key_code);
+        match key_code {
+            29 => MKeyCode::KeyY,
+            30 => MKeyCode::KeyU,
+            31 => MKeyCode::KeyI,
+            _ => { MKeyCode::Unknown }
+        }
+        
+    }
     pub fn set_editor_handle(&self, handle: Rc<RefCell<Editor>>)
     {
         let buffer = &handle.borrow().buf;
@@ -196,12 +206,12 @@ impl CharEditorView {
 
         let handle1 = handle.clone();
         let key = gtk4::EventControllerKey::new();
-        key.connect_key_pressed(glib::clone!(@strong self as this => move |_, key, _, modifier| {
+        key.connect_key_pressed(glib::clone!(@strong self as this => move |_, key, key_code, modifier| {
             sync_workbench_state(&mut handle1.borrow_mut());
             {
                 if let Some(key)= CharEditorView::translate_key(key) {
                     unsafe {
-                        TOOLS[WORKSPACE.selected_tool].handle_key(handle1.clone(), key, CharEditorView::translate_modifier(modifier));
+                        TOOLS[WORKSPACE.selected_tool].handle_key(handle1.clone(), key, CharEditorView::translate_key_code(key_code), CharEditorView::translate_modifier(modifier));
                     }
                     this.queue_draw();
                 }

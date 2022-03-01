@@ -1,7 +1,7 @@
 
 use std::{rc::Rc, cell::RefCell};
 
-use super::{ Tool, MKey, MModifiers, Editor, Event, Position};
+use super::{ Tool, MKey, MModifiers, Editor, Event, Position, MKeyCode};
 
 pub struct SelectTool {}
 
@@ -12,7 +12,7 @@ impl Tool for SelectTool
 {
     fn get_icon_name(&self) -> &'static str { "edit-select" }
 
-    fn handle_key(&self, editor: Rc<RefCell<Editor>>, key: MKey, _modifier: MModifiers) -> Event
+    fn handle_key(&self, editor: Rc<RefCell<Editor>>, key: MKey, key_code: MKeyCode, _modifier: MModifiers) -> Event
     {
         let mut editor = editor.borrow_mut();
         match key {

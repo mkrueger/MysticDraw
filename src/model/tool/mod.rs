@@ -1,4 +1,4 @@
-use std::{rc::Rc, cell::RefCell};
+use std::{rc::Rc, cell::{RefCell, RefMut}};
 
 use super::TextAttribute;
 pub use super::{Editor, Event, Position};
@@ -80,7 +80,7 @@ pub trait Tool
 
         // ctrl+pgup  - upper left corner
         // ctrl+pgdn  - lower left corner
-
+        println!("{:?} {:?} {:?}", key, key_code, modifier);
         let pos = editor.borrow().cursor.pos;
         let mut editor = editor.borrow_mut();
         match key {
@@ -142,6 +142,7 @@ pub trait Tool
                     for i in (0..editor.buf.width).rev()  {
                         if !editor.buf.get_char(pos.with_x(i as i32)).is_transparent() {
                             editor.set_cursor(i as i32, pos.y);
+                            return Event::None;
                         }
                     }
                 }
@@ -189,45 +190,7 @@ pub trait Tool
                     } 
                 }
             }
-            /*			
-            
-            if (event->key.keysym.mod & KMOD_SHIFT) {
-				switch (event->key.keysym.sym) {   
-					case SDLK_F1:
-						ActiveCharset=1;
-						return true;
-					case SDLK_F2:
-						ActiveCharset=2;
-						return true;
-					case SDLK_F3:
-						ActiveCharset=3;
-						return true;
-					case SDLK_F4:
-						ActiveCharset=4;
-						return true;
-					case SDLK_F5:
-						ActiveCharset=5;
-						return true;
-					case SDLK_F6:
-						ActiveCharset=6;
-						return true;
-					case SDLK_F7:
-						ActiveCharset=7;
-						return true;
-					case SDLK_F8:
-						ActiveCharset=8;
-						return true;
-					case SDLK_F9:
-						ActiveCharset=9;
-						return true;
-					case SDLK_F10:
-						ActiveCharset=10;
-						return true;
-					default:
-						break;
-				}
-			}       
- */
+
             MKey::Character(ch) => { 
                 if let MModifiers::Alt = modifier {
                     match key_code { 
@@ -239,20 +202,40 @@ pub trait Tool
                     return Event::None;
                 }
 
-                let attr = editor.cursor.attr;
-                if editor.cursor.insert_mode {
-                    for i in (editor.buf.width as i32 - 1)..=pos.x {
-                        let next = editor.buf.get_char( Position::from(i - 1, pos.y));
-                        editor.buf.set_char(Position::from(i, pos.y), next);
-                    }
-                }
-
-                editor.buf.set_char(pos, crate::model::DosChar {
-                    char_code: ch,
-                    attribute: attr,
-                });
-                editor.set_cursor(pos.x + 1, pos.y);
+                editor.type_key(ch);
             }
+
+            MKey::F1 => {
+                handle_outline_insertion(&mut editor, modifier, 0);
+            }
+            MKey::F2 => {
+                handle_outline_insertion(&mut editor, modifier, 1);
+            }
+            MKey::F3 => {
+                handle_outline_insertion(&mut editor, modifier, 2);
+            }
+            MKey::F4 => {
+                handle_outline_insertion(&mut editor, modifier, 3);
+            }
+            MKey::F5 => {
+                handle_outline_insertion(&mut editor, modifier, 4);
+            }
+            MKey::F6 => {
+                handle_outline_insertion(&mut editor, modifier, 5);
+            }
+            MKey::F7 => {
+                handle_outline_insertion(&mut editor, modifier, 6);
+            }
+            MKey::F8 => {
+                handle_outline_insertion(&mut editor, modifier, 7);
+            }
+            MKey::F9 => {
+                handle_outline_insertion(&mut editor, modifier, 8);
+            }
+            MKey::F10 => {
+                handle_outline_insertion(&mut editor, modifier, 9);
+            }
+
             _ => {}
         }
         Event::None
@@ -274,7 +257,25 @@ pub trait Tool
         Event::None
     }
 }
-   
+
+fn handle_outline_insertion(editor: &mut RefMut<Editor>, modifier: MModifiers, outline: i32) {
+    if let MModifiers::Control = modifier {
+        editor.cur_outline = outline;
+        return;
+    }
+
+    if outline < 5 {
+        if let MModifiers::Shift = modifier {
+            editor.cur_outline = 10 + outline;
+            return;
+        }
+    }
+
+    let ch = editor.get_outline_char_code(outline);
+    if let Ok(ch) = ch {
+        editor.type_key(ch);
+    }
+}
 
 pub static mut FONT_TOOL: font_tool::FontTool = font_tool::FontTool { fonts: Vec::new(), selected_font: -1  };
 pub static mut TOOLS: Vec<&dyn Tool> = Vec::new();
@@ -293,3 +294,4 @@ pub fn init_tools()
         TOOLS.push(&FONT_TOOL);
     }
 }
+
