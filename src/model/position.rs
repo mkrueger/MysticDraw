@@ -13,6 +13,7 @@ impl std::fmt::Display for Position {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "(x: {}, y: {})", self.x, self.y)
     }
+
 }
 
 impl Position {
@@ -25,6 +26,16 @@ impl Position {
     
     pub fn from_index(buf: &Buffer, i: i32) -> Self {
         Position { x: i % (buf.width as i32) , y: i / (buf.width as i32) }
+    }
+
+    pub fn with_y(&self, y: i32) -> Position
+    {
+        Position { x: self.x,  y }
+    }
+
+    pub fn with_x(&self, x: i32) -> Position
+    {
+        Position { x,  y: self.y }
     }
 }
 

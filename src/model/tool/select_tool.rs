@@ -5,6 +5,9 @@ use super::{ Tool, MKey, MModifiers, Editor, Event, Position};
 
 pub struct SelectTool {}
 
+// block tools:
+// copy/moxe
+// fill, delete
 impl Tool for SelectTool
 {
     fn get_icon_name(&self) -> &'static str { "edit-select" }

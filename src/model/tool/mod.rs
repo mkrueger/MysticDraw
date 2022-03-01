@@ -50,29 +50,73 @@ pub enum MModifiers
     Alt,
     Control
 }
+#[derive(Copy, Clone, Debug)]
+pub enum MKeyCode
+{
+    Unknown,
+    KeyI,
+    KeyU,
+    KeyY,
+}
 
 pub trait Tool
 {
     fn get_icon_name(&self) -> &'static str;/* 
     fn add_tool_page(&self, window: &ApplicationWindow,parent: &mut gtk4::Box);
 */
-fn handle_key(&self, editor: Rc<RefCell<Editor>>, key: MKey, _modifier: MModifiers) -> Event
-{
+
+    fn handle_key(&self, editor: Rc<RefCell<Editor>>, key: MKey, key_code: MKeyCode, modifier: MModifiers) -> Event
+    {
+        // TODO Keys:
+
+        // ALT+Left Delete current column
+        // ALT+Right Insert a colum
+
+        // ALT-F1-10 select char set 1-10
+        // CTRL-F1-5 Select char set 11-15
+
+        // Tab - Next tab
+        // Shift+Tab - Prev tab
+
+        // ctrl+pgup  - upper left corner
+        // ctrl+pgdn  - lower left corner
+
         let pos = editor.borrow().cursor.pos;
         let mut editor = editor.borrow_mut();
-
         match key {
             MKey::Down => {
-                editor.set_cursor(pos.x, pos.y + 1);
+                if let MModifiers::Control = modifier {
+                    let fg = (editor.cursor.attr.get_foreground() + 14) % 16;
+                    editor.cursor.attr.set_foreground(fg);
+                } else {
+                    editor.set_cursor(pos.x, pos.y + 1);
+                }
             }
             MKey::Up => {
-                editor.set_cursor(pos.x, pos.y - 1);
+                if let MModifiers::Control = modifier {
+                    let fg = (editor.cursor.attr.get_foreground() + 1) % 16;
+                    editor.cursor.attr.set_foreground(fg);
+                } else {
+                    editor.set_cursor(pos.x, pos.y - 1);
+                }
             }
             MKey::Left => {
-                editor.set_cursor(pos.x - 1, pos.y);
+                // TODO: ICE Colors
+                if let MModifiers::Control = modifier {
+                    let bg = (editor.cursor.attr.get_background() + 7) % 8;
+                    editor.cursor.attr.set_background(bg);
+                } else {
+                    editor.set_cursor(pos.x - 1, pos.y);
+                }
             }
             MKey::Right => {
-                editor.set_cursor(pos.x + 1, pos.y);
+                // TODO: ICE Colors
+                if let MModifiers::Control = modifier {
+                    let bg = (editor.cursor.attr.get_background() + 1) % 8;
+                    editor.cursor.attr.set_background(bg);
+                } else {
+                    editor.set_cursor(pos.x + 1, pos.y);
+                }
             }
             MKey::PageDown => {
                 // TODO
@@ -83,9 +127,24 @@ fn handle_key(&self, editor: Rc<RefCell<Editor>>, key: MKey, _modifier: MModifie
                 println!("pgup");
             }
             MKey::Home  => {
+                if let MModifiers::Control = modifier {
+                    for i in 0..editor.buf.width {
+                        if !editor.buf.get_char(pos.with_x(i as i32)).is_transparent() {
+                            editor.set_cursor(i as i32, pos.y);
+                            return Event::None;
+                        }
+                    }
+                }
                 editor.set_cursor(0, pos.y);
             }
             MKey::End => {
+                if let MModifiers::Control = modifier {
+                    for i in (0..editor.buf.width).rev()  {
+                        if !editor.buf.get_char(pos.with_x(i as i32)).is_transparent() {
+                            editor.set_cursor(i as i32, pos.y);
+                        }
+                    }
+                }
                 let w = editor.buf.width as i32;
                 editor.set_cursor(w - 1, pos.y);
             }
@@ -170,8 +229,17 @@ fn handle_key(&self, editor: Rc<RefCell<Editor>>, key: MKey, _modifier: MModifie
 			}       
  */
             MKey::Character(ch) => { 
+                if let MModifiers::Alt = modifier {
+                    match key_code { 
+                        MKeyCode::KeyI => editor.insert_line(pos.y),
+                        MKeyCode::KeyU => editor.pickup_color(pos),
+                        MKeyCode::KeyY => editor.delete_line(pos.y),
+                        _ => {}
+                    }
+                    return Event::None;
+                }
+
                 let attr = editor.cursor.attr;
-                
                 if editor.cursor.insert_mode {
                     for i in (editor.buf.width as i32 - 1)..=pos.x {
                         let next = editor.buf.get_char( Position::from(i - 1, pos.y));

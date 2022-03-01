@@ -2,6 +2,11 @@ use super::Tool;
 
 pub struct FillTool {}
 
+// Fill with 
+// Attribute, Fore/Back
+// Character 
+// Both
+
 impl Tool for FillTool
 {
     fn get_icon_name(&self) -> &'static str { "edit-select" }

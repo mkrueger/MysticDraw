@@ -2,6 +2,8 @@ use std::{cmp::{max, min}, path::Path, io::Write, fs::File, ffi::OsStr};
 
 use crate::model::{Buffer, Position, TextAttribute, Rectangle, convert_to_ans, convert_to_asc, convert_to_avt, convert_to_binary, convert_to_pcb, convert_to_xb};
 
+use super::{Layer, layer};
+
 #[derive(Debug, Default)]
 pub struct Cursor {
     pub pos: Position,
@@ -81,42 +83,33 @@ impl Editor
             cur_selection: Selection::new()
         }
     }
-/* 
-    pub fn handle_key(&mut self, key: gtk4::gdk::Key, key_code: u32, modifier: gtk4::gdk::ModifierType) -> Event
+
+    pub fn delete_line(&mut self, line: i32)
     {
-        unsafe {
-            crate::WORKSPACE.cur_tool().handle_key( self, key, key_code, modifier)
+        let layer = &mut self.buf.layers[0];
+        if line < 0 || line >= layer.height as i32 {
+            panic!("line out of range");
+        }
+        layer.lines.remove(line as usize);
+    }
+
+    pub fn insert_line(&mut self, line: i32) {
+        let layer = &mut self.buf.layers[0];
+        if line < 0 || line >= layer.height as i32 {
+            panic!("line out of range");
+        }
+        layer.lines.insert(line as usize, super::Line::new());
+        if layer.lines.len() >= layer.height {
+            layer.lines.resize(layer.height, super::Line::new());
         }
     }
 
-    pub fn handle_click(&mut self, button: u32, x: i32, y: i32) -> Event
+    pub fn pickup_color(&mut self, pos: Position)
     {
-        unsafe {
-            crate::WORKSPACE.cur_tool().handle_click( self, button, x, y)
-        }
+        let ch = self.buf.get_char(pos);
+        self.cursor.attr = ch.attribute;
     }
 
-    pub fn handle_drag_begin(&mut self, start: Position, cur: Position) -> Event
-    {
-        unsafe {
-            crate::WORKSPACE.cur_tool().handle_drag_begin( self, start, cur)
-        }
-    }
-
-    pub fn handle_drag(&mut self, start: Position, cur: Position) -> Event
-    {
-        unsafe {
-            crate::WORKSPACE.cur_tool().handle_drag( self, start, cur)
-        }
-    }
-
-    pub fn handle_drag_end(&mut self, start: Position, cur: Position) -> Event
-    {
-        unsafe {
-            crate::WORKSPACE.cur_tool().handle_drag_end( self, start, cur)
-        }
-    }
-    */
     pub fn set_cursor(&mut self, x: i32, y: i32) -> Event
     {
         let old = self.cursor.pos;
