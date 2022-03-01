@@ -62,14 +62,14 @@ pub fn convert_to_pcb(buf: &Buffer) -> Vec<u8>
 }
 
 #[allow(non_snake_case)]
-pub fn display_PCBoard(data: &mut ParseStates, ch: u8) -> u8 {
+pub fn display_PCBoard(data: &mut ParseStates, ch: u8) -> Option<u8> {
     if data.pcb_color {
         data.pcb_pos += 1;
         if data.pcb_pos < 3 {
             match data.pcb_pos {
                 1 => {
                     data.pcb_value = conv_ch(ch);
-                    return 0;
+                    return None;
                 }
                 2 => {
                     data.pcb_value = (data.pcb_value << 4) + conv_ch(ch);
@@ -80,7 +80,7 @@ pub fn display_PCBoard(data: &mut ParseStates, ch: u8) -> u8 {
         }
         data.pcb_color = false;
         data.pcb_code = false;
-        return 0;
+        return None;
     }
 
     if data.pcb_code {
@@ -94,13 +94,13 @@ pub fn display_PCBoard(data: &mut ParseStates, ch: u8) -> u8 {
             }
             _ => {}
         }
-        return 0;
+        return None;
     }
     match ch {
         b'@' => {
             data.pcb_code = true;
-            0
+            None
         }
-        _ => ch,
+        _ => Some(ch),
     }
 }

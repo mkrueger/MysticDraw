@@ -23,7 +23,7 @@ pub enum AvtReadState {
 }
 
 // Advanced Video Attribute Terminal Assembler and Recreator
-pub fn display_avt(data: &mut ParseStates, ch: u8) -> (u8, bool) {
+pub fn display_avt(data: &mut ParseStates, ch: u8) -> (Option<u8>, bool) {
 
     match data.avt_state {
         AvtReadState::Chars => {
@@ -40,16 +40,16 @@ pub fn display_avt(data: &mut ParseStates, ch: u8) -> (u8, bool) {
                     data.avt_state = AvtReadState::ReadCommand;
                 }
                 _ => {
-                    return (ch, false);
+                    return (Some(ch), false);
                 }
             }
-            (0, false)
+            (None, false)
         }
         AvtReadState::ReadCommand => {
             match ch {
                 1 => {
                     data.avt_state = AvtReadState::ReadColor;
-                    return (0, false);
+                    return (None, false);
                 }
                 2 => {
                     data.text_attr.set_blink(true);
@@ -74,25 +74,25 @@ pub fn display_avt(data: &mut ParseStates, ch: u8) -> (u8, bool) {
                 8 =>  {
                     data.avt_state = AvtReadState::MoveCursor;
                     data.avatar_state = 1;
-                    return (0, false);
+                    return (None, false);
                 }
                 // TODO implement commands from FSC0025.txt & FSC0037.txt
                 _ => { eprintln!("unsupported avatar command {}", ch); }
             }
             data.avt_state = AvtReadState::Chars;
-            (0, false)
+            (None, false)
         }
         AvtReadState::RepeatChars => {
             match data.avatar_state {
                 1=> {
                     data.avt_repeat_char = ch;
                     data.avatar_state = 2;
-                    (0, false)
+                    (None, false)
                 }
                 2 => {
                     data.avt_repeat_count = ch as i32;
                     data.avatar_state = 3;
-                    (0, true)
+                    (None, true)
                 }
                 3 => {
                     if data.avt_repeat_count > 0 {
@@ -100,40 +100,40 @@ pub fn display_avt(data: &mut ParseStates, ch: u8) -> (u8, bool) {
                         if data.avt_repeat_count == 0 {
                             data.avt_state = AvtReadState::Chars;
                         }
-                        return (data.avt_repeat_char, data.avt_repeat_count > 0);
+                        return (Some(data.avt_repeat_char), data.avt_repeat_count > 0);
                     }
-                    (0, false)
+                    (None, false)
                 }
                 _ => { 
                     eprintln!("error in reading avt state"); 
                     data.avt_state = AvtReadState::Chars;
-                    (0, false)
+                    (None, false)
                 }
             }
         }
         AvtReadState::ReadColor => {
             data.text_attr = TextAttribute::from_u8(ch);
             data.avt_state = AvtReadState::Chars;
-            (0, false)
+            (None, false)
         }
         AvtReadState::MoveCursor => {
             match data.avatar_state {
                 1=> {
                     data.avt_repeat_char = ch;
                     data.avatar_state = 2;
-                    return (0, false);
+                    return (None, false);
                 }
                 2 => {
                     data.cur_pos.x = data.avt_repeat_char as i32;
                     data.cur_pos.y = ch as i32;
                     
                     data.avt_state = AvtReadState::Chars;
-                    return (0, false);
+                    return (None, false);
                 }
                 _ => { eprintln!("error in reading avt avt_gotoxy"); }
             }
             data.avt_state = AvtReadState::Chars;
-            (0, false)
+            (None, false)
         }
     }
 }

@@ -12,17 +12,17 @@ const COLOR_OFFSETS : [u8; 8] = [ 0, 4, 2, 6, 1, 5, 3, 7 ];
 const FG_TABLE: [&[u8;2];8] = [ b"30", b"34", b"32", b"36", b"31", b"35", b"33", b"37" ];
 const BG_TABLE: [&[u8;2];8] = [ b"40", b"44", b"42", b"46", b"41", b"45", b"43", b"47" ];
 
-pub fn display_ans(data: &mut ParseStates, ch: u8) -> u8 {
+pub fn display_ans(data: &mut ParseStates, ch: u8) -> Option<u8> {
     if data.ans_esc {
         if ch == ANSI_CSI {
             data.ans_esc = false;
             data.ans_code = true;
             data.ans_numbers.clear();
-            return 0;
+            return None;
         }
         // ignore all other ANSI escape codes
         data.ans_esc = false;
-        return 0;
+        return None;
     }
 
     if data.ans_code {
@@ -41,7 +41,7 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> u8 {
                     }
                 }
                 data.ans_code = false;
-                return 0;
+                return None;
             }
             b'H' | b'f' => { // Cursor Position + Horizontal Vertical Position ('f')
                 if !data.ans_numbers.is_empty() {
@@ -57,7 +57,7 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> u8 {
                     }
                 }
                 data.ans_code = false;
-                return 0;
+                return None;
             }
             b'C' => { // Cursor Forward 
                 if data.ans_numbers.is_empty() {
@@ -66,9 +66,8 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> u8 {
                     data.cur_pos.x += data.ans_numbers[0];
                 }
                 data.cur_pos.x = min(data.screen_width - 1, data.cur_pos.x);
-                println!("+{}", data.cur_pos.x);
                 data.ans_code = false;
-                return 0;
+                return None;
             }
             b'D' => { // Cursor Back 
                 if data.ans_numbers.is_empty() {
@@ -77,9 +76,8 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> u8 {
                     data.cur_pos.x =  max(0, data.cur_pos.x.saturating_sub(data.ans_numbers[0]));
                 }
                 data.cur_pos.x = max(0, data.cur_pos.x);
-                println!("-{}", data.cur_pos.x);
                 data.ans_code = false;
-                return 0;
+                return None;
             }
             b'A' => { // Cursor Up 
                 if data.ans_numbers.is_empty() {
@@ -89,7 +87,7 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> u8 {
                 }
                 data.cur_pos.y = max(0, data.cur_pos.y);
                 data.ans_code = false;
-                return 0;
+                return None;
             }
             b'B' => { // Cursor Down 
                 if data.ans_numbers.is_empty() {
@@ -98,17 +96,17 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> u8 {
                     data.cur_pos.y += data.ans_numbers[0];
                 }
                 data.ans_code = false;
-                return 0;
+                return None;
             }
             b's' => { // Save Current Cursor Position
                 data.saved_pos = data.cur_pos;
                 data.ans_code = false;
-                return 0;
+                return None;
             }
             b'u' => { // Restore Saved Cursor Position 
                 data.cur_pos = data.saved_pos;
                 data.ans_code = false;
-                return 0;
+                return None;
             }
             b'J' => { // Erase in Display 
                 data.ans_code = false;
@@ -126,7 +124,7 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> u8 {
                         _ => {eprintln!("unknown ANSI J sequence {}", data.ans_numbers[0])}
                     }
                 }
-                return 0;
+                return None;
             }
             _ => {
                 if (0x40..=0x7E).contains(&ch) {
@@ -134,7 +132,7 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> u8 {
                     data.ans_code = false;
                     data.ans_esc = false;
                     eprintln!("unknown control sequence, terminating.");
-                    return 0;
+                    return None;
                 }
 
                 if (b'0'..=b'9').contains(&ch) {
@@ -145,7 +143,7 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> u8 {
                     data.ans_numbers.push(d * 10 + (ch - b'0') as i32);
                 } else if ch == b';' {
                     data.ans_numbers.push(0);
-                    return 0;
+                    return None;
                 } else {
                     // error in control sequence, terminate reading
                     eprintln!(
@@ -155,7 +153,7 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> u8 {
                     data.ans_code = false;
                     data.ans_esc = false;
                 }
-                return 0;
+                return None;
             }
         }
     }
@@ -163,9 +161,9 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> u8 {
     if ch == ANSI_ESC {
         data.ans_code = false;
         data.ans_esc = true;
-        0
+        None
     } else {
-        ch
+        Some(ch)
     }
 }
 
@@ -385,6 +383,13 @@ mod tests {
         assert_eq!(b'F', line.chars[2].char_code);
     }
 
+    #[test]
+    fn test_char0_bug() {
+        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x00A");
+        let line = &buf.layers[0].lines[0];
+        assert_eq!(b'A', line.chars[1].char_code);
+    }
+
     fn test_ansi(data: &[u8])
     {
         let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, data);
@@ -441,4 +446,5 @@ mod tests {
         let data = b"\x1B[0;1;33;45mA";
         test_ansi(data);
     }
+
 }

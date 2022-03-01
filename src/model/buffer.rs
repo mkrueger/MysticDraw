@@ -151,25 +151,31 @@ impl Buffer {
         data.screen_width = screen_width;
 
         for b in bytes.iter().take(file_size) {
-            let mut ch = *b;
+            let mut ch = Some(*b);
             if parse_ansi {
-                ch = display_ans(&mut data, ch);
+                if let Some(c) = ch {
+                    ch = display_ans(&mut data, c);
+                }
             }
             if parse_pcb {
-                ch = display_PCBoard(&mut data, ch);
+                if let Some(c) = ch {
+                    ch = display_PCBoard(&mut data, c);
+                }
             }
 
             if parse_avt {
-                let mut avt_result = display_avt(&mut data, ch);
-                let ch = avt_result.0;
-                if ch == 26 { break; }
-                Buffer::output_char(&mut result, screen_width, &mut data, ch);
-                while avt_result.1 {
-                    avt_result = display_avt(&mut data, 0);
-                    Buffer::output_char(&mut result, screen_width, &mut data, avt_result.0);
+                if let Some(c) = ch { 
+                    let mut avt_result = display_avt(&mut data, c);
+                    let ch = avt_result.0;
+                    if let Some(26) = ch { break; }
+                    Buffer::output_char(&mut result, screen_width, &mut data, ch);
+                    while avt_result.1 {
+                        avt_result = display_avt(&mut data, 0);
+                        Buffer::output_char(&mut result, screen_width, &mut data, avt_result.0);
+                    }
                 }
             } else {
-                if ch == 26 { break; }
+                if let Some(26) = ch { break; }
                 Buffer::output_char(&mut result, screen_width, &mut data, ch);
             }
         }
@@ -178,8 +184,8 @@ impl Buffer {
         result
     }
 
-    fn output_char(result: &mut Buffer, screen_width : i32, data: &mut ParseStates, ch: u8) {
-        if ch != 0 {
+    fn output_char(result: &mut Buffer, screen_width : i32, data: &mut ParseStates, ch: Option<u8>) {
+        if let Some(ch) = ch {
             match ch {
                 10 => {
                     data.cur_pos.x = 0;
