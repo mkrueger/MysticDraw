@@ -2,8 +2,6 @@ use std::{cmp::{max, min}, path::Path, io::Write, fs::File, ffi::OsStr};
 
 use crate::model::{Buffer, Position, TextAttribute, Rectangle, convert_to_ans, convert_to_asc, convert_to_avt, convert_to_binary, convert_to_pcb, convert_to_xb};
 
-use super::{Layer, layer};
-
 #[derive(Debug, Default)]
 pub struct Cursor {
     pub pos: Position,
@@ -91,17 +89,13 @@ impl Editor
     pub fn delete_line(&mut self, line: i32)
     {
         let layer = &mut self.buf.layers[0];
-        if line < 0 || line >= layer.height as i32 {
-            panic!("line out of range");
-        }
+        assert!(!(line < 0 || line >= layer.height as i32), "line out of range");
         layer.lines.remove(line as usize);
     }
 
     pub fn insert_line(&mut self, line: i32) {
         let layer = &mut self.buf.layers[0];
-        if line < 0 || line >= layer.height as i32 {
-            panic!("line out of range");
-        }
+        assert!(!(line < 0 || line >= layer.height as i32), "line out of range");
         layer.lines.insert(line as usize, super::Line::new());
         if layer.lines.len() >= layer.height {
             layer.lines.resize(layer.height, super::Line::new());

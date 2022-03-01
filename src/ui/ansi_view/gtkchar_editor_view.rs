@@ -9,7 +9,7 @@ use crate::model::Editor;
 #[derive(Default)]
 
 pub struct GtkCharEditorView {
-    pub editor: RefCell<Rc<Editor>>
+    pub editor: RefCell<Rc<RefCell<Editor>>>
 }
 
 impl GtkCharEditorView {
@@ -32,10 +32,10 @@ impl ObjectImpl for GtkCharEditorView {
 }
 
 impl WidgetImpl for GtkCharEditorView {
-      fn realize(&self, widget: &Self::Type) {
+    fn realize(&self, widget: &Self::Type) {
         self.parent_realize(widget);
       }
-}
+  }
 
 
 impl DrawingAreaImpl for GtkCharEditorView {}

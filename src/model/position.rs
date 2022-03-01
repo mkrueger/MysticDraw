@@ -28,12 +28,12 @@ impl Position {
         Position { x: i % (buf.width as i32) , y: i / (buf.width as i32) }
     }
 
-    pub fn with_y(&self, y: i32) -> Position
+    pub fn with_y(self, y: i32) -> Position
     {
         Position { x: self.x,  y }
     }
 
-    pub fn with_x(&self, x: i32) -> Position
+    pub fn with_x(self, x: i32) -> Position
     {
         Position { x,  y: self.y }
     }

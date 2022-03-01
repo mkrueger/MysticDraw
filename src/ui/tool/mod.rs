@@ -1,6 +1,6 @@
 mod font_tool;
 pub use font_tool::*;
-use glib::{clone, Cast, ObjectExt};
+use glib::{clone, Cast};
 use gtk4::{traits::{BoxExt, ListBoxRowExt}};
 use libadwaita::ApplicationWindow;
 
@@ -35,7 +35,7 @@ pub fn add_font_tool_page(window: &ApplicationWindow, parent: &mut gtk4::Box)
         }
     }
 
-    listbox.connect_row_selected(move |lb, row| {
+    listbox.connect_row_selected(move |_, row| {
         if let Some(row) = row {
             let idx = row.index();
             unsafe {

@@ -1,6 +1,7 @@
 
 use std::{ str::FromStr, rc::Rc, cell::RefCell, cmp::{max, min} };
 
+use glib::subclass::types::ObjectSubclassIsExt;
 use gtk4::{ glib, traits::{WidgetExt, GestureExt, GestureSingleExt, GestureDragExt}, gdk::{Paintable, self, Key, ModifierType}, prelude::{DrawingAreaExtManual, GdkCairoContextExt}, cairo::Operator};
 
 use crate::{model::{Position, Editor, Size, MKey, MModifiers, MKeyCode}, sync_workbench_state};
@@ -31,6 +32,11 @@ struct Dialog {
 impl CharEditorView {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create a AnsiEditorArea")
+    }
+
+    pub fn get_editor(&self) -> Rc<RefCell<Editor>>
+    {
+        self.imp().editor.borrow().clone()
     }
 
     fn calc_xy(c: &Rc<RefCell<Editor>>, xy: (f64, f64)) -> Position
@@ -112,6 +118,7 @@ impl CharEditorView {
         let buffer = &handle.borrow().buf;
         let font_dimensions = buffer.get_font_dimensions();
         self.set_size_request((buffer.width * font_dimensions.width) as i32, (buffer.height * font_dimensions.height) as i32);
+        self.imp().editor.replace(handle.clone());
 
         let mut char_img =
         gtk4::cairo::ImageSurface::create(gtk4::cairo::Format::ARgb32, 8, 16).unwrap();

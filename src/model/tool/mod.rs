@@ -197,7 +197,7 @@ pub trait Tool
                         MKeyCode::KeyI => editor.insert_line(pos.y),
                         MKeyCode::KeyU => editor.pickup_color(pos),
                         MKeyCode::KeyY => editor.delete_line(pos.y),
-                        _ => {}
+                        MKeyCode::Unknown => {}
                     }
                     return Event::None;
                 }
