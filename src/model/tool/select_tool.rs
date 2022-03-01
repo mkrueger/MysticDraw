@@ -41,7 +41,7 @@ impl Tool for SelectTool
         Event::None
     }
 
-    fn handle_click(&self, editor: Rc<RefCell<Editor>>, button: u32, cur: Position) -> Event
+    fn handle_click(&self, editor: Rc<RefCell<Editor>>, button: u32, _cur: Position) -> Event
     {
         let mut editor = editor.borrow_mut();
         if button == 3 {

@@ -1,5 +1,5 @@
 use std::{
-    cmp::{max, min},
+    cmp::{ min},
     fs::File,
     io::{self, Read},
     path::{PathBuf, Path},
@@ -66,14 +66,12 @@ impl Buffer {
         let cur_layer  = &mut self.layers[0];
         if pos.y >= cur_layer.lines.len() as i32 {
             cur_layer.lines.resize(pos.y as usize + 1, Line::new());
-            self.height = max(self.height, pos.y as usize + 1);
-            cur_layer.height = self.height;
         }
-        self.width = max(self.width, pos.x as usize + 1);
-        cur_layer.width = self.width;
 
         let cur_line = &mut cur_layer.lines[pos.y as usize];
-        cur_line.chars.resize(pos.x as usize + 1, DosChar::new());
+        if pos.x >= cur_line.chars.len() as i32 {
+            cur_line.chars.resize(pos.x as usize + 1, DosChar::new());
+        }
         cur_line.chars[pos.x as usize] = dos_char;
     }
 
@@ -150,6 +148,8 @@ impl Buffer {
         if screen_width == 0 { screen_width = 80; }
 
         result.width = screen_width as usize;
+        data.screen_width = screen_width;
+
         for b in bytes.iter().take(file_size) {
             let mut ch = *b;
             if parse_ansi {
@@ -194,10 +194,6 @@ impl Buffer {
                     data.cur_pos.x = 0;
                 }
                 _ => {
-                    if data.cur_pos.x >= screen_width {
-                        data.cur_pos.x = 0;
-                        data.cur_pos.y += 1;
-                    }
                     result.set_char(
                         data.cur_pos,
                         DosChar {
@@ -206,7 +202,14 @@ impl Buffer {
                         },
                     );
                     data.cur_pos.x += 1;
+                    if data.cur_pos.x >= screen_width {
+                        data.cur_pos.x = 0;
+                        data.cur_pos.y += 1;
+                    }
                 }
+            }
+            if data.cur_pos.y >= result.height as i32 {
+                result.height = data.cur_pos.y as usize + 1;
             }
         }
     }

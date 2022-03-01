@@ -1,5 +1,6 @@
 use std::{rc::Rc, cell::RefCell};
 
+use super::TextAttribute;
 pub use super::{Editor, Event, Position};
 
 mod brush_tool;
@@ -55,11 +56,10 @@ pub trait Tool
     fn get_icon_name(&self) -> &'static str;/* 
     fn add_tool_page(&self, window: &ApplicationWindow,parent: &mut gtk4::Box);
 */
-fn handle_key(&self, _editor: Rc<RefCell<Editor>>, key: MKey, _modifier: MModifiers) -> Event
+fn handle_key(&self, editor: Rc<RefCell<Editor>>, key: MKey, _modifier: MModifiers) -> Event
 {
-        let pos = _editor.borrow().cursor.pos;
-        let attr = _editor.borrow().cursor.attr;
-        let mut editor = _editor.borrow_mut();
+        let pos = editor.borrow().cursor.pos;
+        let mut editor = editor.borrow_mut();
 
         match key {
             MKey::Down => {
@@ -74,67 +74,111 @@ fn handle_key(&self, _editor: Rc<RefCell<Editor>>, key: MKey, _modifier: MModifi
             MKey::Right => {
                 editor.set_cursor(pos.x + 1, pos.y);
             }
-            
-            MKey::PageDown |
-            
+            MKey::PageDown => {
+                // TODO
+                println!("pgdn");
+            }
             MKey::PageUp => {
                 // TODO
+                println!("pgup");
             }
             MKey::Home  => {
                 editor.set_cursor(0, pos.y);
             }
-            
             MKey::End => {
                 let w = editor.buf.width as i32;
                 editor.set_cursor(w - 1, pos.y);
             }
-
             MKey::Return => {
                 editor.set_cursor(0,pos.y + 1);
             }
-/*
-
-                            case SDLK_DELETE:
-                    for (int i = caret.getLogicalX(); i < getCurrentBuffer()->getWidth(); ++i) {
-                        getCurrentBuffer()->getCharacter(caret.getLogicalY(), i) = getCurrentBuffer()->getCharacter(caret.getLogicalY(), i + 1);
-                        getCurrentBuffer()->getAttribute(caret.getLogicalY(), i) = getCurrentBuffer()->getAttribute(caret.getLogicalY(), i + 1);
-                    }
-                    getCurrentBuffer()->getCharacter(caret.getLogicalY(), getCurrentBuffer()->getWidth() - 1) = ' ';
-                    getCurrentBuffer()->getAttribute(caret.getLogicalY(), getCurrentBuffer()->getWidth() - 1) = 7;
-                    break;
-                case SDLK_INSERT:
-                    caret.insertMode() = !caret.insertMode();
-                    break;
-                case SDLK_BACKSPACE:
-                    if (caret.getLogicalX()>0){
-                        if (caret.fontMode() && FontTyped && cpos > 0)  {
-                            caret.getX() -= CursorPos[cpos] - 1;
-                            for (a=0;a<=CursorPos[cpos];a++)
-                            for (b=0;b<=FontLibrary::getInstance().maxY;b++) {
-                                getCurrentBuffer()->getCharacter(caret.getLogicalY() + b, caret.getLogicalX()+a) = getUndoBuffer()->getCharacter(caret.getLogicalY() + b, caret.getLogicalX()+a);
-                                getCurrentBuffer()->getAttribute(caret.getLogicalY() + b, caret.getLogicalX()+a) = getUndoBuffer()->getAttribute(caret.getLogicalY() + b, caret.getLogicalX()+a);
-                            }
-                            cpos--;
-                        } else {	
-                            cpos=0;
-                            caret.getX()--;
-                            if (caret.insertMode()) {
-                                for (int i = caret.getLogicalX(); i < getCurrentBuffer()->getWidth(); ++i) {
-                                    getCurrentBuffer()->getCharacter(caret.getLogicalY(), i) = getCurrentBuffer()->getCharacter(caret.getLogicalY(), i + 1);
-                                    getCurrentBuffer()->getAttribute(caret.getLogicalY(), i) = getCurrentBuffer()->getAttribute(caret.getLogicalY(), i + 1);
-                                }
-                                getCurrentBuffer()->getCharacter(caret.getLogicalY(), getCurrentBuffer()->getWidth() - 1) = ' ';
-                                getCurrentBuffer()->getAttribute(caret.getLogicalY(), getCurrentBuffer()->getWidth() - 1) = 7;
-                            } else  {
-                                getCurrentBuffer()->getCharacter(caret.getLogicalY(), getCurrentBuffer()->getWidth() - 1) = ' ';
-                                getCurrentBuffer()->getAttribute(caret.getLogicalY(), getCurrentBuffer()->getWidth() - 1) = 7;
-                            } 
+            MKey::Delete => {
+                let pos = editor.cursor.pos;
+                for i in pos.x..(editor.buf.width as i32 - 1) {
+                    let next = editor.buf.get_char( Position::from(i + 1, pos.y));
+                    editor.buf.set_char(Position::from(i, pos.y), next);
+                }
+                let last_pos = Position::from(editor.buf.width as i32 - 1, pos.y);
+                editor.buf.set_char(last_pos, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
+            }
+            MKey::Insert => {
+                editor.cursor.insert_mode = !editor.cursor.insert_mode;
+            }
+            MKey::Backspace => {
+                let pos = editor.cursor.pos;
+                if pos.x> 0 {
+                   /* if (caret.fontMode() && FontTyped && cpos > 0)  {
+                        caret.getX() -= CursorPos[cpos] - 1;
+                        for (a=0;a<=CursorPos[cpos];a++)
+                        for (b=0;b<=FontLibrary::getInstance().maxY;b++) {
+                            getCurrentBuffer()->getCharacter(caret.getLogicalY() + b, caret.getLogicalX()+a) = getUndoBuffer()->getCharacter(caret.getLogicalY() + b, caret.getLogicalX()+a);
+                            getCurrentBuffer()->getAttribute(caret.getLogicalY() + b, caret.getLogicalX()+a) = getUndoBuffer()->getAttribute(caret.getLogicalY() + b, caret.getLogicalX()+a);
                         }
-                    }
-                    break;
-*/
+                        cpos--;
+                    } else {*/	
+                        editor.cursor.pos.x -= 1;
+                    if editor.cursor.insert_mode {
+                        for i in pos.x..(editor.buf.width as i32 - 1) {
+                            let next = editor.buf.get_char( Position::from(i + 1, pos.y));
+                            editor.buf.set_char(Position::from(i, pos.y), next);
+                        }
+                        let last_pos = Position::from(editor.buf.width as i32 - 1, pos.y);
+                        editor.buf.set_char(last_pos, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
+                    } else  {
+                        let pos = editor.cursor.pos;
+                        editor.buf.set_char(pos, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
+                    } 
+                }
+            }
+            /*			
+            
+            if (event->key.keysym.mod & KMOD_SHIFT) {
+				switch (event->key.keysym.sym) {   
+					case SDLK_F1:
+						ActiveCharset=1;
+						return true;
+					case SDLK_F2:
+						ActiveCharset=2;
+						return true;
+					case SDLK_F3:
+						ActiveCharset=3;
+						return true;
+					case SDLK_F4:
+						ActiveCharset=4;
+						return true;
+					case SDLK_F5:
+						ActiveCharset=5;
+						return true;
+					case SDLK_F6:
+						ActiveCharset=6;
+						return true;
+					case SDLK_F7:
+						ActiveCharset=7;
+						return true;
+					case SDLK_F8:
+						ActiveCharset=8;
+						return true;
+					case SDLK_F9:
+						ActiveCharset=9;
+						return true;
+					case SDLK_F10:
+						ActiveCharset=10;
+						return true;
+					default:
+						break;
+				}
+			}       
+ */
             MKey::Character(ch) => { 
                 let attr = editor.cursor.attr;
+                
+                if editor.cursor.insert_mode {
+                    for i in (editor.buf.width as i32 - 1)..=pos.x {
+                        let next = editor.buf.get_char( Position::from(i - 1, pos.y));
+                        editor.buf.set_char(Position::from(i, pos.y), next);
+                    }
+                }
+
                 editor.buf.set_char(pos, crate::model::DosChar {
                     char_code: ch,
                     attribute: attr,

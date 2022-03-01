@@ -272,7 +272,7 @@ fn build_ui(app: &Application) {
             if response == ResponseType::Ok {
                 let file = d.file().expect("Couldn't get file");
                 let filename = file.path().expect("Couldn't get file path");
-                let buffer = Buffer::load_buffer(&filename.as_path().to_path_buf());
+                let buffer = Buffer::load_buffer(filename.as_path());
                 if let Ok(buf) = buffer {
                     load_page(WORKSPACE.get_tab_view(), buf);
                     std::env::set_current_dir(filename.parent().unwrap()).expect("can't set current path.");

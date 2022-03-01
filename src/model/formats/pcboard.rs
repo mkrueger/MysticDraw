@@ -1,5 +1,20 @@
 use crate::model::{Buffer, Position, TextAttribute};
 
+use super::ParseStates;
+
+fn conv_ch(ch: u8) -> u8 {
+    if (b'0'..=b'9').contains(&ch) {
+        return ch - b'0';
+    }
+    if (b'a'..=b'f').contains(&ch) {
+        return 10 + ch - b'a';
+    }
+    if (b'A'..=b'F').contains(&ch) {
+        return 10 + ch - b'A';
+    }
+    0
+}
+
 const HEX_TABLE: &[u8;16] = b"0123456789ABCDEF";
 
 pub fn convert_to_pcb(buf: &Buffer) -> Vec<u8>
@@ -44,4 +59,48 @@ pub fn convert_to_pcb(buf: &Buffer) -> Vec<u8>
         pos.x = 0;
     }
     result
+}
+
+#[allow(non_snake_case)]
+pub fn display_PCBoard(data: &mut ParseStates, ch: u8) -> u8 {
+    if data.pcb_color {
+        data.pcb_pos += 1;
+        if data.pcb_pos < 3 {
+            match data.pcb_pos {
+                1 => {
+                    data.pcb_value = conv_ch(ch);
+                    return 0;
+                }
+                2 => {
+                    data.pcb_value = (data.pcb_value << 4) + conv_ch(ch);
+                    data.text_attr = TextAttribute::from_u8(data.pcb_value);
+                }
+                _ => {}
+            }
+        }
+        data.pcb_color = false;
+        data.pcb_code = false;
+        return 0;
+    }
+
+    if data.pcb_code {
+        match ch {
+            b'@' => {
+                data.pcb_code = false;
+            }
+            b'X' => {
+                data.pcb_color = true;
+                data.pcb_pos = 0;
+            }
+            _ => {}
+        }
+        return 0;
+    }
+    match ch {
+        b'@' => {
+            data.pcb_code = true;
+            0
+        }
+        _ => ch,
+    }
 }
