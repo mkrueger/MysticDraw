@@ -23,8 +23,8 @@ impl Layer {
     pub fn new() -> Self {
         Layer {
             name: "Background".to_string(),
-            width: 0,
-            height: 0,
+            width: 25,
+            height: 80,
             lines: Vec::new(),
         }
     }

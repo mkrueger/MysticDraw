@@ -18,11 +18,8 @@ pub use position::*;
 mod buffer;
 pub use  buffer::*;
 
-mod load;
-pub use load::*;
-
-mod save;
-pub use save::*;
+mod formats;
+pub use formats::*;
 
 mod tdf_font;
 pub use tdf_font::*;

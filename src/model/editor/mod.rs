@@ -5,7 +5,8 @@ use crate::model::{Buffer, Position, TextAttribute, Rectangle, convert_to_ans, c
 #[derive(Debug, Default)]
 pub struct Cursor {
     pub pos: Position,
-    pub attr: TextAttribute
+    pub attr: TextAttribute,
+    pub insert_mode: bool
 }
 
 impl PartialEq for Cursor {
@@ -76,7 +77,7 @@ impl Editor
         Editor {
             id,
             buf, 
-            cursor: Cursor { pos: Position::new(), attr: TextAttribute::DEFAULT },
+            cursor: Cursor { pos: Position::new(), attr: TextAttribute::DEFAULT, insert_mode: false },
             cur_selection: Selection::new()
         }
     }
@@ -119,8 +120,8 @@ impl Editor
     pub fn set_cursor(&mut self, x: i32, y: i32) -> Event
     {
         let old = self.cursor.pos;
-        self.cursor.pos.x = min(max(0, x), self.buf.width as i32);
-        self.cursor.pos.y = min(max(0, y), self.buf.height as i32);
+        self.cursor.pos.x = min(max(0, x), self.buf.width as i32 - 1);
+        self.cursor.pos.y = min(max(0, y), self.buf.height as i32 - 1);
         Event::CursorPositionChange(old, self.cursor.pos)
     }
 

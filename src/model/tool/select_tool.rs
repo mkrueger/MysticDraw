@@ -44,7 +44,8 @@ impl Tool for SelectTool
         Event::None
     }
 
-    fn handle_click(&self, editor: &mut Editor, button: u32, x: i32, y: i32) -> Event
+
+    fn handle_click(&self, editor: Rc<RefCell<Editor>>, button: u32, _cur: Position) -> Event
     {
         if button == 3 {
             editor.cur_selection.is_active = false;

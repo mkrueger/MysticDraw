@@ -1,5 +1,7 @@
 use std::{cmp::Ordering, ops::{Add, Sub}};
 
+use super::Buffer;
+
 
 #[derive(Copy, Clone, Debug)]
 pub struct Position {
@@ -19,6 +21,10 @@ impl Position {
     }
     pub fn from(x: i32, y: i32) -> Self {
         Position { x, y }
+    }
+    
+    pub fn from_index(buf: &Buffer, i: i32) -> Self {
+        Position { x: i % (buf.width as i32) , y: i / (buf.width as i32) }
     }
 }
 
