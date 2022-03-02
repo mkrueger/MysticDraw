@@ -32,6 +32,18 @@ pub fn convert_to_asc(buf: &Buffer) -> Vec<u8>
     result
 }
 
+/* 
+pub fn convert_to_utf(char_code: u8) -> u16
+{
+    if char_code >= 0x80_u8 {
+        let low = (0xc0 | ((char_code >> 6) & 0x1f))  as u16;
+        let high = (0x80 | (char_code & 0x3f)) as u16;
+        low | (high << 8)
+    } else {
+        char_code as u16
+    }
+}*/
+
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;

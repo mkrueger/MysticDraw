@@ -15,9 +15,9 @@ pub struct BitFont {
     pub data: Vec<u32>,
 }
 
-#[derive(Debug)]
 pub struct Buffer {
     pub file_name: Option<PathBuf>,
+    pub file_name_changed: Box<dyn Fn ()>,
 
     pub width: usize,
     pub height: usize,
@@ -26,6 +26,12 @@ pub struct Buffer {
     pub font: Option<BitFont>,
     pub layers: Vec<Layer>,
     pub sauce: Option<Sauce>,
+}
+
+impl std::fmt::Debug for Buffer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Buffer").field("file_name", &self.file_name).field("width", &self.width).field("height", &self.height).field("custom_palette", &self.custom_palette).field("font", &self.font).field("layers", &self.layers).field("sauce", &self.sauce).finish()
+    }
 }
 
 const DEFAULT_FONT: &[u8] = include_bytes!("../../data/font.fnt");
@@ -40,6 +46,7 @@ impl Buffer {
             font: None,
             layers: vec!(Layer::new()),
             sauce: None,
+            file_name_changed: Box::new(|| {})
         }
     }
 

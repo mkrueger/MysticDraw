@@ -8,7 +8,7 @@ use std::{
 use glib::subclass::types::ObjectSubclassIsExt;
 use gtk4::{
     cairo::Operator,
-    gdk::{self, Key, ModifierType, Paintable},
+    gdk::{self, Key, ModifierType},
     glib,
     prelude::{DrawingAreaExtManual, GdkCairoContextExt},
     traits::{GestureDragExt, GestureExt, GestureSingleExt, WidgetExt},

@@ -1,6 +1,6 @@
 use std::{path::Path, fs::File, io::{Read}};
 
-use super::{Buffer, Position, TextAttribute, DosChar, Editor};
+use super::{ Position, TextAttribute, DosChar, Editor};
 
 #[derive(Copy, Clone, Debug)]
 pub enum TheDrawFontType {

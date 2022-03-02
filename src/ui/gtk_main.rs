@@ -18,7 +18,7 @@ pub struct MainWindow {
     pub window: ApplicationWindow,
     tab_view: TabView,
     color_picker: ColorPicker,
-    tab_to_view: RefCell<HashMap<TabPage, Rc<CharEditorView>>>,
+    tab_to_view: RefCell<HashMap<Rc<TabPage>, Rc<CharEditorView>>>,
     title: adw::WindowTitle,
 
     layer_listbox_model: layer_view::Model,
@@ -103,6 +103,7 @@ impl MainWindow {
             let open_action = SimpleAction::new("new", None);
             open_action.connect_activate(clone!(@strong main_window => move |_,_| {
                 let mut buffer = Buffer::new();
+                buffer.file_name = None;
                 buffer.width  = 80;
                 buffer.height = 25;
                 main_window.load_page(buffer);
@@ -157,12 +158,16 @@ impl MainWindow {
 
                 file_chooser.add_button("Save", ResponseType::Ok);
                 file_chooser.add_button("Cancel", ResponseType::Cancel);
-                file_chooser.connect_response(clone!(@strong main_window => move |d, response| {
+                file_chooser.connect_response(clone!(@weak main_window => move |d, response| {
                     if response == ResponseType::Ok {
                         if let Some(page) = main_window.get_current_ansi_view() {
                             let file = d.file().expect("Couldn't get file");
                             let filename = file.path().expect("Couldn't get file path");
                             page.get_editor().borrow().save_content(&filename);
+                            println!("{}", filename.to_str().unwrap());
+                            page.get_editor().borrow_mut().buf.file_name = Some(filename);
+                            println!("file changed !!! {:?}",page.get_editor().borrow().buf.file_name); 
+                            (page.get_editor().borrow().buf.file_name_changed)()
                         } else {
                             eprintln!("can't find ansi view to save.");
                         }
@@ -209,8 +214,6 @@ impl MainWindow {
             action.connect_activate(clone!(@strong main_window => move |_,_| {
                 let cur = main_window.get_current_ansi_view();
                 if let Some(editor) = cur.map(|view| view.get_editor()) {
-                    let l = &main_window.layer_listbox;
-
                     if let Some(row) = main_window.layer_listbox.selected_row() {
                         let idx = row.index() as usize;
                         let len = editor.borrow().buf.layers.len();
@@ -232,8 +235,6 @@ impl MainWindow {
             action.connect_activate(clone!(@strong main_window => move |_,_| {
                 let cur = main_window.get_current_ansi_view();
                 if let Some(editor) = cur.map(|view| view.get_editor()) {
-                    let l = &main_window.layer_listbox;
-
                     if let Some(row) = main_window.layer_listbox.selected_row() {
                         let idx = row.index();
                         editor.borrow_mut().buf.layers.remove(idx as usize);
@@ -261,9 +262,7 @@ impl MainWindow {
             if fn_opt.is_none() {
                 self.title.set_title("Untitled");
                 self.title.set_subtitle("");
-                return;
-            }
-            if let Some(name) = fn_opt {
+            } else if let Some(name) = fn_opt {
                 let file = name.file_name().unwrap().to_str().unwrap();
                 self.title.set_title(file);
 
@@ -507,38 +506,50 @@ impl MainWindow {
 
         page_box.append(&status_bar);
 
-        let page = self.tab_view.add_page(&page_box, None);
-        let file_name = buf.file_name.clone();
-        let mut editor = Editor::new(0, buf);
+        let page = Rc::new(self.tab_view.add_page(&page_box, None));
+        let handle = Rc::new(RefCell::new(Editor::new(0, buf)));
 
-        editor.cursor.changed = std::boxed::Box::new(move |p| {
+        handle.borrow_mut().cursor.changed = std::boxed::Box::new(move |p| {
             caret_pos_label.set_text(format!("({:>2},{:>3})", p.x + 1, p.y + 1).as_str());
         });
-        let handle = Rc::new(RefCell::new(editor));
 
-        let key_handle2 = key_handle;
+        let key_handle2 = key_handle.clone();
         handle.borrow_mut().outline_changed = std::boxed::Box::new(move |editor| {
             MainWindow::update_keyset_view(editor, key_handle2.clone());
             key_set_view.queue_draw();
         });
+        let handle2 = handle.clone();
+        let handle3 = handle.clone();
 
         // force outline update.
         handle.borrow_mut().set_cur_outline(0);
 
         child2.set_editor_handle(handle);
-        if let Some(x) = file_name {
+
+        self.tab_view.set_selected_page(&page);
+        child2.grab_focus();
+
+        self.tab_to_view.borrow_mut().insert(page.clone(), Rc::new(child2));
+        self.page_swap();
+
+        MainWindow::set_file_name_for_page(&page, &handle3);
+        handle2.borrow_mut().buf.file_name_changed = std::boxed::Box::new(move || {
+            MainWindow::set_file_name_for_page(&page, &handle3);
+        });
+    }
+
+    fn set_file_name_for_page(page: &Rc<TabPage>, editor: &Rc<RefCell<Editor>>)
+    {
+        if let Some(x) = &editor.borrow().buf.file_name {
             let fin = x
                 .as_path()
                 .file_name()
                 .ok_or_else(|| panic!("Can't convert file name"))
                 .unwrap();
             page.set_title(fin.to_str().unwrap());
+        }  else {
+            page.set_title("Untitled");
         }
-        self.tab_view.set_selected_page(&page);
-        child2.grab_focus();
-
-        self.tab_to_view.borrow_mut().insert(page, Rc::new(child2));
-        self.page_swap();
     }
 
     fn update_keyset_view(editor: &Editor, key_handle: Rc<RefCell<Editor>>) {
