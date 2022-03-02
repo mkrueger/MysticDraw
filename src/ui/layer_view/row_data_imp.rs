@@ -9,7 +9,7 @@ use gtk4::{
 #[derive(Default)]
 pub struct RowData {
     name: RefCell<Option<String>>,
-    count: Cell<u32>,
+    is_visible: Cell<bool>,
 }
 
 #[glib::object_subclass]
@@ -30,13 +30,11 @@ impl ObjectImpl for RowData {
                     None, // Default value
                     glib::ParamFlags::READWRITE,
                 ),
-                glib::ParamSpecUInt::new(
-                    "count",
-                    "Count",
-                    "Count",
-                    0,
-                    u32::MAX,
-                    0, // Allowed range and default value
+                glib::ParamSpecBoolean::new(
+                    "isvisible",
+                    "IsVisible",
+                    "IsVisible",
+                    true, // Default value
                     glib::ParamFlags::READWRITE,
                 ),
             ]
@@ -51,9 +49,9 @@ impl ObjectImpl for RowData {
                 let name = value.get().unwrap();
                 self.name.replace(name);
             }
-            "count" => {
-                let count = value.get().unwrap();
-                self.count.replace(count);
+            "isvisible" => {
+                let isvisible = value.get().unwrap();
+                self.is_visible.replace(isvisible);
             }
             _ => unimplemented!(),
         }
@@ -62,7 +60,7 @@ impl ObjectImpl for RowData {
     fn property(&self, _obj: &Self::Type, _id: usize, pspec: &ParamSpec) -> Value {
         match pspec.name() {
             "name" => self.name.borrow().to_value(),
-            "count" => self.count.get().to_value(),
+            "isvisible" => self.is_visible.get().to_value(),
             _ => unimplemented!(),
         }
     }

@@ -2,6 +2,8 @@ use std::{cmp::{max, min}, path::Path, io::Write, fs::File, ffi::OsStr};
 
 use crate::model::{Buffer, Position, TextAttribute, Rectangle, convert_to_ans, convert_to_asc, convert_to_avt, convert_to_binary, convert_to_pcb, convert_to_xb};
 
+use super::DosChar;
+
 pub struct Cursor {
     pos: Position,
     pub attr: TextAttribute,
@@ -88,6 +90,7 @@ pub struct Editor {
     cur_outline: i32,
     pub is_inactive: bool,
 
+    pub cur_layer: i32,
     pub outline_changed: std::boxed::Box<dyn Fn(&Editor)>
 }
 
@@ -116,24 +119,22 @@ impl Editor
             cur_selection: Selection::new(),
             cur_outline: 0,
             is_inactive: false,
-            outline_changed: Box::new(|_| {})
+            outline_changed: Box::new(|_| {}),
+            cur_layer: 0
         }
     }
 
     pub fn delete_line(&mut self, line: i32)
     {
         let layer = &mut self.buf.layers[0];
-        assert!(!(line < 0 || line >= layer.height as i32), "line out of range");
+        assert!(!(line < 0 || line >= self.buf.height as i32), "line out of range");
         layer.lines.remove(line as usize);
     }
 
     pub fn insert_line(&mut self, line: i32) {
         let layer = &mut self.buf.layers[0];
-        assert!(!(line < 0 || line >= layer.height as i32), "line out of range");
+        assert!(!(line < 0 || line >= self.buf.height as i32), "line out of range");
         layer.lines.insert(line as usize, super::Line::new());
-        if layer.lines.len() >= layer.height {
-            layer.lines.resize(layer.height, super::Line::new());
-        }
     }
 
     pub fn pickup_color(&mut self, pos: Position)
@@ -201,16 +202,21 @@ impl Editor
         Ok(DEFAULT_OUTLINE_TABLE[self.cur_outline as usize][i as usize])
     }
 
+    pub fn set_char(&mut self, pos: Position, dos_char: DosChar) {
+        self.buf.set_char(self.cur_layer as usize, pos, dos_char);
+    }
+
+
     pub fn type_key(&mut self, char_code: u8) {
         let pos = self.cursor.pos;
         if self.cursor.insert_mode {
             for i in (self.buf.width as i32 - 1)..=pos.x {
                 let next = self.buf.get_char( Position::from(i - 1, pos.y));
-                self.buf.set_char(Position::from(i, pos.y), next);
+                self.set_char(Position::from(i, pos.y), next);
             }
         }
 
-        self.buf.set_char(pos, crate::model::DosChar {
+        self.set_char(pos, crate::model::DosChar {
             char_code,
             attribute: self.cursor.attr,
         });

@@ -57,11 +57,19 @@ impl ObjectImpl for ListBoxRow {
         let item = item.as_ref().cloned().unwrap();
 
         let hbox = gtk4::Box::new(gtk4::Orientation::Horizontal, 5);
+
+        let check_button = gtk4::CheckButton::new();
+        item.bind_property("isvisible", &check_button, "active")
+            .flags(glib::BindingFlags::DEFAULT | glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::BIDIRECTIONAL)
+            .build();
+        hbox.append(&check_button);
+
         let label = gtk4::Label::new(None);
         item.bind_property("name", &label, "label")
             .flags(glib::BindingFlags::DEFAULT | glib::BindingFlags::SYNC_CREATE)
             .build();
         hbox.append(&label);
+        
         obj.set_child(Some(&hbox));
     }
 }

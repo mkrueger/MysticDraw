@@ -95,7 +95,7 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8])
             Compression::Off => {
                 for _ in 0..repeat_counter {
                     if o + 2 > bytes.len() { return; }
-                    result.set_char(pos, DosChar { 
+                    result.set_char(0, pos, DosChar { 
                         char_code: bytes[o], 
                         attribute: TextAttribute::from_u8(bytes[o + 1])
                     });
@@ -110,7 +110,7 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8])
                 o += 1;
                 for _ in 0..repeat_counter {
                     if o + 1 > bytes.len() { return; }
-                    result.set_char(pos, DosChar { 
+                    result.set_char(0, pos, DosChar { 
                         char_code: ch, 
                         attribute: TextAttribute::from_u8(bytes[o])
                     });
@@ -125,7 +125,7 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8])
                 o += 1;
                 for _ in 0..repeat_counter {
                     if o + 1 > bytes.len() { return; }
-                    result.set_char(pos, DosChar { 
+                    result.set_char(0, pos, DosChar { 
                         char_code: bytes[o], 
                         attribute: attr
                     });
@@ -147,7 +147,7 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8])
                 };
 
                 for _ in 0..repeat_counter {
-                    result.set_char(pos, rep_ch);
+                    result.set_char(0, pos, rep_ch);
                     if !advance_pos(result, &mut pos) {
                         return;
                     }
@@ -162,7 +162,7 @@ fn read_data_uncompressed(result: &mut Buffer, bytes: &[u8])
     let mut pos = Position::new();
     let mut o = 0;
     while o + 2 <= bytes.len() {
-        result.set_char(pos, DosChar { 
+        result.set_char(0, pos, DosChar { 
             char_code: bytes[o], 
             attribute: TextAttribute::from_u8(bytes[o + 1])
         });

@@ -62,8 +62,8 @@ impl Buffer {
         }
     }
 
-    pub fn set_char(&mut self, pos: Position, dos_char: DosChar) {
-        let cur_layer  = &mut self.layers[0];
+    pub fn set_char(&mut self, layer: usize, pos: Position, dos_char: DosChar) {
+        let cur_layer  = &mut self.layers[layer];
         if pos.y >= cur_layer.lines.len() as i32 {
             cur_layer.lines.resize(pos.y as usize + 1, Line::new());
         }
@@ -76,17 +76,22 @@ impl Buffer {
     }
 
     pub fn get_char(&self, pos: Position) -> DosChar {
-        let cur_layer  = &self.layers[0];
-        if pos.y >= cur_layer.lines.len() as i32 {
-            return DosChar::new();
+        for cur_layer in &self.layers {
+            if !cur_layer.is_visible { continue; }
+
+            let y = pos.y as usize;
+            if cur_layer.lines.len() <= y { continue; }
+
+            let cur_line = &cur_layer.lines[y];
+            if pos.x < cur_line.chars.len() as i32 {
+                let ch = cur_line.chars[pos.x as usize];
+                if !ch.is_transparent() {
+                    return ch;
+                }
+            } 
         }
 
-        let cur_line = &cur_layer.lines[pos.y as usize];
-        if pos.x >= cur_line.chars.len() as i32 {
-            DosChar::new()
-        } else {
-            cur_line.chars[pos.x as usize]
-        }
+        DosChar::new()
     }
 
     pub fn load_buffer(file_name: &Path) -> io::Result<Buffer> {
@@ -180,7 +185,6 @@ impl Buffer {
             }
         }
 
-        println!("buffer load with width : {}", result.width);
         result
     }
 
@@ -190,8 +194,6 @@ impl Buffer {
                 10 => {
                     data.cur_pos.x = 0;
                     data.cur_pos.y += 1;
-                    println!("],");
-                    print!("[");
                 }
                 12 => {
                     data.cur_pos.x = 0;
@@ -202,8 +204,8 @@ impl Buffer {
                     data.cur_pos.x = 0;
                 }
                 _ => {
-                    print!("{}, ", ch);
                     result.set_char(
+                        0,
                         data.cur_pos,
                         DosChar {
                             char_code: ch,

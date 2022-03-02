@@ -1,6 +1,6 @@
 use std::{path::Path, fs::File, io::{Read}};
 
-use super::{Buffer, Position, TextAttribute, DosChar};
+use super::{Buffer, Position, TextAttribute, DosChar, Editor};
 
 #[derive(Copy, Clone, Debug)]
 pub enum TheDrawFontType {
@@ -100,7 +100,7 @@ impl TheDrawFont
         self.font_data[1]
     }
     
-    pub fn render(&self, buf: &mut Buffer, pos: Position, color: TextAttribute, char_code: u8) -> i32
+    pub fn render(&self, editor: &mut Editor, pos: Position, color: TextAttribute, char_code: u8) -> i32
     {
         let char_offset = (char_code as i32) - b' '  as i32 - 1;
         if char_offset < 0 || char_offset > self.char_table.len() as i32 {
@@ -138,8 +138,8 @@ impl TheDrawFont
                         DosChar { char_code: ch, attribute: ch_attr }
                     }
                 };
-                if dest_pos.x >= 0 && dest_pos.y >= 0 && dest_pos.x < buf.width as i32 && dest_pos.y < buf.height as i32 {
-                    buf.set_char(dest_pos, dos_char);
+                if dest_pos.x >= 0 && dest_pos.y >= 0 && dest_pos.x < editor.buf.width as i32 && dest_pos.y < editor.buf.height as i32 {
+                    editor.set_char(dest_pos, dos_char);
                 }
                 x += 1;
             }

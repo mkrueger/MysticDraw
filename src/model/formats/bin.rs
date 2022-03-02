@@ -10,7 +10,7 @@ pub fn read_binary(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_w
             if o + 2 > file_size {
                 return;
             }
-            result.set_char(pos, DosChar {
+            result.set_char(0, pos, DosChar {
                 char_code: bytes[o],
                 attribute: TextAttribute::from_u8(bytes[o + 1])
             });

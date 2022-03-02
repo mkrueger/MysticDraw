@@ -8,7 +8,7 @@ glib::wrapper! {
 
 impl Default for ColorPicker {
     fn default() -> Self {
-         Self::new()
+        Self::new()
     }
 }
 

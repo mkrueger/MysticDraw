@@ -156,10 +156,10 @@ pub trait Tool
                 let pos = editor.cursor.get_position();
                 for i in pos.x..(editor.buf.width as i32 - 1) {
                     let next = editor.buf.get_char( Position::from(i + 1, pos.y));
-                    editor.buf.set_char(Position::from(i, pos.y), next);
+                    editor.set_char(Position::from(i, pos.y), next);
                 }
                 let last_pos = Position::from(editor.buf.width as i32 - 1, pos.y);
-                editor.buf.set_char(last_pos, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
+                editor.set_char(last_pos, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
             }
             MKey::Insert => {
                 editor.cursor.insert_mode = !editor.cursor.insert_mode;
@@ -180,13 +180,13 @@ pub trait Tool
                     if editor.cursor.insert_mode {
                         for i in pos.x..(editor.buf.width as i32 - 1) {
                             let next = editor.buf.get_char( Position::from(i + 1, pos.y));
-                            editor.buf.set_char(Position::from(i, pos.y), next);
+                            editor.set_char(Position::from(i, pos.y), next);
                         }
                         let last_pos = Position::from(editor.buf.width as i32 - 1, pos.y);
-                        editor.buf.set_char(last_pos, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
+                        editor.set_char(last_pos, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
                     } else  {
                         let pos = editor.cursor.get_position();
-                        editor.buf.set_char(pos, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
+                        editor.set_char(pos, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
                     } 
                 }
             }

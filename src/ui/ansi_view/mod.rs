@@ -1,24 +1,36 @@
-
-use std::{ str::FromStr, rc::Rc, cell::RefCell, cmp::{max, min} };
+use std::{
+    cell::RefCell,
+    cmp::{max, min},
+    rc::Rc,
+    str::FromStr,
+};
 
 use glib::subclass::types::ObjectSubclassIsExt;
-use gtk4::{ glib, traits::{WidgetExt, GestureExt, GestureSingleExt, GestureDragExt}, gdk::{Paintable, self, Key, ModifierType}, prelude::{DrawingAreaExtManual, GdkCairoContextExt}, cairo::Operator};
+use gtk4::{
+    cairo::Operator,
+    gdk::{self, Key, ModifierType, Paintable},
+    glib,
+    prelude::{DrawingAreaExtManual, GdkCairoContextExt},
+    traits::{GestureDragExt, GestureExt, GestureSingleExt, WidgetExt},
+};
 
-use crate::{model::{Position, Editor, Size, MKey, MModifiers, MKeyCode}, sync_workbench_state};
+use crate::{
+    model::{Editor, MKey, MKeyCode, MModifiers, Position, Size},
+    sync_workbench_state,
+};
 
 use self::gtkchar_editor_view::GtkCharEditorView;
 mod gtkchar_editor_view;
 use crate::model::TOOLS;
 use crate::WORKSPACE;
 
-
 glib::wrapper! {
-    pub struct CharEditorView(ObjectSubclass<GtkCharEditorView>) @extends gtk4::Widget, gtk4::DrawingArea, @implements Paintable;
+    pub struct CharEditorView(ObjectSubclass<GtkCharEditorView>) @extends gtk4::Widget, gtk4::DrawingArea;
 }
 
 impl Default for CharEditorView {
     fn default() -> Self {
-         Self::new()
+        Self::new()
     }
 }
 
@@ -28,27 +40,26 @@ struct Dialog {
  }
 */
 
-
 impl CharEditorView {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create a AnsiEditorArea")
     }
 
-    pub fn get_editor(&self) -> Rc<RefCell<Editor>>
-    {
+    pub fn get_editor(&self) -> Rc<RefCell<Editor>> {
         self.imp().editor.borrow().clone()
     }
 
-    fn calc_xy(c: &Rc<RefCell<Editor>>, xy: (f64, f64)) -> Position
-    {
+    fn calc_xy(c: &Rc<RefCell<Editor>>, xy: (f64, f64)) -> Position {
         let dim = c.borrow().buf.get_font_dimensions();
         let x = xy.0;
         let y = xy.1;
-        Position::from((x / dim.width as f64) as i32, (y / dim.height as f64) as i32)
+        Position::from(
+            (x / dim.width as f64) as i32,
+            (y / dim.height as f64) as i32,
+        )
     }
-    
-    fn translate_key(key: Key) -> Option<MKey>
-    {
+
+    fn translate_key(key: Key) -> Option<MKey> {
         match key {
             Key::Down => Some(MKey::Down),
             Key::Up => Some(MKey::Up),
@@ -65,7 +76,6 @@ impl CharEditorView {
             Key::BackSpace => Some(MKey::Backspace),
             Key::Tab => Some(MKey::Tab),
             Key::Escape => Some(MKey::Escape),
-
 
             Key::F1 => Some(MKey::F1),
             Key::F2 => Some(MKey::F2),
@@ -93,36 +103,34 @@ impl CharEditorView {
         }
     }
 
-    fn translate_modifier(modifier: gdk::ModifierType) -> MModifiers
-    {
+    fn translate_modifier(modifier: gdk::ModifierType) -> MModifiers {
         match modifier {
             ModifierType::SHIFT_MASK => MModifiers::Shift,
             ModifierType::ALT_MASK => MModifiers::Alt,
             ModifierType::CONTROL_MASK => MModifiers::Control,
-            _ => MModifiers::None
+            _ => MModifiers::None,
         }
     }
-    fn translate_key_code(key_code: u32) -> MKeyCode
-    {
-        println!("key code: {}", key_code);
+    fn translate_key_code(key_code: u32) -> MKeyCode {
         match key_code {
             29 => MKeyCode::KeyY,
             30 => MKeyCode::KeyU,
             31 => MKeyCode::KeyI,
-            _ => { MKeyCode::Unknown }
+            _ => MKeyCode::Unknown,
         }
-        
     }
-    pub fn set_editor_handle(&self, handle: Rc<RefCell<Editor>>)
-    {
+    pub fn set_editor_handle(&self, handle: Rc<RefCell<Editor>>) {
         let buffer = &handle.borrow().buf;
         let font_dimensions = buffer.get_font_dimensions();
-        self.set_size_request((buffer.width * font_dimensions.width) as i32, (buffer.height * font_dimensions.height) as i32);
+        self.set_size_request(
+            (buffer.width * font_dimensions.width) as i32,
+            (buffer.height * font_dimensions.height) as i32,
+        );
         self.imp().editor.replace(handle.clone());
 
         let mut char_img =
-        gtk4::cairo::ImageSurface::create(gtk4::cairo::Format::ARgb32, 8, 16).unwrap();
-       // let dialog = Dialog { payload: editor };
+            gtk4::cairo::ImageSurface::create(gtk4::cairo::Format::ARgb32, 8, 16).unwrap();
+        // let dialog = Dialog { payload: editor };
         if !handle.borrow().is_inactive {
             let drag = gtk4::GestureDrag::new();
             let handle1 = handle.clone();
@@ -141,7 +149,7 @@ impl CharEditorView {
                 }
                 this.queue_draw();
                 this.grab_focus();
-            })); 
+            }));
 
             let handle1 = handle.clone();
             drag.connect_end(glib::clone!(@strong self as this => move |gst_drag, _| {
@@ -158,8 +166,8 @@ impl CharEditorView {
                 }
                 this.queue_draw();
                 this.grab_focus();
-            })); 
-            
+            }));
+
             let handle1 = handle.clone();
             drag.connect_update(glib::clone!(@strong self as this => move |gst_drag, _| {
                 sync_workbench_state(&mut handle1.borrow_mut());
@@ -238,45 +246,49 @@ impl CharEditorView {
             let buffer = &editor.buf;
 
             let font_dimensions = buffer.get_font_dimensions();
-    
+
             for y in 0..buffer.height {
                 for x in 0..buffer.width {
                     let ch = buffer.get_char(Position::from(x as i32, y as i32));
-                    
+
                     cr.rectangle(
-                        x as f64 * font_dimensions.width as f64, 
-                        y as f64 * font_dimensions.height as f64, 
+                        x as f64 * font_dimensions.width as f64,
+                        y as f64 * font_dimensions.height as f64,
                         font_dimensions.width as f64,
-                        font_dimensions.height as f64);
+                        font_dimensions.height as f64,
+                    );
                     let bg = buffer.get_rgb_f64(ch.attribute.get_background());
                     cr.set_source_rgba(bg.0, bg.1, bg.2, 1f64);
                     cr.fill().expect("error while calling fill.");
-                    
+
                     let fg = buffer.get_rgb(ch.attribute.get_foreground());
                     unsafe {
                         let mut data = char_img.data().expect("Can't lock image");
                         let ptr = data.as_mut_ptr();
                         render_char(buffer, ch.char_code, ptr, fg);
                     }
-                    cr.set_source_surface(&char_img, (x as i32 * font_dimensions.width as i32) as f64, (y as i32 * font_dimensions.height as i32) as f64)
-                        .expect("error while calling fill.");
-                        cr.paint()
-                        .expect("error while calling fill.");
+                    cr.set_source_surface(
+                        &char_img,
+                        (x as i32 * font_dimensions.width as i32) as f64,
+                        (y as i32 * font_dimensions.height as i32) as f64,
+                    )
+                    .expect("error while calling fill.");
+                    cr.paint().expect("error while calling fill.");
                 }
             }
             if !editor.is_inactive {
                 draw_caret(editor.cursor.get_position(), cr, font_dimensions);
-    
+
                 if editor.cur_selection.is_active {
                     let rect = &editor.cur_selection.rectangle;
                     cr.rectangle(
-                        buffer.to_screenx(rect.start.x), 
-                        buffer.to_screeny(rect.start.y), 
-                        buffer.to_screenx(rect.size.width as i32), 
-                        buffer.to_screeny(rect.size.height as i32));
+                        buffer.to_screenx(rect.start.x),
+                        buffer.to_screeny(rect.start.y),
+                        buffer.to_screenx(rect.size.width as i32),
+                        buffer.to_screeny(rect.size.height as i32),
+                    );
                     cr.set_source_rgb(1.0, 1.0, 1.0);
                     cr.set_line_width(3f64);
-                    println!("preview: {}", editor.cur_selection.is_preview);
                     if editor.cur_selection.is_preview {
                         cr.fill().expect("error while calling fill.");
                     } else {
@@ -295,8 +307,17 @@ impl CharEditorView {
 fn draw_caret(cursor_pos: Position, cr: &gtk4::cairo::Context, font_dimensions: Size) {
     let x = cursor_pos.x;
     let y = cursor_pos.y;
-    cr.rectangle((x as i32 * font_dimensions.width as i32) as f64, (y as i32 * font_dimensions.height as i32) as f64, font_dimensions.width as f64, font_dimensions.height as f64);
-    cr.set_source_rgb(0x7F as f64 / 255.0, 0x7F as f64 / 255.0, 0x7F as f64 / 255.0);
+    cr.rectangle(
+        (x as i32 * font_dimensions.width as i32) as f64,
+        (y as i32 * font_dimensions.height as i32) as f64,
+        font_dimensions.width as f64,
+        font_dimensions.height as f64,
+    );
+    cr.set_source_rgb(
+        0x7F as f64 / 255.0,
+        0x7F as f64 / 255.0,
+        0x7F as f64 / 255.0,
+    );
     cr.set_operator(Operator::Difference);
     cr.fill().expect("error while calling fill.");
 }

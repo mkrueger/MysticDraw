@@ -14,8 +14,8 @@ impl Line {
 #[derive(Clone, Debug, Default)]
 pub struct Layer {
     pub name: String,
-    pub width: usize,
-    pub height: usize,
+    pub is_visible: bool,
+
     pub lines: Vec<Line>,
 }
 
@@ -23,8 +23,7 @@ impl Layer {
     pub fn new() -> Self {
         Layer {
             name: "Background".to_string(),
-            width: 25,
-            height: 80,
+            is_visible: true,
             lines: Vec::new(),
         }
     }
