@@ -2,11 +2,36 @@ use std::{cmp::{max, min}, path::Path, io::Write, fs::File, ffi::OsStr};
 
 use crate::model::{Buffer, Position, TextAttribute, Rectangle, convert_to_ans, convert_to_asc, convert_to_avt, convert_to_binary, convert_to_pcb, convert_to_xb};
 
-#[derive(Debug, Default)]
 pub struct Cursor {
-    pub pos: Position,
+    pos: Position,
     pub attr: TextAttribute,
-    pub insert_mode: bool
+    pub insert_mode: bool,
+    pub changed: std::boxed::Box<dyn Fn(Position)>
+}
+
+impl Cursor {
+    pub fn get_position(&self) -> Position
+    {
+        self.pos
+    }
+
+    pub fn set_position(&mut self, pos: Position)
+    {
+        self.pos = pos;
+        (self.changed)(pos);
+    }
+}
+
+impl std::fmt::Debug for Cursor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Cursor").field("pos", &self.pos).field("attr", &self.attr).field("insert_mode", &self.insert_mode).finish()
+    }
+}
+
+impl Default for Cursor {
+    fn default() -> Self {
+        Self { pos: Default::default(), attr: Default::default(), insert_mode: Default::default(), changed: Box::new(|_| {}) }
+    }
 }
 
 impl PartialEq for Cursor {
@@ -53,7 +78,6 @@ impl Default for Selection {
     }
 }
 
-#[derive(Debug)]
 pub struct Editor {
     pub id: usize,
     pub buf: Buffer,
@@ -61,8 +85,16 @@ pub struct Editor {
     pub cursor: Cursor,
     pub cur_selection: Selection,
 
-    pub cur_outline: i32,
-    // TODO: Custom Outline.
+    cur_outline: i32,
+    pub is_inactive: bool,
+
+    pub outline_changed: std::boxed::Box<dyn Fn(&Editor)>
+}
+
+impl std::fmt::Debug for Editor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Editor").field("id", &self.id).field("buf", &self.buf).field("cursor", &self.cursor).field("cur_selection", &self.cur_selection).field("cur_outline", &self.cur_outline).field("is_inactive", &self.is_inactive).finish()
+    }
 }
 
 impl Default for Editor 
@@ -80,9 +112,11 @@ impl Editor
         Editor {
             id,
             buf, 
-            cursor: Cursor { pos: Position::new(), attr: TextAttribute::DEFAULT, insert_mode: false },
+            cursor: Default::default(),
             cur_selection: Selection::new(),
-            cur_outline: 0
+            cur_outline: 0,
+            is_inactive: false,
+            outline_changed: Box::new(|_| {})
         }
     }
 
@@ -111,9 +145,21 @@ impl Editor
     pub fn set_cursor(&mut self, x: i32, y: i32) -> Event
     {
         let old = self.cursor.pos;
-        self.cursor.pos.x = min(max(0, x), self.buf.width as i32 - 1);
-        self.cursor.pos.y = min(max(0, y), self.buf.height as i32 - 1);
+        self.cursor.set_position(Position::from(
+            min(max(0, x), self.buf.width as i32 - 1),
+            min(max(0, y), self.buf.height as i32 - 1)));
         Event::CursorPositionChange(old, self.cursor.pos)
+    }
+    
+    pub fn get_cur_outline(&self) -> i32
+    {
+        self.cur_outline
+    }
+
+    pub fn set_cur_outline(&mut self, outline: i32)
+    {
+        self.cur_outline = outline;
+        (self.outline_changed)(self);
     }
 
     pub fn save_content(&self, file_name: &Path)

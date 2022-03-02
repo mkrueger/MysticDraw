@@ -10,8 +10,5 @@ pub use ansi_view::*;
 mod tool;
 pub use tool::*;
 
-mod status_bar;
-pub use status_bar::*;
-
 mod gtk_main;
 pub use gtk_main::*;

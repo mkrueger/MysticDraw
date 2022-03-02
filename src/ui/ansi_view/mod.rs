@@ -123,110 +123,110 @@ impl CharEditorView {
         let mut char_img =
         gtk4::cairo::ImageSurface::create(gtk4::cairo::Format::ARgb32, 8, 16).unwrap();
        // let dialog = Dialog { payload: editor };
+        if !handle.borrow().is_inactive {
+            let drag = gtk4::GestureDrag::new();
+            let handle1 = handle.clone();
 
-        let drag = gtk4::GestureDrag::new();
-        let handle1 = handle.clone();
-
-        drag.connect_begin(glib::clone!(@strong self as this => move |gst_drag, _| {
-            sync_workbench_state(&mut handle1.borrow_mut());
-            let start = gst_drag.start_point();
-            let cur   = gst_drag.offset();
-            if start.is_none() || cur.is_none() {
-                return;
-            }
-            let start = CharEditorView::calc_xy(&handle1, start.unwrap());
-            let end   = CharEditorView::calc_xy(&handle1, cur.unwrap());
-            unsafe {
-                TOOLS[WORKSPACE.selected_tool].handle_drag_begin(handle1.clone(), start, end);
-            }
-            this.queue_draw();
-            this.grab_focus();
-        })); 
-
-        let handle1 = handle.clone();
-        drag.connect_end(glib::clone!(@strong self as this => move |gst_drag, _| {
-            sync_workbench_state(&mut handle1.borrow_mut());
-            let start = gst_drag.start_point();
-            let cur   = gst_drag.offset();
-            if start.is_none() || cur.is_none() {
-                return;
-            }
-            let start = CharEditorView::calc_xy(&handle1, start.unwrap());
-            let end   = CharEditorView::calc_xy(&handle1, cur.unwrap());
-            unsafe {
-                TOOLS[WORKSPACE.selected_tool].handle_drag_end(handle1.clone(), start, end);
-            }
-            this.queue_draw();
-            this.grab_focus();
-        })); 
-        
-        let handle1 = handle.clone();
-        drag.connect_update(glib::clone!(@strong self as this => move |gst_drag, _| {
-            sync_workbench_state(&mut handle1.borrow_mut());
-            let start = gst_drag.start_point();
-            let cur   = gst_drag.offset();
-            if start.is_none() || cur.is_none() {
-                return;
-            }
-            let start = start.unwrap();
-            let cur = cur.unwrap();
-            let cur = (start.0 + cur.0, start.1 + cur.1);
-            let start = CharEditorView::calc_xy(&handle1, start);
-            let end   = CharEditorView::calc_xy(&handle1, cur);
-            unsafe {
-                TOOLS[WORKSPACE.selected_tool].handle_drag(handle1.clone(), start, end);
-            }
-            this.queue_draw();
-            this.grab_focus();
-        }));
-        self.add_controller(&drag);
-
-        let gesture = gtk4::GestureClick::new();
-        let handle1 = handle.clone();
-        gesture.set_button(1);
-        gesture.connect_pressed(glib::clone!(@strong self as this => move |e, _clicks, x, y| {
-            sync_workbench_state(&mut handle1.borrow_mut());
-            let x = min(handle1.borrow().buf.width as i32, max(0, x as i32 / font_dimensions.width as i32));
-            let y = min(handle1.borrow().buf.height as i32, max(0, y as i32 / font_dimensions.height as i32));
-            unsafe {
-                TOOLS[WORKSPACE.selected_tool].handle_click(handle1.clone(), e.button(),Position::from(x, y));
-            }
-            this.queue_draw();
-            this.grab_focus();
-        }));
-        self.add_controller(&gesture);
-
-        let gesture = gtk4::GestureClick::new();
-        let handle1 = handle.clone();
-        gesture.set_button(3);
-        gesture.connect_pressed(glib::clone!(@strong self as this => move |e, _clicks, x, y| {
-            sync_workbench_state(&mut handle1.borrow_mut());
-            let x = min(handle1.borrow().buf.width as i32, max(0, x as i32 / font_dimensions.width as i32));
-            let y = min(handle1.borrow().buf.height as i32, max(0, y as i32 / font_dimensions.height as i32));
-            unsafe {
-                TOOLS[WORKSPACE.selected_tool].handle_click(handle1.clone(), e.button(), Position::from(x, y));
-            }
-            this.queue_draw();
-            this.grab_focus();
-        }));
-        self.add_controller(&gesture);
-
-        let handle1 = handle.clone();
-        let key = gtk4::EventControllerKey::new();
-        key.connect_key_pressed(glib::clone!(@strong self as this => move |_, key, key_code, modifier| {
-            sync_workbench_state(&mut handle1.borrow_mut());
-            {
-                if let Some(key)= CharEditorView::translate_key(key) {
-                    unsafe {
-                        TOOLS[WORKSPACE.selected_tool].handle_key(handle1.clone(), key, CharEditorView::translate_key_code(key_code), CharEditorView::translate_modifier(modifier));
-                    }
-                    this.queue_draw();
+            drag.connect_begin(glib::clone!(@strong self as this => move |gst_drag, _| {
+                sync_workbench_state(&mut handle1.borrow_mut());
+                let start = gst_drag.start_point();
+                let cur   = gst_drag.offset();
+                if start.is_none() || cur.is_none() {
+                    return;
                 }
-            }
-            glib::signal::Inhibit(true)
-        }));
-        self.add_controller(&key);
+                let start = CharEditorView::calc_xy(&handle1, start.unwrap());
+                let end   = CharEditorView::calc_xy(&handle1, cur.unwrap());
+                unsafe {
+                    TOOLS[WORKSPACE.selected_tool].handle_drag_begin(handle1.clone(), start, end);
+                }
+                this.queue_draw();
+                this.grab_focus();
+            })); 
 
+            let handle1 = handle.clone();
+            drag.connect_end(glib::clone!(@strong self as this => move |gst_drag, _| {
+                sync_workbench_state(&mut handle1.borrow_mut());
+                let start = gst_drag.start_point();
+                let cur   = gst_drag.offset();
+                if start.is_none() || cur.is_none() {
+                    return;
+                }
+                let start = CharEditorView::calc_xy(&handle1, start.unwrap());
+                let end   = CharEditorView::calc_xy(&handle1, cur.unwrap());
+                unsafe {
+                    TOOLS[WORKSPACE.selected_tool].handle_drag_end(handle1.clone(), start, end);
+                }
+                this.queue_draw();
+                this.grab_focus();
+            })); 
+            
+            let handle1 = handle.clone();
+            drag.connect_update(glib::clone!(@strong self as this => move |gst_drag, _| {
+                sync_workbench_state(&mut handle1.borrow_mut());
+                let start = gst_drag.start_point();
+                let cur   = gst_drag.offset();
+                if start.is_none() || cur.is_none() {
+                    return;
+                }
+                let start = start.unwrap();
+                let cur = cur.unwrap();
+                let cur = (start.0 + cur.0, start.1 + cur.1);
+                let start = CharEditorView::calc_xy(&handle1, start);
+                let end   = CharEditorView::calc_xy(&handle1, cur);
+                unsafe {
+                    TOOLS[WORKSPACE.selected_tool].handle_drag(handle1.clone(), start, end);
+                }
+                this.queue_draw();
+                this.grab_focus();
+            }));
+            self.add_controller(&drag);
+
+            let gesture = gtk4::GestureClick::new();
+            let handle1 = handle.clone();
+            gesture.set_button(1);
+            gesture.connect_pressed(glib::clone!(@strong self as this => move |e, _clicks, x, y| {
+                sync_workbench_state(&mut handle1.borrow_mut());
+                let x = min(handle1.borrow().buf.width as i32, max(0, x as i32 / font_dimensions.width as i32));
+                let y = min(handle1.borrow().buf.height as i32, max(0, y as i32 / font_dimensions.height as i32));
+                unsafe {
+                    TOOLS[WORKSPACE.selected_tool].handle_click(handle1.clone(), e.button(),Position::from(x, y));
+                }
+                this.queue_draw();
+                this.grab_focus();
+            }));
+            self.add_controller(&gesture);
+
+            let gesture = gtk4::GestureClick::new();
+            let handle1 = handle.clone();
+            gesture.set_button(3);
+            gesture.connect_pressed(glib::clone!(@strong self as this => move |e, _clicks, x, y| {
+                sync_workbench_state(&mut handle1.borrow_mut());
+                let x = min(handle1.borrow().buf.width as i32, max(0, x as i32 / font_dimensions.width as i32));
+                let y = min(handle1.borrow().buf.height as i32, max(0, y as i32 / font_dimensions.height as i32));
+                unsafe {
+                    TOOLS[WORKSPACE.selected_tool].handle_click(handle1.clone(), e.button(), Position::from(x, y));
+                }
+                this.queue_draw();
+                this.grab_focus();
+            }));
+            self.add_controller(&gesture);
+
+            let handle1 = handle.clone();
+            let key = gtk4::EventControllerKey::new();
+            key.connect_key_pressed(glib::clone!(@strong self as this => move |_, key, key_code, modifier| {
+                sync_workbench_state(&mut handle1.borrow_mut());
+                {
+                    if let Some(key)= CharEditorView::translate_key(key) {
+                        unsafe {
+                            TOOLS[WORKSPACE.selected_tool].handle_key(handle1.clone(), key, CharEditorView::translate_key_code(key_code), CharEditorView::translate_modifier(modifier));
+                        }
+                        this.queue_draw();
+                    }
+                }
+                glib::signal::Inhibit(true)
+            }));
+            self.add_controller(&key);
+        }
 
         let handle1 = handle.clone();
         let background_rgba = gdk::RGBA::from_str("white").unwrap();
@@ -264,27 +264,28 @@ impl CharEditorView {
                         .expect("error while calling fill.");
                 }
             }
+            if !editor.is_inactive {
+                draw_caret(editor.cursor.get_position(), cr, font_dimensions);
+    
+                if editor.cur_selection.is_active {
+                    let rect = &editor.cur_selection.rectangle;
+                    cr.rectangle(
+                        buffer.to_screenx(rect.start.x), 
+                        buffer.to_screeny(rect.start.y), 
+                        buffer.to_screenx(rect.size.width as i32), 
+                        buffer.to_screeny(rect.size.height as i32));
+                    cr.set_source_rgb(1.0, 1.0, 1.0);
+                    cr.set_line_width(3f64);
+                    println!("preview: {}", editor.cur_selection.is_preview);
+                    if editor.cur_selection.is_preview {
+                        cr.fill().expect("error while calling fill.");
+                    } else {
+                        cr.stroke_preserve().expect("error while calling stroke.");
 
-            draw_caret(editor.cursor.pos, cr, font_dimensions);
- 
-            if editor.cur_selection.is_active {
-                let rect = &editor.cur_selection.rectangle;
-                cr.rectangle(
-                    buffer.to_screenx(rect.start.x), 
-                    buffer.to_screeny(rect.start.y), 
-                    buffer.to_screenx(rect.size.width as i32), 
-                    buffer.to_screeny(rect.size.height as i32));
-                cr.set_source_rgb(1.0, 1.0, 1.0);
-                cr.set_line_width(3f64);
-                println!("preview: {}", editor.cur_selection.is_preview);
-                if editor.cur_selection.is_preview {
-                    cr.fill().expect("error while calling fill.");
-                } else {
-                    cr.stroke_preserve().expect("error while calling stroke.");
-
-                    cr.set_source_rgb(0.0, 0.0, 0.0);
-                    cr.set_line_width(1f64);
-                    cr.stroke().expect("error while calling stroke.");
+                        cr.set_source_rgb(0.0, 0.0, 0.0);
+                        cr.set_line_width(1f64);
+                        cr.stroke().expect("error while calling stroke.");
+                    }
                 }
             }
         });

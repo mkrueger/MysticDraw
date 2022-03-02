@@ -10,7 +10,7 @@ use adw::{prelude::*, TabBar, TabView, TabPage};
 use adw::{ApplicationWindow, HeaderBar};
 use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType};
 
-use crate::model::{Tool, TOOLS, Buffer, Editor};
+use crate::model::{Tool, TOOLS, Buffer, Editor, TextAttribute, Position, DosChar};
 
 use super::{ColorPicker, CharEditorView};
 
@@ -285,17 +285,47 @@ impl MainWindow {
             .build();
 
         let page_box = gtk4::Box::builder()
+        .orientation(Orientation::Vertical)
         .build();
 
         page_box.append(&scroller);
+        let caret_pos_label = gtk4::Label::new(Some("( 1, 1)"));
+
         
+        let mut key_preview_buf = Buffer::new();
+        key_preview_buf.width = 4 * 12;
+        key_preview_buf.height = 1;
+        let mut key_preview_editor = Editor::new(0, key_preview_buf);
+        key_preview_editor.is_inactive = true;
+        let key_handle = Rc::new(RefCell::new(key_preview_editor));
+
+        let key_set_view = CharEditorView::new();
+        key_set_view.set_editor_handle(key_handle.clone());
+        let status_bar =  gtk4::Box::new(Orientation::Horizontal, 8);
+        status_bar.append(&caret_pos_label);
+        status_bar.append(&gtk4::Box::builder().hexpand(true).build());
+        status_bar.append(&key_set_view);
+
+        page_box.append(&status_bar);
+
+
         let page = self.tab_view.add_page(&page_box, None);
         let file_name = buf.file_name.clone();
-        let editor = Editor::new(0, buf);
+        let mut editor = Editor::new(0, buf);
 
+        editor.cursor.changed = std::boxed::Box::new(move |p| {
+            caret_pos_label.set_text(format!("({:>2},{:>3})", p.x + 1, p.y + 1).as_str());
+        });
         let handle = Rc::new(RefCell::new(editor));
 
-        // page_box.append(&AnsiStatusBar::new());
+        let key_handle2 = key_handle;
+        handle.borrow_mut().outline_changed = std::boxed::Box::new(move |editor| {
+            MainWindow::update_keyset_view(editor, key_handle2.clone());
+            key_set_view.queue_draw();
+        });
+
+        // force outline update.
+        handle.borrow_mut().set_cur_outline(0);
 
         child2.set_editor_handle(handle);
         if let Some(x) = file_name {
@@ -308,7 +338,89 @@ impl MainWindow {
         }
         self.tab_view.set_selected_page(&page);
         child2.grab_focus();
+
         self.tab_to_view.borrow_mut().insert(page, Rc::new(child2));
         self.page_swap();
+    }
+
+    fn update_keyset_view(editor: &Editor, key_handle: Rc<RefCell<Editor>>)
+    {
+        let out_buf = &mut key_handle.borrow_mut().buf;
+        let mut x = 0; 
+        out_buf.set_char(Position::from(x, 0), DosChar {
+            char_code: b'S',
+            attribute: TextAttribute::from_color(9, 0)
+        });
+        x += 1;
+        out_buf.set_char(Position::from(x, 0), DosChar {
+            char_code: b'e',
+            attribute: TextAttribute::from_color(9, 0)
+        });
+        x += 1;
+        out_buf.set_char(Position::from(x, 0), DosChar {
+            char_code: b't',
+            attribute: TextAttribute::from_color(9, 0)
+        });
+        x += 1;
+        out_buf.set_char(Position::from(x, 0), DosChar {
+            char_code: b' ',
+            attribute: TextAttribute::from_color(9, 0)
+        });
+        x += 1;
+        let outline = editor.get_cur_outline();
+        out_buf.set_char(Position::from(x, 0), DosChar {
+            char_code: if outline > 8 { b'1' } else { b' '},
+            attribute: TextAttribute::from_color(9, 0)
+        });
+        x += 1;
+        out_buf.set_char(Position::from(x, 0), DosChar {
+            char_code: b'0' + ((outline + 1) % 10) as u8,
+            attribute: TextAttribute::from_color(9, 0)
+        });
+        x += 1;
+        out_buf.set_char(Position::from(x, 0), DosChar {
+            char_code: b' ',
+            attribute: TextAttribute::from_color(9, 0)
+        });
+        x += 1;
+
+        for i in 0..10 {
+            out_buf.set_char(Position::from(x, 0), DosChar {
+                char_code: b' ',
+                attribute: TextAttribute::from_color(0, 4)
+            });
+            x += 1;
+
+            if i == 9 {
+                out_buf.set_char(Position::from(x, 0), DosChar {
+                    char_code: b'1',
+                    attribute: TextAttribute::from_color(0, 4)
+                });
+                x += 1;
+                out_buf.set_char(Position::from(x, 0), DosChar {
+                    char_code: b'0',
+                    attribute: TextAttribute::from_color(0, 4)
+                });
+                x += 1;
+            } else {
+                out_buf.set_char(Position::from(x, 0), DosChar {
+                    char_code: i + b'1',
+                    attribute: TextAttribute::from_color(0, 4)
+                });
+                x += 1;
+    
+            }
+            out_buf.set_char(Position::from(x, 0), DosChar {
+                char_code: b'=',
+                attribute: TextAttribute::from_color(0, 4)
+            });
+            x += 1;
+            out_buf.set_char(Position::from(x, 0), DosChar {
+                char_code: editor.get_outline_char_code(i as i32).unwrap(),
+                attribute: TextAttribute::from_color(15, 4)
+            });
+            x += 1;
+            
+        }
     }
 }

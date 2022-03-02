@@ -81,7 +81,7 @@ pub trait Tool
         // ctrl+pgup  - upper left corner
         // ctrl+pgdn  - lower left corner
         println!("{:?} {:?} {:?}", key, key_code, modifier);
-        let pos = editor.borrow().cursor.pos;
+        let pos = editor.borrow().cursor.get_position();
         let mut editor = editor.borrow_mut();
         match key {
             MKey::Down => {
@@ -153,7 +153,7 @@ pub trait Tool
                 editor.set_cursor(0,pos.y + 1);
             }
             MKey::Delete => {
-                let pos = editor.cursor.pos;
+                let pos = editor.cursor.get_position();
                 for i in pos.x..(editor.buf.width as i32 - 1) {
                     let next = editor.buf.get_char( Position::from(i + 1, pos.y));
                     editor.buf.set_char(Position::from(i, pos.y), next);
@@ -165,7 +165,7 @@ pub trait Tool
                 editor.cursor.insert_mode = !editor.cursor.insert_mode;
             }
             MKey::Backspace => {
-                let pos = editor.cursor.pos;
+                let pos = editor.cursor.get_position();
                 if pos.x> 0 {
                    /* if (caret.fontMode() && FontTyped && cpos > 0)  {
                         caret.getX() -= CursorPos[cpos] - 1;
@@ -176,7 +176,7 @@ pub trait Tool
                         }
                         cpos--;
                     } else {*/	
-                        editor.cursor.pos.x -= 1;
+                        editor.cursor.set_position(pos + Position::from(-1, 0));
                     if editor.cursor.insert_mode {
                         for i in pos.x..(editor.buf.width as i32 - 1) {
                             let next = editor.buf.get_char( Position::from(i + 1, pos.y));
@@ -185,7 +185,7 @@ pub trait Tool
                         let last_pos = Position::from(editor.buf.width as i32 - 1, pos.y);
                         editor.buf.set_char(last_pos, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
                     } else  {
-                        let pos = editor.cursor.pos;
+                        let pos = editor.cursor.get_position();
                         editor.buf.set_char(pos, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
                     } 
                 }
@@ -260,13 +260,13 @@ pub trait Tool
 
 fn handle_outline_insertion(editor: &mut RefMut<Editor>, modifier: MModifiers, outline: i32) {
     if let MModifiers::Control = modifier {
-        editor.cur_outline = outline;
+        editor.set_cur_outline(outline);
         return;
     }
 
     if outline < 5 {
         if let MModifiers::Shift = modifier {
-            editor.cur_outline = 10 + outline;
+            editor.set_cur_outline(10 + outline);
             return;
         }
     }

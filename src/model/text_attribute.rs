@@ -17,6 +17,11 @@ impl TextAttribute
         TextAttribute(attr)
     }
 
+    pub fn from_color(fg: u8, bg: u8) -> Self
+    {
+        TextAttribute(fg | bg << 4)
+    }
+
     pub fn as_u8(self) -> u8
     {
         self.0
