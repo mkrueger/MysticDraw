@@ -8,7 +8,7 @@ pub struct ClickTool {}
 
 impl Tool for ClickTool
 {
-    fn get_icon_name(&self) -> &'static str { "edit-select" }
+    fn get_icon_name(&self) -> &'static str { "md-tool-click" }
 /* 
     fn add_tool_page(&self, window: &ApplicationWindow,parent: &mut gtk4::Box)
     {

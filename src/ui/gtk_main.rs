@@ -147,6 +147,52 @@ impl MainWindow {
 
         {
             let open_action = SimpleAction::new("save", None);
+            open_action.connect_activate(clone!(@weak main_window => move |_,_| {
+                println!("1");
+                if let Some(editor) = main_window.get_current_editor() {
+                    println!("2");
+                    if let Some(file_name) = &editor.borrow().buf.file_name {
+                        println!("3");
+                        editor.borrow().save_content(file_name);
+                        return;
+                    }
+                } else {
+                    return;
+                }
+                println!("4----------->");
+
+                let file_chooser = gtk4::FileChooserDialog::builder()
+                    .title("Save file")
+                    .action(FileChooserAction::Save)
+                    .transient_for(&main_window.window)
+                    .width_request(640)
+                    .height_request(480)
+                    .build();
+
+                file_chooser.add_button("Save", ResponseType::Ok);
+                file_chooser.add_button("Cancel", ResponseType::Cancel);
+                file_chooser.connect_response(clone!(@weak main_window => move |d, response| {
+                    if response == ResponseType::Ok {
+                        if let Some(page) = main_window.get_current_ansi_view() {
+                            let file = d.file().expect("Couldn't get file");
+                            let filename = file.path().expect("Couldn't get file path");
+                            page.get_editor().borrow().save_content(&filename);
+                            page.get_editor().borrow_mut().buf.file_name = Some(filename);
+                            (page.get_editor().borrow().buf.file_name_changed)()
+                        } else {
+                            eprintln!("can't find ansi view to save.");
+                        }
+                    }
+                    main_window.page_swap();
+                    d.close();
+                }));
+                file_chooser.show();
+            }));
+            app.add_action(&open_action);
+        }
+
+        {
+            let open_action = SimpleAction::new("saveas", None);
             open_action.connect_activate(clone!(@strong main_window => move |_,_| {
                 let file_chooser = gtk4::FileChooserDialog::builder()
                     .title("Save file")
@@ -164,9 +210,7 @@ impl MainWindow {
                             let file = d.file().expect("Couldn't get file");
                             let filename = file.path().expect("Couldn't get file path");
                             page.get_editor().borrow().save_content(&filename);
-                            println!("{}", filename.to_str().unwrap());
                             page.get_editor().borrow_mut().buf.file_name = Some(filename);
-                            println!("file changed !!! {:?}",page.get_editor().borrow().buf.file_name); 
                             (page.get_editor().borrow().buf.file_name_changed)()
                         } else {
                             eprintln!("can't find ansi view to save.");
@@ -244,7 +288,11 @@ impl MainWindow {
                 }
             }));
             app.add_action(&action);
+
+            app.set_accels_for_action("app.open", &["<primary>o"]);
+            app.set_accels_for_action("app.preferences", &["<primary>comma"]);
         }
+
     }
 
     fn page_swap(&self) {
@@ -322,14 +370,22 @@ impl MainWindow {
         hb.pack_start(&open_button);
 
         let new_window_button = gtk4::Button::builder()
-            .icon_name("tab-new-symbolic")
-            .action_name("app.new")
-            .build();
+        .icon_name("tab-new-symbolic")
+        .action_name("app.new")
+        .build();
         hb.pack_start(&new_window_button);
+
+        let menu = gtk4::gio::Menu::new();
+        menu.append(Some("Save as…"), Some("app.saveas"));
+        menu.append(Some("Settings"), Some("app.settings"));
+        menu.append(Some("Keyboard Map"), Some("app.keymap"));
+        menu.append(Some("About"), Some("app.about"));
+
 
         hb.pack_end(
             &gtk4::MenuButton::builder()
                 .icon_name("open-menu-symbolic")
+                .menu_model(&menu)
                 .build(),
         );
         let save_button = gtk4::Button::builder()
@@ -414,25 +470,25 @@ impl MainWindow {
         .build();
         toolbar.style_context().add_class("toolbar");
         let new_layer_button = gtk4::Button::builder()
-            .icon_name("document-new")
+            .icon_name("md-layer-add")
             .action_name("app.layer-new")
             .build();
         toolbar.append(&new_layer_button);
 
         let layer_up_button = gtk4::Button::builder()
-            .icon_name("go-up")
+            .icon_name("md-layer-up")
             .action_name("app.layer-up")
             .build();
         toolbar.append(&layer_up_button);
 
         let layer_down_button = gtk4::Button::builder()
-            .icon_name("go-down")
+            .icon_name("md-layer-down")
             .action_name("app.layer-down")
             .build();
         toolbar.append(&layer_down_button);
 
         let layer_delete_button = gtk4::Button::builder()
-            .icon_name("edit-delete")
+            .icon_name("md-layer-delete")
             .action_name("app.layer-delete")
             .build();
         toolbar.append(&layer_delete_button);

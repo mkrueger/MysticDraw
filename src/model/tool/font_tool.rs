@@ -44,7 +44,7 @@ impl FontTool
 
 impl Tool for FontTool
 {
-    fn get_icon_name(&self) -> &'static str { "edit-select" }
+    fn get_icon_name(&self) -> &'static str { "md-tool-font" }
 /*
     fn add_tool_page(&self, window: &ApplicationWindow,parent: &mut gtk4::Box)
     {

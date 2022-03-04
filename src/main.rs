@@ -1,4 +1,4 @@
-use gtk4::{gio::{ApplicationFlags}};
+use gtk4::{gio::{ApplicationFlags, self, ResourceLookupFlags}};
 use libadwaita as adw;
 
 use adw::{prelude::*};
@@ -39,17 +39,28 @@ pub fn sync_workbench_state(editor: &mut Editor) {
     }
 }
 
+const RESOURCES_BYTES:&[u8] = include_bytes!("../data/resources.gresource");
+
+
 fn main() {
     init_tools();
+    gtk4::init().expect("failed to init gtk");
+
+    let resource_data = glib::Bytes::from_static(RESOURCES_BYTES);
+    let res = gio::Resource::from_data(&resource_data).unwrap();
+    gio::resources_register(&res);
+
     let app = Application::new(Some("mystic.draw"), ApplicationFlags::FLAGS_NONE);
+    app.set_resource_base_path(Some("/com/github/mkrueger/MysticDraw/"));
     app.connect_startup(|_| {
         adw::init();
     });
     app.connect_activate(|app| {
+
+        println!("{:?}", app.resource_base_path());
+        
         MainWindow::build_ui(app);
     });
-
- 
     app.run();
 }
 

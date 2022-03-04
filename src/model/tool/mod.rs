@@ -5,7 +5,8 @@ pub use super::{Editor, Event, Position};
 
 mod brush_tool;
 mod click_tool;
-mod draw_shape_tool;
+mod draw_rectangle_tool;
+mod draw_ellipse_tool;
 mod erase_tool;
 mod fill_tool;
 mod font_tool;
@@ -301,7 +302,8 @@ pub static mut CLICK_TOOL: click_tool::ClickTool = click_tool::ClickTool { };
 pub static mut FONT_TOOL: font_tool::FontTool = font_tool::FontTool { fonts: Vec::new(), selected_font: -1  };
 
 pub static mut LINE_TOOL: line_tool::LineTool = line_tool::LineTool { old_pos: Position { x: 0, y: 0 } };
-pub static mut SHAPE_TOOL: draw_shape_tool::DrawShapeTool = draw_shape_tool::DrawShapeTool { };
+pub static mut RECT_TOOL: draw_rectangle_tool::DrawRectangleTool = draw_rectangle_tool::DrawRectangleTool { };
+pub static mut ELLIPSE_TOOL: draw_ellipse_tool::DrawEllipseTool = draw_ellipse_tool::DrawEllipseTool { };
 pub static mut BRUSH_TOOL: brush_tool::BrushTool = brush_tool::BrushTool { size: 3, brush_type: brush_tool::BrushType::Gradient };
 pub static mut ERASE_TOOL: erase_tool::EraseTool = erase_tool::EraseTool { size: 3, brush_type: erase_tool::EraseType::Gradient };
 pub static mut FILL_TOOL: fill_tool::FillTool = fill_tool::FillTool { };
@@ -311,11 +313,12 @@ pub fn init_tools()
     unsafe {
         // FONT_TOOL.load_fonts();
         TOOLS.push(&mut CLICK_TOOL);
-        TOOLS.push(&mut LINE_TOOL);
 //        TOOLS.push(&paint_tool::PaintTool{});
         TOOLS.push(&mut BRUSH_TOOL);
         TOOLS.push(&mut ERASE_TOOL);
-        TOOLS.push(&mut SHAPE_TOOL);
+        TOOLS.push(&mut LINE_TOOL);
+        TOOLS.push(&mut RECT_TOOL);
+        TOOLS.push(&mut ELLIPSE_TOOL);
         
         TOOLS.push(&mut FILL_TOOL);
         TOOLS.push(&mut FONT_TOOL);

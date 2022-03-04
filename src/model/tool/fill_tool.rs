@@ -12,7 +12,7 @@ pub struct FillTool {}
 
 impl Tool for FillTool
 {
-    fn get_icon_name(&self) -> &'static str { "edit-select" }
+    fn get_icon_name(&self) -> &'static str { "md-tool-fill" }
 
    
     fn handle_click(&mut self, editor: Rc<RefCell<Editor>>, button: u32, pos: Position) -> Event {

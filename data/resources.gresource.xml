@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/com/github/mkrueger/MysticDraw/">
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-click.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-circle.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-draw.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-erase.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-fill.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-font.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-line.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-rectangle.svg</file>
+
+
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-layer-add.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-layer-delete.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-layer-down.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-layer-up.svg</file>
+  </gresource>
+</gresources>

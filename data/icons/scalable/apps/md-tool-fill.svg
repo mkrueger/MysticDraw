@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="76px"
+   height="76px"
+   viewBox="0 0 76 76"
+   version="1.1"
+   enable-background="new 0 0 76.00 76.00"
+   xml:space="preserve"
+   id="svg4"
+   sodipodi:docname="md-tool-fill.svg"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs8" /><sodipodi:namedview
+   id="namedview6"
+   pagecolor="#ffffff"
+   bordercolor="#666666"
+   borderopacity="1.0"
+   inkscape:pageshadow="2"
+   inkscape:pageopacity="0.0"
+   inkscape:pagecheckerboard="0"
+   showgrid="false"
+   inkscape:zoom="10.223684"
+   inkscape:cx="38"
+   inkscape:cy="38"
+   inkscape:window-width="3840"
+   inkscape:window-height="1015"
+   inkscape:window-x="0"
+   inkscape:window-y="32"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="svg4" />
+	<path
+   fill="#000000"
+   fill-opacity="1"
+   stroke-width="0.315888"
+   stroke-linejoin="round"
+   d="M 35.086091,8.1214924 60.093847,35.630135 27.583748,68.140235 0.07510479,40.63175 13.204205,27.502651 c 0,0 28.759086,8.752627 31.884958,2.500728 5.001613,-7.502343 -7.502343,-9.377929 -7.502343,-6.877201 2.500885,2.500886 4.376313,5.626916 4.376313,5.626916 0,0 -31.884799,-0.625302 -36.8864136,-13.129259 C 2.575991,5.620764 31.960062,11.247521 31.960062,11.247521 Z m -7.502343,6.8772006 c 0,0 -15.629828,-1.250285 -15.629828,1.250443 0,2.500728 9.377929,3.751172 9.377929,3.751172 z m 32.510099,18.130714 -17.505414,-20.0063 c 0,0 13.882493,9.837704 16.254971,10.628372 1.875586,0.625142 6.252058,-3.126029 11.253673,-0.625301 5.001456,2.500886 -1.59e-4,8.127644 -1.59e-4,5.626916 0,-2.500887 -7.502184,-0.625302 -7.502184,-0.625302 12.503799,2.500729 15.004527,7.502343 12.503799,10.003072 -2.500728,2.500886 -5.626757,2.500886 -5.626757,0 0,-2.500729 -9.377929,-5.001457 -9.377929,-5.001457 z"
+   id="path2" />
+</svg>

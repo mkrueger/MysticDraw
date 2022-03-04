@@ -103,7 +103,7 @@ impl LineTool {
 // fill, delete
 impl Tool for LineTool {
     fn get_icon_name(&self) -> &'static str {
-        "edit-select"
+        "md-tool-line"
     }
 
     fn handle_key(
