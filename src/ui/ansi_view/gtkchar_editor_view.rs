@@ -1,6 +1,6 @@
 use gtk4::subclass::prelude::*;
 use gtk4::traits::WidgetExt;
-use gtk4::{gdk, glib};
+use gtk4::{glib};
 use std::cell::RefCell;
 use std::rc::Rc;
 

@@ -1,5 +1,5 @@
 mod model;
-use gtk4::{traits::{WidgetExt, DialogExt, GtkWindowExt, EntryExt, BoxExt, EditableExt, CheckButtonExt}, ResponseType};
+use gtk4::{traits::{WidgetExt, DialogExt, BoxExt, EditableExt, CheckButtonExt}, ResponseType};
 pub use model::*;
 mod model_imp;
 

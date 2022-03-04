@@ -17,9 +17,9 @@ pub struct Workspace {
 }
 
 impl Workspace {
-    pub fn cur_tool(&self) -> std::boxed::Box<&'static dyn Tool> {
+    pub fn cur_tool(&self) -> std::boxed::Box<&&'static mut dyn Tool> {
         unsafe {
-            let t = TOOLS[self.selected_tool];
+            let t = &TOOLS[self.selected_tool];
             std::boxed::Box::new(t)
         }
     }

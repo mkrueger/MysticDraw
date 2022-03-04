@@ -92,6 +92,12 @@ impl TextAttribute
         assert!(color < 0b1000, "color was: {}", color);
         self.0 = (0b1000_1111 & self.0) | (color << 4);
     }
+
+    pub fn set_background_ice(&mut self, color: u8) 
+    {
+        assert!(color < 0b1_0000, "color was: {}", color);
+        self.0 = (0b0000_1111 & self.0) | (color << 4);
+    }
 }
 
 

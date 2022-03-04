@@ -40,6 +40,8 @@ struct Dialog {
  }
 */
 
+static mut DRAG_POS: Position = Position {x:-1, y:-1};
+
 impl CharEditorView {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create a AnsiEditorArea")
@@ -134,7 +136,6 @@ impl CharEditorView {
         if !handle.borrow().is_inactive {
             let drag = gtk4::GestureDrag::new();
             let handle1 = handle.clone();
-
             drag.connect_begin(glib::clone!(@strong self as this => move |gst_drag, _| {
                 sync_workbench_state(&mut handle1.borrow_mut());
                 let start = gst_drag.start_point();
@@ -145,6 +146,7 @@ impl CharEditorView {
                 let start = CharEditorView::calc_xy(&handle1, start.unwrap());
                 let end   = CharEditorView::calc_xy(&handle1, cur.unwrap());
                 unsafe {
+                    DRAG_POS = start;
                     TOOLS[WORKSPACE.selected_tool].handle_drag_begin(handle1.clone(), start, end);
                 }
                 this.queue_draw();
@@ -159,8 +161,11 @@ impl CharEditorView {
                 if start.is_none() || cur.is_none() {
                     return;
                 }
-                let start = CharEditorView::calc_xy(&handle1, start.unwrap());
-                let end   = CharEditorView::calc_xy(&handle1, cur.unwrap());
+                let start = start.unwrap();
+                let cur = cur.unwrap();
+                let cur = (start.0 + cur.0, start.1 + cur.1);
+                let start = CharEditorView::calc_xy(&handle1, start);
+                let end   = CharEditorView::calc_xy(&handle1, cur);
                 unsafe {
                     TOOLS[WORKSPACE.selected_tool].handle_drag_end(handle1.clone(), start, end);
                 }
@@ -182,9 +187,12 @@ impl CharEditorView {
                 let start = CharEditorView::calc_xy(&handle1, start);
                 let end   = CharEditorView::calc_xy(&handle1, cur);
                 unsafe {
-                    TOOLS[WORKSPACE.selected_tool].handle_drag(handle1.clone(), start, end);
+                    if DRAG_POS != end {
+                        DRAG_POS = end;
+                        TOOLS[WORKSPACE.selected_tool].handle_drag(handle1.clone(), start, end);
+                        this.queue_draw();
+                    }
                 }
-                this.queue_draw();
                 this.grab_focus();
             }));
             self.add_controller(&drag);

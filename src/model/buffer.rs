@@ -6,7 +6,7 @@ use std::{
 };
 use std::ffi::OsStr;
 
-use super::{Layer, read_xb, Sauce, read_sauce, SauceDataType, Position, DosChar, Line, ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size};
+use super::{Layer, read_xb, Sauce, read_sauce, SauceDataType, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size};
 
 #[derive(Debug, Default)]
 #[allow(dead_code)]
@@ -22,6 +22,7 @@ pub struct Buffer {
     pub width: usize,
     pub height: usize,
     pub custom_palette: Option<Vec<u8>>,
+    overlay_layer: Option<Layer>,
 
     pub font: Option<BitFont>,
     pub layers: Vec<Layer>,
@@ -44,9 +45,32 @@ impl Buffer {
             height: 25,
             custom_palette: None,
             font: None,
+            overlay_layer: None,
             layers: vec!(Layer::new()),
             sauce: None,
             file_name_changed: Box::new(|| {})
+        }
+    }
+
+    pub fn get_overlay_layer(&mut self) -> &mut Option<Layer>
+    {
+        if self.overlay_layer.is_none() {
+            self.overlay_layer = Some(Layer::new());
+        }
+
+        &mut self.overlay_layer
+    }
+    
+    pub fn remove_overlay(&mut self)
+    {
+        self.overlay_layer = None;
+    }
+
+    pub fn join_overlay(&mut self, i: i32)
+    {
+        if let Some(layer) = &self.overlay_layer {
+            self.layers[i as usize].join(layer);
+            self.remove_overlay();
         }
     }
 
@@ -70,32 +94,26 @@ impl Buffer {
     }
 
     pub fn set_char(&mut self, layer: usize, pos: Position, dos_char: DosChar) {
-        let cur_layer  = &mut self.layers[layer];
-        if pos.y >= cur_layer.lines.len() as i32 {
-            cur_layer.lines.resize(pos.y as usize + 1, Line::new());
-        }
+        assert!(layer < self.layers.len(), "invalid layer.");
 
-        let cur_line = &mut cur_layer.lines[pos.y as usize];
-        if pos.x >= cur_line.chars.len() as i32 {
-            cur_line.chars.resize(pos.x as usize + 1, DosChar::new());
-        }
-        cur_line.chars[pos.x as usize] = dos_char;
+        let cur_layer  = &mut self.layers[layer];
+        cur_layer.set_char(pos, dos_char);
     }
 
     pub fn get_char(&self, pos: Position) -> DosChar {
+        if let Some(overlay) = &self.overlay_layer  {
+            let ch = overlay.get_char(pos);
+            if !ch.is_transparent() {
+                return ch;
+            }
+        }
+
         for cur_layer in &self.layers {
             if !cur_layer.is_visible { continue; }
-
-            let y = pos.y as usize;
-            if cur_layer.lines.len() <= y { continue; }
-
-            let cur_line = &cur_layer.lines[y];
-            if pos.x < cur_line.chars.len() as i32 {
-                let ch = cur_line.chars[pos.x as usize];
-                if !ch.is_transparent() {
-                    return ch;
-                }
-            } 
+            let ch = cur_layer.get_char(pos);
+            if !ch.is_transparent() {
+                return ch;
+            }
         }
 
         DosChar::new()

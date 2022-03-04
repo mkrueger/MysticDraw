@@ -513,7 +513,7 @@ impl MainWindow {
             caret_pos_label.set_text(format!("({:>2},{:>3})", p.x + 1, p.y + 1).as_str());
         });
 
-        let key_handle2 = key_handle.clone();
+        let key_handle2 = key_handle;
         handle.borrow_mut().outline_changed = std::boxed::Box::new(move |editor| {
             MainWindow::update_keyset_view(editor, key_handle2.clone());
             key_set_view.queue_draw();

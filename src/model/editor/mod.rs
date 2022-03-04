@@ -2,7 +2,7 @@ use std::{cmp::{max, min}, path::Path, io::Write, fs::File, ffi::OsStr};
 
 use crate::model::{Buffer, Position, TextAttribute, Rectangle, convert_to_ans, convert_to_asc, convert_to_avt, convert_to_binary, convert_to_pcb, convert_to_xb};
 
-use super::DosChar;
+use super::{DosChar, Layer};
 
 pub struct Cursor {
     pos: Position,
@@ -32,7 +32,7 @@ impl std::fmt::Debug for Cursor {
 
 impl Default for Cursor {
     fn default() -> Self {
-        Self { pos: Default::default(), attr: Default::default(), insert_mode: Default::default(), changed: Box::new(|_| {}) }
+        Self { pos: Position::default(), attr: TextAttribute::default(), insert_mode: Default::default(), changed: Box::new(|_| {}) }
     }
 }
 
@@ -123,6 +123,16 @@ impl Editor
             cur_layer: 0
         }
     }
+    
+    pub fn get_overlay_layer(&mut self) -> &mut Option<Layer>
+    {
+        self.buf.get_overlay_layer()
+    }
+    
+    pub fn join_overlay(&mut self)
+    {
+        self.buf.join_overlay(self.cur_layer);
+    }
 
     pub fn delete_line(&mut self, line: i32)
     {
@@ -201,7 +211,18 @@ impl Editor
         
         Ok(DEFAULT_OUTLINE_TABLE[self.cur_outline as usize][i as usize])
     }
-
+    
+    pub fn get_outline_char_code_from(&self, outline:i32, i: i32) -> Result<u8, &str>
+    {
+        if outline < 0 || outline >= DEFAULT_OUTLINE_TABLE.len() as i32 {
+            return Err("current outline out of range.");
+        }
+        if !(0..=10).contains(&i) {
+            return Err("outline char# out of range.");
+        }
+        Ok(DEFAULT_OUTLINE_TABLE[outline as usize][i as usize])
+    }
+    
     pub fn set_char(&mut self, pos: Position, dos_char: DosChar) {
         self.buf.set_char(self.cur_layer as usize, pos, dos_char);
     }

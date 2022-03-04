@@ -16,11 +16,30 @@ impl Tool for ClickTool
     }
 */
 
+fn handle_click(&mut self, editor: Rc<RefCell<Editor>>, button: u32, pos: Position) -> Event {
+    if button == 1 {
+        editor.borrow_mut().cursor.set_position(pos);
+    }
+    Event::None
+}
 
-    fn handle_click(&self, editor: Rc<RefCell<Editor>>, button: u32, pos: Position) -> Event {
-        if button == 1 {
-            editor.borrow_mut().cursor.set_position(pos);
+    fn handle_drag(&self, editor: Rc<RefCell<Editor>>, start: Position, cur: Position) -> Event
+    {
+        let mut editor = editor.borrow_mut();
+        let mut cur = cur;
+        if start < cur {
+            cur = cur + Position::from(1, 1);
         }
+        editor.cur_selection.rectangle = crate::model::Rectangle::from_pt(start, cur);
+        editor.cur_selection.is_preview = true;
+        editor.cur_selection.is_active = true;
+        Event::None
+    }
+
+    fn handle_drag_end(&self, editor: Rc<RefCell<Editor>>, _start: Position, _cur: Position) -> Event {
+        let mut editor = editor.borrow_mut();
+        editor.cur_selection.is_preview = false;
+        editor.cur_selection.is_active = true;
         Event::None
     }
 }
