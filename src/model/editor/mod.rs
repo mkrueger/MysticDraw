@@ -5,7 +5,7 @@ use super::{DosChar, Layer};
 
 pub struct Cursor {
     pos: Position,
-    pub attr: TextAttribute,
+    attr: TextAttribute,
     pub insert_mode: bool,
     pub changed: std::boxed::Box<dyn Fn(Position)>
 }
@@ -20,6 +20,21 @@ impl Cursor {
     {
         self.pos = pos;
         (self.changed)(pos);
+    }
+
+    pub fn get_attribute(&self) -> TextAttribute
+    {
+        self.attr
+    }
+
+    pub fn set_attribute(&mut self, attr: TextAttribute)
+    {
+        self.attr = attr;
+
+        // HACK: FILL tool needs the current editor color, 
+        unsafe {
+            super::FILL_TOOL.attr = attr;
+        }
     }
 }
 
@@ -231,10 +246,10 @@ impl Editor
             return selection.rectangle.is_inside(pos);
         }
 
-        pos.x < 0 || 
-        pos.y < 0 || 
-        pos.x >= self.buf.width as i32 || 
-        pos.y >= self.buf.height as i32
+        pos.x >= 0 &&
+        pos.y >= 0 && 
+        pos.x < self.buf.width as i32 &&
+        pos.y < self.buf.height as i32
     }
 
     pub fn type_key(&mut self, char_code: u8) {

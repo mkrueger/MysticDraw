@@ -5,7 +5,6 @@ use crate::model::Selection;
 
 use super::{Editor, Event, Position, Tool};
 
-
 pub struct ClickTool {}
 
 impl Tool for ClickTool
@@ -28,22 +27,29 @@ impl Tool for ClickTool
         if start < cur {
             cur = cur + Position::from(1, 1);
         }
-        editor.cur_selection = Some(Selection { 
-            rectangle: crate::model::Rectangle::from_pt(start, cur),
-            is_preview: true,
-            shape: crate::model::Shape::Rectangle
-        });
+        if start == cur { 
+            editor.cur_selection = None;
+        } else {
+            editor.cur_selection = Some(Selection { 
+                rectangle: crate::model::Rectangle::from_pt(start, cur),
+                is_preview: true,
+                shape: crate::model::Shape::Rectangle
+            });
+        }
         Event::None
     }
 
     fn handle_drag_end(&self, editor: Rc<RefCell<Editor>>, start: Position, cur: Position) -> Event {
         let mut editor = editor.borrow_mut();
-
-        editor.cur_selection = Some(Selection { 
-            rectangle: crate::model::Rectangle::from_pt(start, cur),
-            is_preview: false,
-            shape: crate::model::Shape::Rectangle
-        });
+        if start == cur { 
+            editor.cur_selection = None;
+        } else {
+            editor.cur_selection = Some(Selection { 
+                rectangle: crate::model::Rectangle::from_pt(start, cur),
+                is_preview: false,
+                shape: crate::model::Shape::Rectangle
+            });
+        }
 
         Event::None
     }

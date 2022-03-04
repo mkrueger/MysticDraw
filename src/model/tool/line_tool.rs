@@ -107,7 +107,6 @@ impl Tool for LineTool {
     fn get_icon_name(&self) -> &'static str {
         "md-tool-line"
     }
-    fn use_caret(&self) -> bool { false }
     fn use_selection(&self) -> bool { false }
 
     fn handle_key(
@@ -181,7 +180,7 @@ impl Tool for LineTool {
         if a == 1 || a == -1 {
             let c = LineTool::get_new_vert_char(&e, new_char.char_code, a == -1 );
             let char_code = e.get_outline_char_code(c).unwrap();
-            let attribute = e.cursor.attr;
+            let attribute = e.cursor.get_attribute();
             e.set_char(
                 new_pos,
                 crate::model::DosChar {
@@ -214,7 +213,7 @@ impl Tool for LineTool {
         if b == 1 || b == -1 { // horizontal movement
             let c = LineTool::get_new_horiz_char(&e, new_char.char_code, b == -1 );
             let char_code = e.get_outline_char_code(c).unwrap();
-            let attribute = e.cursor.attr;
+            let attribute = e.cursor.get_attribute();
             e.set_char(
                 new_pos,
                 crate::model::DosChar {
@@ -261,7 +260,7 @@ impl Tool for LineTool {
     fn handle_drag(&self, editor: Rc<RefCell<Editor>>, start: Position, cur: Position) -> Event
     {
         let mut editor = editor.borrow_mut();
-        let attr = editor.cursor.attr;
+        let attr = editor.cursor.get_attribute();
         if let Some(layer) = editor.get_overlay_layer() {
             layer.clear();
             plot_line(layer, attr, start, cur);

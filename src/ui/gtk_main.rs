@@ -10,7 +10,7 @@ use adw::{prelude::*, TabBar, TabPage, TabView};
 use adw::{ApplicationWindow, HeaderBar};
 use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType};
 
-use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS};
+use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, FILL_TOOL};
 
 use super::{AnsiView, ColorPicker, layer_view};
 
@@ -328,6 +328,9 @@ impl MainWindow {
                 let path = name.parent().unwrap().to_str().unwrap();
                 self.title.set_subtitle(path);
             }
+            unsafe {
+                FILL_TOOL.attr = editor.borrow().cursor.get_attribute();
+            }
         }
         self.update_layer_view();
     }
@@ -347,11 +350,14 @@ impl MainWindow {
                 }
             }
         }
+        self.tool_notebook.queue_draw();
     }
 
     pub fn update_editor(&self)
     {
-        self.get_current_ansi_view().unwrap().queue_draw();
+        if let Some(view) = &self.get_current_ansi_view() {
+            view.queue_draw();
+        }
     }
 
     pub fn get_current_editor(&self) -> Option<Rc<RefCell<Editor>>> {
@@ -517,7 +523,11 @@ impl MainWindow {
             .icon_name(tool.get_icon_name())
             .build();
         self.tool_container_box.insert(&button, -1);
-        let page_content = Box::new(Orientation::Vertical, 0);
+        let mut page_content = Box::new(Orientation::Vertical, 0);
+
+        if tool.get_icon_name() == "md-tool-fill" {
+            super::add_fill_tool_page(&mut page_content);
+        }
 
         let page_num = self.tool_notebook.append_page(&page_content, Option::<&gtk4::Widget>::None);
         let nb = &self.tool_notebook;

@@ -35,7 +35,7 @@ pub fn sync_workbench_state(editor: &mut Editor) {
     // with the same state accross everything I'm not able to get any mutable data strucutures out of Gtk
     // and working with weird RefCell/Cell/Rc makes things worse than doing a manualy sync.
     unsafe {
-        editor.cursor.attr = WORKSPACE.selected_attribute;
+        editor.cursor.set_attribute(WORKSPACE.selected_attribute);
     }
 }
 

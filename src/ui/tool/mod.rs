@@ -1,8 +1,13 @@
-mod font_tool;
-pub use font_tool::*;
 use glib::{clone, Cast};
 use gtk4::{traits::{BoxExt, ListBoxRowExt}};
 use libadwaita::ApplicationWindow;
+
+mod font_tool;
+pub use font_tool::*;
+
+mod fill_tool;
+pub use fill_tool::*;
+
 
 pub fn add_font_tool_page(window: &ApplicationWindow, parent: &mut gtk4::Box)
 {

@@ -19,7 +19,7 @@ impl Tool for DrawEllipseTool {
     
     fn handle_drag(&self, editor: Rc<RefCell<Editor>>, start: Position, cur: Position) -> Event {
         let mut editor = editor.borrow_mut();
-        let attr = editor.cursor.attr;
+        let attr = editor.cursor.get_attribute();
         if let Some(layer) = editor.get_overlay_layer() {
             layer.clear();
 

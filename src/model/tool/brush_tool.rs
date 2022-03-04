@@ -27,7 +27,7 @@ impl BrushTool {
                     BrushType::Gradient => {    
                         let ch = editor.buf.get_char(center + Position::from(x, y));
                        
-                        let attribute= editor.cursor.attr;
+                        let attribute= editor.cursor.get_attribute();
 
                         let mut char_code = gradient[0];
                         if ch.char_code == gradient[gradient.len() -1] {
@@ -47,7 +47,7 @@ impl BrushTool {
 
                     },
                     BrushType::Character(char_code) => {
-                        let attribute= editor.cursor.attr;
+                        let attribute= editor.cursor.get_attribute();
                         editor.set_char(center + Position::from(x, y), crate::model::DosChar { char_code, attribute });
                     },
                     BrushType::Color(use_fore, use_back) => {
@@ -55,10 +55,10 @@ impl BrushTool {
                         let mut attribute = ch.attribute;
 
                         if use_fore {
-                            attribute.set_foreground(editor.cursor.attr.get_foreground());
+                            attribute.set_foreground(editor.cursor.get_attribute().get_foreground());
                         }
                         if use_back {
-                            attribute.set_background_ice(editor.cursor.attr.get_background_ice());
+                            attribute.set_background_ice(editor.cursor.get_attribute().get_background_ice());
                         }
 
                         editor.set_char(center + Position::from(x, y), crate::model::DosChar { 

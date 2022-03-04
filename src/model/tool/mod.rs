@@ -107,16 +107,16 @@ pub trait Tool
         match key {
             MKey::Down => {
                 if let MModifiers::Control = modifier {
-                    let fg = (editor.cursor.attr.get_foreground() + 14) % 16;
-                    editor.cursor.attr.set_foreground(fg);
+                    let fg = (editor.cursor.get_attribute().get_foreground() + 14) % 16;
+                    editor.cursor.get_attribute().set_foreground(fg);
                 } else {
                     editor.set_cursor(pos.x, pos.y + 1);
                 }
             }
             MKey::Up => {
                 if let MModifiers::Control = modifier {
-                    let fg = (editor.cursor.attr.get_foreground() + 1) % 16;
-                    editor.cursor.attr.set_foreground(fg);
+                    let fg = (editor.cursor.get_attribute().get_foreground() + 1) % 16;
+                    editor.cursor.get_attribute().set_foreground(fg);
                 } else {
                     editor.set_cursor(pos.x, pos.y - 1);
                 }
@@ -124,8 +124,8 @@ pub trait Tool
             MKey::Left => {
                 // TODO: ICE Colors
                 if let MModifiers::Control = modifier {
-                    let bg = (editor.cursor.attr.get_background() + 7) % 8;
-                    editor.cursor.attr.set_background(bg);
+                    let bg = (editor.cursor.get_attribute().get_background() + 7) % 8;
+                    editor.cursor.get_attribute().set_background(bg);
                 } else {
                     editor.set_cursor(pos.x - 1, pos.y);
                 }
@@ -133,8 +133,8 @@ pub trait Tool
             MKey::Right => {
                 // TODO: ICE Colors
                 if let MModifiers::Control = modifier {
-                    let bg = (editor.cursor.attr.get_background() + 1) % 8;
-                    editor.cursor.attr.set_background(bg);
+                    let bg = (editor.cursor.get_attribute().get_background() + 1) % 8;
+                    editor.cursor.get_attribute().set_background(bg);
                 } else {
                     editor.set_cursor(pos.x + 1, pos.y);
                 }
@@ -309,7 +309,13 @@ pub static mut RECT_TOOL: draw_rectangle_tool::DrawRectangleTool = draw_rectangl
 pub static mut ELLIPSE_TOOL: draw_ellipse_tool::DrawEllipseTool = draw_ellipse_tool::DrawEllipseTool { };
 pub static mut BRUSH_TOOL: brush_tool::BrushTool = brush_tool::BrushTool { size: 3, brush_type: brush_tool::BrushType::Gradient };
 pub static mut ERASE_TOOL: erase_tool::EraseTool = erase_tool::EraseTool { size: 3, brush_type: erase_tool::EraseType::Gradient };
-pub static mut FILL_TOOL: fill_tool::FillTool = fill_tool::FillTool { };
+pub static mut FILL_TOOL: fill_tool::FillTool = fill_tool::FillTool {
+    use_char: true,
+    use_fore: true,
+    use_back: true,
+    char_code: 219,
+    attr: TextAttribute::DEFAULT
+};
 
 pub fn init_tools()
 {
