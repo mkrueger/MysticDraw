@@ -35,7 +35,8 @@ impl MainWindow {
         let main_window = Rc::new(MainWindow {
             window: ApplicationWindow::builder()
                 .application(app)
-                .default_width(350)
+                .default_width(1024)
+                .default_height(568)
                 .content(&content)
                 .build(),
             tab_view: TabView::builder().vexpand(true).build(),
@@ -60,9 +61,10 @@ impl MainWindow {
         let right_pane = gtk4::Paned::builder()
             .orientation(Orientation::Horizontal)
             .start_child(&tab_box)
+            .resize_end_child(false)
             .end_child(&main_window.construct_right_toolbar())
             .build();
-        right_pane.set_position(200);
+        right_pane.set_position(1024 - 380);
 
         let left_pane = Box::new(Orientation::Horizontal, 0);
         left_pane.append(&main_window.construct_left_toolbar());

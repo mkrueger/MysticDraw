@@ -36,6 +36,7 @@ impl Tool for ClickTool
                 shape: crate::model::Shape::Rectangle
             });
         }
+        editor.cursor.set_position(cur);
         Event::None
     }
 
@@ -50,6 +51,7 @@ impl Tool for ClickTool
                 shape: crate::model::Shape::Rectangle
             });
         }
+        editor.cursor.set_position(cur);
 
         Event::None
     }

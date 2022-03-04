@@ -186,6 +186,7 @@ pub trait Tool
                 editor.cursor.insert_mode = !editor.cursor.insert_mode;
             }
             MKey::Backspace => {
+                editor.cur_selection = None;
                 let pos = editor.cursor.get_position();
                 if pos.x> 0 {
                    /* if (caret.fontMode() && FontTyped && cpos > 0)  {
@@ -213,6 +214,7 @@ pub trait Tool
             }
 
             MKey::Character(ch) => { 
+                editor.cur_selection = None;
                 if let MModifiers::Alt = modifier {
                     match key_code { 
                         MKeyCode::KeyI => editor.insert_line(pos.y),
@@ -293,7 +295,7 @@ fn handle_outline_insertion(editor: &mut RefMut<Editor>, modifier: MModifiers, o
             return;
         }
     }
-
+    editor.cur_selection = None;
     let ch = editor.get_outline_char_code(outline);
     if let Ok(ch) = ch {
         editor.type_key(ch);
