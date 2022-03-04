@@ -50,14 +50,14 @@ impl BrushTool {
                         let attribute= editor.cursor.attr;
                         editor.set_char(center + Position::from(x, y), crate::model::DosChar { char_code, attribute });
                     },
-                    BrushType::Color(use_fg, use_bg) => {
+                    BrushType::Color(use_fore, use_back) => {
                         let ch = editor.buf.get_char(center + Position::from(x, y));
                         let mut attribute = ch.attribute;
 
-                        if use_fg {
+                        if use_fore {
                             attribute.set_foreground(editor.cursor.attr.get_foreground());
                         }
-                        if use_bg {
+                        if use_back {
                             attribute.set_background_ice(editor.cursor.attr.get_background_ice());
                         }
 
@@ -76,6 +76,7 @@ impl BrushTool {
 impl Tool for BrushTool
 {
     fn get_icon_name(&self) -> &'static str { "md-tool-draw" }
+    fn use_caret(&self) -> bool { false }
 
     fn handle_click(&mut self, editor: Rc<RefCell<Editor>>, button: u32, pos: Position) -> super::Event {
         if button == 1 {

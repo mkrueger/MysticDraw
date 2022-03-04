@@ -19,16 +19,16 @@ use crate::{
     sync_workbench_state,
 };
 
-use self::gtkchar_editor_view::GtkCharEditorView;
-mod gtkchar_editor_view;
+use self::gtkansi_view::GtkAnsiView;
+mod gtkansi_view;
 use crate::model::TOOLS;
 use crate::WORKSPACE;
 
 glib::wrapper! {
-    pub struct CharEditorView(ObjectSubclass<GtkCharEditorView>) @extends gtk4::Widget, gtk4::DrawingArea;
+    pub struct AnsiView(ObjectSubclass<GtkAnsiView>) @extends gtk4::Widget, gtk4::DrawingArea;
 }
 
-impl Default for CharEditorView {
+impl Default for AnsiView {
     fn default() -> Self {
         Self::new()
     }
@@ -42,7 +42,7 @@ struct Dialog {
 
 static mut DRAG_POS: Position = Position {x:-1, y:-1};
 
-impl CharEditorView {
+impl AnsiView {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create a AnsiEditorArea")
     }
@@ -143,8 +143,8 @@ impl CharEditorView {
                 if start.is_none() || cur.is_none() {
                     return;
                 }
-                let start = CharEditorView::calc_xy(&handle1, start.unwrap());
-                let end   = CharEditorView::calc_xy(&handle1, cur.unwrap());
+                let start = AnsiView::calc_xy(&handle1, start.unwrap());
+                let end   = AnsiView::calc_xy(&handle1, cur.unwrap());
                 unsafe {
                     DRAG_POS = start;
                     TOOLS[WORKSPACE.selected_tool].handle_drag_begin(handle1.clone(), start, end);
@@ -164,8 +164,8 @@ impl CharEditorView {
                 let start = start.unwrap();
                 let cur = cur.unwrap();
                 let cur = (start.0 + cur.0, start.1 + cur.1);
-                let start = CharEditorView::calc_xy(&handle1, start);
-                let end   = CharEditorView::calc_xy(&handle1, cur);
+                let start = AnsiView::calc_xy(&handle1, start);
+                let end   = AnsiView::calc_xy(&handle1, cur);
                 unsafe {
                     TOOLS[WORKSPACE.selected_tool].handle_drag_end(handle1.clone(), start, end);
                 }
@@ -184,8 +184,8 @@ impl CharEditorView {
                 let start = start.unwrap();
                 let cur = cur.unwrap();
                 let cur = (start.0 + cur.0, start.1 + cur.1);
-                let start = CharEditorView::calc_xy(&handle1, start);
-                let end   = CharEditorView::calc_xy(&handle1, cur);
+                let start = AnsiView::calc_xy(&handle1, start);
+                let end   = AnsiView::calc_xy(&handle1, cur);
                 unsafe {
                     if DRAG_POS != end {
                         DRAG_POS = end;
@@ -232,9 +232,9 @@ impl CharEditorView {
             key.connect_key_pressed(glib::clone!(@strong self as this => move |_, key, key_code, modifier| {
                 sync_workbench_state(&mut handle1.borrow_mut());
                 {
-                    if let Some(key)= CharEditorView::translate_key(key) {
+                    if let Some(key)= AnsiView::translate_key(key) {
                         unsafe {
-                            TOOLS[WORKSPACE.selected_tool].handle_key(handle1.clone(), key, CharEditorView::translate_key_code(key_code), CharEditorView::translate_modifier(modifier));
+                            TOOLS[WORKSPACE.selected_tool].handle_key(handle1.clone(), key, AnsiView::translate_key_code(key_code), AnsiView::translate_modifier(modifier));
                         }
                         this.queue_draw();
                     }
@@ -285,26 +285,32 @@ impl CharEditorView {
                 }
             }
             if !editor.is_inactive {
-                draw_caret(editor.cursor.get_position(), cr, font_dimensions);
+                unsafe {
+                    if WORKSPACE.cur_tool().use_caret() {
+                        draw_caret(editor.cursor.get_position(), cr, font_dimensions);
+                    }
 
-                if editor.cur_selection.is_active {
-                    let rect = &editor.cur_selection.rectangle;
-                    cr.rectangle(
-                        buffer.to_screenx(rect.start.x),
-                        buffer.to_screeny(rect.start.y),
-                        buffer.to_screenx(rect.size.width as i32),
-                        buffer.to_screeny(rect.size.height as i32),
-                    );
-                    cr.set_source_rgb(1.0, 1.0, 1.0);
-                    cr.set_line_width(3f64);
-                    if editor.cur_selection.is_preview {
-                        cr.fill().expect("error while calling fill.");
-                    } else {
-                        cr.stroke_preserve().expect("error while calling stroke.");
+                    if let Some(cur_selection) = &editor.cur_selection{
+                            if WORKSPACE.cur_tool().use_selection() {
+                            let rect = &cur_selection.rectangle;
+                            cr.rectangle(
+                                buffer.to_screenx(rect.start.x),
+                                buffer.to_screeny(rect.start.y),
+                                buffer.to_screenx(rect.size.width as i32),
+                                buffer.to_screeny(rect.size.height as i32),
+                            );
+                            cr.set_source_rgb(1.0, 1.0, 1.0);
+                            cr.set_line_width(3f64);
+                            if cur_selection.is_preview {
+                                cr.fill().expect("error while calling fill.");
+                            } else {
+                                cr.stroke_preserve().expect("error while calling stroke.");
 
-                        cr.set_source_rgb(0.0, 0.0, 0.0);
-                        cr.set_line_width(1f64);
-                        cr.stroke().expect("error while calling stroke.");
+                                cr.set_source_rgb(0.0, 0.0, 0.0);
+                                cr.set_line_width(1f64);
+                                cr.stroke().expect("error while calling stroke.");
+                            }
+                        }
                     }
                 }
             }

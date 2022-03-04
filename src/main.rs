@@ -1,4 +1,4 @@
-use gtk4::{gio::{ApplicationFlags, self, ResourceLookupFlags}};
+use gtk4::{gio::{ApplicationFlags, self}};
 use libadwaita as adw;
 
 use adw::{prelude::*};
@@ -56,9 +56,6 @@ fn main() {
         adw::init();
     });
     app.connect_activate(|app| {
-
-        println!("{:?}", app.resource_base_path());
-        
         MainWindow::build_ui(app);
     });
     app.run();

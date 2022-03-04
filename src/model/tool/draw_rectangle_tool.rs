@@ -14,6 +14,9 @@ impl Tool for DrawRectangleTool {
         "md-tool-rectangle"
     }
 
+    fn use_caret(&self) -> bool { false }
+    fn use_selection(&self) -> bool { false }
+
     fn handle_drag(&self, editor: Rc<RefCell<Editor>>, start: Position, cur: Position) -> Event {
         let mut editor = editor.borrow_mut();
         let attr = editor.cursor.attr;
@@ -36,7 +39,6 @@ impl Tool for DrawRectangleTool {
         cur: Position,
     ) -> Event {
         let mut editor = editor.borrow_mut();
-        println!("{:?}, {:?}", start, cur);
         if start == cur {
             editor.buf.remove_overlay();
         } else {

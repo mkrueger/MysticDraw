@@ -81,10 +81,12 @@ pub enum MKeyCode
 
 pub trait Tool
 {
-    fn get_icon_name(&self) -> &'static str;/* 
-    fn add_tool_page(&self, window: &ApplicationWindow,parent: &mut gtk4::Box);
-*/
-
+    fn get_icon_name(&self) -> &'static str;
+    
+    fn use_caret(&self) -> bool { true }
+    
+    fn use_selection(&self) -> bool { true }
+    
     fn handle_key(&mut self, editor: Rc<RefCell<Editor>>, key: MKey, key_code: MKeyCode, modifier: MModifiers) -> Event
     {
         // TODO Keys:
@@ -100,7 +102,6 @@ pub trait Tool
 
         // ctrl+pgup  - upper left corner
         // ctrl+pgdn  - lower left corner
-        println!("{:?} {:?} {:?}", key, key_code, modifier);
         let pos = editor.borrow().cursor.get_position();
         let mut editor = editor.borrow_mut();
         match key {
@@ -255,7 +256,9 @@ pub trait Tool
             MKey::F10 => {
                 handle_outline_insertion(&mut editor, modifier, 9);
             }
-
+            MKey::Escape => {
+                editor.cur_selection = None;
+            }
             _ => {}
         }
         Event::None

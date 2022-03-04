@@ -73,4 +73,12 @@ impl Rectangle
             size: Size::from((p1.x - p2.x).abs() as usize, (p1.y - p2.y).abs() as usize) 
         }
     }
+
+    pub fn is_inside(&self, p: Position) -> bool
+    {
+        self.start.x <= p.x && 
+        self.start.y <= p.y && 
+        p.x < self.start.x + self.size.width as i32 &&
+        p.y < self.start.y + self.size.height as i32
+    }
 }

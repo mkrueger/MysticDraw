@@ -66,6 +66,8 @@ impl EraseTool {
 impl Tool for EraseTool
 {
     fn get_icon_name(&self) -> &'static str { "md-tool-erase" }
+   
+    fn use_caret(&self) -> bool { false }
 
     fn handle_click(&mut self, editor: Rc<RefCell<Editor>>, button: u32, pos: Position) -> super::Event {
         if button == 1 {

@@ -8,20 +8,20 @@ use crate::model::Editor;
 
 #[derive(Default)]
 
-pub struct GtkCharEditorView {
+pub struct GtkAnsiView {
     pub editor: RefCell<Rc<RefCell<Editor>>>,
 }
 
-impl GtkCharEditorView {}
+impl GtkAnsiView {}
 
 #[glib::object_subclass]
-impl ObjectSubclass for GtkCharEditorView {
+impl ObjectSubclass for GtkAnsiView {
     const NAME: &'static str = "GtkCharEditorView";
-    type Type = super::CharEditorView;
+    type Type = super::AnsiView;
     type ParentType = gtk4::DrawingArea;
 }
 
-impl ObjectImpl for GtkCharEditorView {
+impl ObjectImpl for GtkAnsiView {
     fn constructed(&self, obj: &Self::Type) {
         obj.set_can_focus(true);
         obj.set_focusable(true);
@@ -29,10 +29,10 @@ impl ObjectImpl for GtkCharEditorView {
     }
 }
 
-impl WidgetImpl for GtkCharEditorView {
+impl WidgetImpl for GtkAnsiView {
     fn realize(&self, widget: &Self::Type) {
         self.parent_realize(widget);
     }
 }
 
-impl DrawingAreaImpl for GtkCharEditorView {}
+impl DrawingAreaImpl for GtkAnsiView {}

@@ -12,17 +12,19 @@ use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType};
 
 use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS};
 
-use super::{CharEditorView, ColorPicker, layer_view};
+use super::{AnsiView, ColorPicker, layer_view};
 
 pub struct MainWindow {
     pub window: ApplicationWindow,
     tab_view: TabView,
     color_picker: ColorPicker,
-    tab_to_view: RefCell<HashMap<Rc<TabPage>, Rc<CharEditorView>>>,
+    tab_to_view: RefCell<HashMap<Rc<TabPage>, Rc<AnsiView>>>,
     title: adw::WindowTitle,
 
     layer_listbox_model: layer_view::Model,
-    layer_listbox: gtk4::ListBox
+    layer_listbox: gtk4::ListBox,
+    tool_container_box: gtk4::FlowBox,
+    tool_notebook: gtk4::Notebook
 }
 
 impl MainWindow {
@@ -41,8 +43,14 @@ impl MainWindow {
             tab_to_view: Default::default(),
             title,
             layer_listbox_model: layer_view::Model::new(),
-            layer_listbox: gtk4::ListBox::new()
+            layer_listbox: gtk4::ListBox::new(),
+            tool_container_box: gtk4::FlowBox::builder()
+            .valign(gtk4::Align::Start)
+            .selection_mode(gtk4::SelectionMode::None)
+            .build(),
+            tool_notebook: gtk4::Notebook::builder().show_tabs(false).build()
         });
+
         content.append(&header_bar);
         let tab_box = Box::new(Orientation::Vertical, 0);
         let tab_bar = TabBar::builder().view(&main_window.tab_view).build();
@@ -71,6 +79,10 @@ impl MainWindow {
         if let Some(e) = main_window.get_current_editor() {
             e.borrow_mut().cur_layer = 1;
         }
+        main_window.tool_notebook.connect_switch_page(clone!(@strong main_window => move |_, _, _| {
+            main_window.update_editor();
+        }));
+
 
         main_window.layer_listbox.connect_row_selected(clone!(@strong main_window => move |_, row| {
             if let Some(row) = row {
@@ -159,7 +171,6 @@ impl MainWindow {
                 } else {
                     return;
                 }
-                println!("4----------->");
 
                 let file_chooser = gtk4::FileChooserDialog::builder()
                     .title("Save file")
@@ -348,7 +359,7 @@ impl MainWindow {
         cur.map(|view| view.get_editor())
     }
 
-    pub fn get_current_ansi_view(&self) -> Option<Rc<CharEditorView>> {
+    pub fn get_current_ansi_view(&self) -> Option<Rc<AnsiView>> {
         if let Some(page) = self.tab_view.selected_page() {
             if let Some(w) = self.tab_to_view.borrow().get(&page) {
                 return Some(w.clone());
@@ -399,26 +410,17 @@ impl MainWindow {
 
     fn construct_left_toolbar(&self) -> Box {
         let result = Box::new(Orientation::Vertical, 0);
-
         result.append(&self.color_picker);
-
-        let flow_box = gtk4::FlowBox::builder()
-            .valign(gtk4::Align::Start)
-            .selection_mode(gtk4::SelectionMode::None)
-            .build();
-
-        let nb = gtk4::Notebook::builder().show_tabs(false).build();
-
         unsafe {
-            let first = self.add_tool(&flow_box, &nb, TOOLS[0]);
+            let first = self.add_tool(TOOLS[0]);
             for t in TOOLS.iter().skip(1) {
-                self.add_tool(&flow_box, &nb, *t).set_group(Some(&first));
+                self.add_tool(*t).set_group(Some(&first));
             }
+            first.activate();
         }
-
-        nb.set_page(0);
-        result.append(&flow_box);
-        result.append(&nb);
+        self.tool_notebook.set_page(0);
+        result.append(&self.tool_container_box);
+        result.append(&self.tool_notebook);
         result
     }
 
@@ -509,19 +511,16 @@ impl MainWindow {
 
     fn add_tool(
         &self,
-        flow_box: &gtk4::FlowBox,
-        nb: &gtk4::Notebook,
         tool: &dyn Tool,
     ) -> gtk4::ToggleButton {
         let button = gtk4::ToggleButton::builder()
             .icon_name(tool.get_icon_name())
             .build();
-        flow_box.insert(&button, -1);
+        self.tool_container_box.insert(&button, -1);
         let page_content = Box::new(Orientation::Vertical, 0);
-        // tool.add_tool_page(window, &mut page_content);
 
-        let page_num = nb.append_page(&page_content, Option::<&gtk4::Widget>::None);
-
+        let page_num = self.tool_notebook.append_page(&page_content, Option::<&gtk4::Widget>::None);
+        let nb = &self.tool_notebook;
         button.connect_toggled(glib::clone!(@weak nb => move |_| {
             unsafe {
                 crate::WORKSPACE.selected_tool = page_num as usize;
@@ -532,7 +531,7 @@ impl MainWindow {
     }
 
     fn load_page(&self, buf: Buffer) {
-        let child2 = CharEditorView::new();
+        let child2 = AnsiView::new();
         let scroller = gtk4::ScrolledWindow::builder()
             .hexpand(true)
             .vexpand(true)
@@ -553,7 +552,7 @@ impl MainWindow {
         key_preview_editor.is_inactive = true;
         let key_handle = Rc::new(RefCell::new(key_preview_editor));
 
-        let key_set_view = CharEditorView::new();
+        let key_set_view = AnsiView::new();
         key_set_view.set_editor_handle(key_handle.clone());
         let status_bar = gtk4::Box::new(Orientation::Horizontal, 8);
         status_bar.append(&caret_pos_label);

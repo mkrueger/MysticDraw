@@ -1,5 +1,4 @@
 use std::{cmp::{max, min}, path::Path, io::Write, fs::File, ffi::OsStr};
-
 use crate::model::{Buffer, Position, TextAttribute, Rectangle, convert_to_ans, convert_to_asc, convert_to_avt, convert_to_binary, convert_to_pcb, convert_to_xb};
 
 use super::{DosChar, Layer};
@@ -59,7 +58,6 @@ pub struct Selection
     pub shape: Shape,
     pub rectangle: Rectangle,
     pub is_preview: bool,
-    pub is_active: bool
 }
 
 impl Selection {
@@ -69,7 +67,6 @@ impl Selection {
             shape: Shape::Rectangle,
             rectangle:  Rectangle::from(-1, -1, 0, 0),
             is_preview: true,
-            is_active: false
         }
     }
 }
@@ -85,7 +82,7 @@ pub struct Editor {
     pub buf: Buffer,
     
     pub cursor: Cursor,
-    pub cur_selection: Selection,
+    pub cur_selection: Option<Selection>,
 
     cur_outline: i32,
     pub is_inactive: bool,
@@ -115,8 +112,8 @@ impl Editor
         Editor {
             id,
             buf, 
-            cursor: Default::default(),
-            cur_selection: Selection::new(),
+            cursor: Cursor::default(),
+            cur_selection: None,
             cur_outline: 0,
             is_inactive: false,
             outline_changed: Box::new(|_| {}),
@@ -224,9 +221,21 @@ impl Editor
     }
     
     pub fn set_char(&mut self, pos: Position, dos_char: DosChar) {
-        self.buf.set_char(self.cur_layer as usize, pos, dos_char);
+        if self.point_is_valid(pos) {
+            self.buf.set_char(self.cur_layer as usize, pos, dos_char);
+        }
     }
 
+    pub fn point_is_valid(&self, pos: Position) -> bool {
+        if let Some(selection) = &self.cur_selection {
+            return selection.rectangle.is_inside(pos);
+        }
+
+        pos.x < 0 || 
+        pos.y < 0 || 
+        pos.x >= self.buf.width as i32 || 
+        pos.y >= self.buf.height as i32
+    }
 
     pub fn type_key(&mut self, char_code: u8) {
         let pos = self.cursor.pos;

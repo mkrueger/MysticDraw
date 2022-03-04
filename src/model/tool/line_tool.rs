@@ -52,8 +52,10 @@ impl LineTool {
                 None
             }
         } else if old_char == editor.get_outline_char_code(VERT_LEFT_CHAR).unwrap() || old_char == editor.get_outline_char_code(VERT_RIGHT_CHAR).unwrap()  {
-            if editor.get_cur_outline() < 4  {
-                Some(editor.get_outline_char_code_from(4, editor.get_cur_outline()).unwrap())
+            let cur =editor.get_cur_outline();
+            if cur < 4  {
+                let ck = editor.get_outline_char_code_from(4, cur);
+                Some(ck.unwrap())
             } else { None}
         } else {
             None
@@ -105,6 +107,8 @@ impl Tool for LineTool {
     fn get_icon_name(&self) -> &'static str {
         "md-tool-line"
     }
+    fn use_caret(&self) -> bool { false }
+    fn use_selection(&self) -> bool { false }
 
     fn handle_key(
         &mut self,
@@ -174,7 +178,6 @@ impl Tool for LineTool {
 
         let b = (new_pos.x - old_pos.x).signum();
         let a = (new_pos.y - old_pos.y).signum();
-        println!("{} {}", a, b);
         if a == 1 || a == -1 {
             let c = LineTool::get_new_vert_char(&e, new_char.char_code, a == -1 );
             let char_code = e.get_outline_char_code(c).unwrap();
@@ -268,7 +271,6 @@ impl Tool for LineTool {
 
     fn handle_drag_end(&self, editor: Rc<RefCell<Editor>>, start: Position, cur: Position) -> Event {
         let mut editor = editor.borrow_mut();
-        println!("{:?}, {:?}", start, cur);
         if start == cur {
             editor.buf.remove_overlay();
         } else {

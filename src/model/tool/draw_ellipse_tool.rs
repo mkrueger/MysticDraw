@@ -14,6 +14,9 @@ impl Tool for DrawEllipseTool {
         "md-tool-circle"
     }
 
+    fn use_caret(&self) -> bool { false }
+    fn use_selection(&self) -> bool { false }
+    
     fn handle_drag(&self, editor: Rc<RefCell<Editor>>, start: Position, cur: Position) -> Event {
         let mut editor = editor.borrow_mut();
         let attr = editor.cursor.attr;
