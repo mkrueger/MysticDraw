@@ -545,6 +545,10 @@ impl MainWindow {
             super::add_ellipse_tool_page(&mut page_content);
         } else if tool.get_icon_name() == "md-tool-line" {
             super::add_line_tool_page(&mut page_content);
+        } else if tool.get_icon_name() == "md-tool-draw" {
+            super::add_brush_tool_page(&mut page_content);
+        } else if tool.get_icon_name() == "md-tool-erase" {
+            super::add_erase_tool_page(&mut page_content);
         }
 
         let page_num = self.tool_notebook.append_page(&page_content, Option::<&gtk4::Widget>::None);

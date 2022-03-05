@@ -2,13 +2,17 @@ use std::{cell::{RefCell}, rc::Rc};
 use super::{ Tool, Editor, Position};
 
 pub enum BrushType {
-    Gradient,
-    Character(u8),
-    Color(bool, bool)
+    Shade,
+    Solid,
+    Color
 }
 
 pub struct BrushTool {
+    pub use_fore: bool,
+    pub use_back: bool,
     pub size: i32,
+    pub char_code: u8,
+
     pub brush_type: BrushType
 }
 
@@ -24,7 +28,7 @@ impl BrushTool {
         for y in 0..self.size {
             for x in 0..self.size {
                 match self.brush_type {
-                    BrushType::Gradient => {    
+                    BrushType::Shade => {    
                         let ch = editor.buf.get_char(center + Position::from(x, y));
                        
                         let attribute= editor.cursor.get_attribute();
@@ -46,18 +50,18 @@ impl BrushTool {
                         });
 
                     },
-                    BrushType::Character(char_code) => {
+                    BrushType::Solid => {
                         let attribute= editor.cursor.get_attribute();
-                        editor.set_char(center + Position::from(x, y), crate::model::DosChar { char_code, attribute });
+                        editor.set_char(center + Position::from(x, y), crate::model::DosChar { char_code: self.char_code, attribute });
                     },
-                    BrushType::Color(use_fore, use_back) => {
+                    BrushType::Color => {
                         let ch = editor.buf.get_char(center + Position::from(x, y));
                         let mut attribute = ch.attribute;
 
-                        if use_fore {
+                        if self.use_fore {
                             attribute.set_foreground(editor.cursor.get_attribute().get_foreground());
                         }
-                        if use_back {
+                        if self.use_back {
                             attribute.set_background_ice(editor.cursor.get_attribute().get_background_ice());
                         }
 

@@ -1,8 +1,6 @@
 
 use std::{rc::Rc, cell::RefCell};
 
-use crate::WORKSPACE;
-
 use super::{Tool, Editor, Position, Event};
 pub struct FlipTool {}
 

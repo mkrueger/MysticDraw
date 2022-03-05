@@ -17,6 +17,12 @@ pub use draw_ellipse_tool::*;
 mod draw_line_tool;
 pub use draw_line_tool::*;
 
+mod brush_tool;
+pub use brush_tool::*;
+
+mod erase_tool;
+pub use erase_tool::*;
+
 pub fn add_font_tool_page(window: &ApplicationWindow, parent: &mut gtk4::Box)
 {
     let model = font_tool::Model::new();

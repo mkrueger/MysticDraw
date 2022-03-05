@@ -3,11 +3,11 @@ use std::{rc::Rc, cell::{RefCell, RefMut}};
 use super::{TextAttribute, DosChar};
 pub use super::{Editor, Event, Position};
 
-mod brush_tool;
+pub mod brush_tool;
 mod click_tool;
 pub mod draw_rectangle_tool;
 mod draw_ellipse_tool;
-mod erase_tool;
+pub mod erase_tool;
 mod fill_tool;
 mod font_tool;
 mod pipette_tool;
@@ -429,8 +429,15 @@ pub static mut ELLIPSE_TOOL: draw_ellipse_tool::DrawEllipseTool = draw_ellipse_t
     char_code: b'#'
 };
 
-pub static mut BRUSH_TOOL: brush_tool::BrushTool = brush_tool::BrushTool { size: 3, brush_type: brush_tool::BrushType::Gradient };
-pub static mut ERASE_TOOL: erase_tool::EraseTool = erase_tool::EraseTool { size: 3, brush_type: erase_tool::EraseType::Gradient };
+pub static mut BRUSH_TOOL: brush_tool::BrushTool = brush_tool::BrushTool {
+    size: 3, 
+    use_back: true,
+    use_fore: true,
+    brush_type: brush_tool::BrushType::Shade,
+    char_code: b'#',
+ };
+
+pub static mut ERASE_TOOL: erase_tool::EraseTool = erase_tool::EraseTool { size: 3, brush_type: erase_tool::EraseType::Shade };
 pub static mut PIPETTE_TOOL: pipette_tool::PipetteTool = pipette_tool::PipetteTool { };
 pub static mut FILL_TOOL: fill_tool::FillTool = fill_tool::FillTool {
     use_char: true,

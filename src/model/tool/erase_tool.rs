@@ -4,8 +4,8 @@ use crate::model::TextAttribute;
 use super::{ Tool, Editor, Position};
 
 pub enum EraseType {
-    Gradient,
-    Stamp
+    Shade,
+    Solid
 }
 
 pub struct EraseTool {
@@ -25,7 +25,7 @@ impl EraseTool {
         for y in 0..self.size {
             for x in 0..self.size {
                 match self.brush_type {
-                    EraseType::Gradient => {    
+                    EraseType::Shade => {    
                         let ch = editor.buf.get_char(center + Position::from(x, y));
                        
                         let mut attribute= ch.attribute;
@@ -53,7 +53,7 @@ impl EraseTool {
                             });
                         }
                     },
-                    EraseType::Stamp => {
+                    EraseType::Solid => {
                         editor.set_char(center + Position::from(x, y), crate::model::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
                     }
                 }
