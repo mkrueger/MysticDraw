@@ -1,17 +1,19 @@
 use std::{rc::Rc, cell::{RefCell, RefMut}};
 
-use super::TextAttribute;
+use super::{TextAttribute, DosChar};
 pub use super::{Editor, Event, Position};
 
 mod brush_tool;
 mod click_tool;
-mod draw_rectangle_tool;
+pub mod draw_rectangle_tool;
 mod draw_ellipse_tool;
 mod erase_tool;
 mod fill_tool;
 mod font_tool;
-mod paint_tool;
+mod pipette_tool;
 mod line_tool;
+mod flip_tool;
+
 #[derive(Copy, Clone, Debug)]
  pub enum MKey {
     Character(u8),
@@ -174,13 +176,17 @@ pub trait Tool
                 editor.set_cursor(0,pos.y + 1);
             }
             MKey::Delete => {
-                let pos = editor.cursor.get_position();
-                for i in pos.x..(editor.buf.width as i32 - 1) {
-                    let next = editor.buf.get_char( Position::from(i + 1, pos.y));
-                    editor.set_char(Position::from(i, pos.y), next);
+                if editor.cur_selection.is_some() {
+                    editor.delete_selection(); 
+                } else {
+                    let pos = editor.cursor.get_position();
+                    for i in pos.x..(editor.buf.width as i32 - 1) {
+                        let next = editor.buf.get_char( Position::from(i + 1, pos.y));
+                        editor.set_char(Position::from(i, pos.y), next);
+                    }
+                    let last_pos = Position::from(editor.buf.width as i32 - 1, pos.y);
+                    editor.set_char(last_pos, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
                 }
-                let last_pos = Position::from(editor.buf.width as i32 - 1, pos.y);
-                editor.set_char(last_pos, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
             }
             MKey::Insert => {
                 editor.cursor.insert_mode = !editor.cursor.insert_mode;
@@ -301,38 +307,156 @@ fn handle_outline_insertion(editor: &mut RefMut<Editor>, modifier: MModifiers, o
         editor.type_key(ch);
     }
 }
+
+#[derive(Clone, Copy, Debug)]
+pub enum DrawMode {
+    Line,
+    Char,
+    Shade,
+    Colorize
+}
+
+trait Plottable {
+    fn get_draw_mode(&self) -> DrawMode;
+
+    fn get_use_fore(&self) -> bool;
+    fn get_use_back(&self) -> bool;
+    fn get_char_code(&self) -> u8;
+}
+
+fn plot_point(editor: &Rc<RefCell<Editor>>, tool: &dyn Plottable, pos: Position)
+{
+    let ch = editor.borrow().get_char(pos);
+    let editor_attr = editor.borrow().cursor.get_attribute();
+    let mut attribute= ch.attribute;
+    if tool.get_use_back() {
+        attribute.set_background_ice(editor_attr.get_background_ice());
+    }
+    if tool.get_use_fore() {
+        attribute.set_foreground(editor_attr.get_foreground());
+    }
+
+    match tool.get_draw_mode() {
+        DrawMode::Line => {
+            if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+                layer.set_char(
+                    pos,
+                    DosChar {
+                        char_code: 219,
+                        attribute,
+                    },
+                );
+            }
+        },
+        DrawMode::Char => {
+            if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+                layer.set_char(
+                    pos,
+                    DosChar {
+                        char_code: tool.get_char_code(),
+                        attribute,
+                    },
+                );
+            }
+        },
+        DrawMode::Shade => {
+            let mut char_code = SHADE_GRADIENT[0];
+            if ch.char_code == SHADE_GRADIENT[SHADE_GRADIENT.len() -1] {
+                char_code = SHADE_GRADIENT[SHADE_GRADIENT.len() -1];
+            } else {
+                for i in 0..SHADE_GRADIENT.len() - 1 {
+                    if ch.char_code == SHADE_GRADIENT[i] {
+                        char_code = SHADE_GRADIENT[i + 1];
+                        break;
+                    }
+                }
+            }
+            if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+                layer.set_char(
+                    pos,
+                    DosChar {
+                        char_code,
+                        attribute,
+                    },
+                );
+            }
+        }
+        DrawMode::Colorize => {
+            if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+                layer.set_char(
+                    pos,
+                    DosChar {
+                        char_code: ch.char_code,
+                        attribute,
+                    },
+                );
+            }
+        }
+    }
+}
+
+pub static SHADE_GRADIENT: [u8;4] = [176, 177, 178, 219];
+
 pub static mut TOOLS: Vec<&mut dyn Tool> = Vec::new();
 
 pub static mut CLICK_TOOL: click_tool::ClickTool = click_tool::ClickTool { };
 pub static mut FONT_TOOL: font_tool::FontTool = font_tool::FontTool { fonts: Vec::new(), selected_font: -1  };
 
-pub static mut LINE_TOOL: line_tool::LineTool = line_tool::LineTool { old_pos: Position { x: 0, y: 0 } };
-pub static mut RECT_TOOL: draw_rectangle_tool::DrawRectangleTool = draw_rectangle_tool::DrawRectangleTool { };
-pub static mut ELLIPSE_TOOL: draw_ellipse_tool::DrawEllipseTool = draw_ellipse_tool::DrawEllipseTool { };
+pub static mut LINE_TOOL: line_tool::LineTool = line_tool::LineTool {
+    draw_mode: DrawMode::Line, 
+    use_fore: true, 
+    use_back: true, 
+    attr: TextAttribute::DEFAULT, 
+    char_code: b'#',
+    old_pos: Position { x: 0, y: 0 }
+};
+
+pub static mut RECT_TOOL: draw_rectangle_tool::DrawRectangleTool = draw_rectangle_tool::DrawRectangleTool { 
+    draw_mode: DrawMode::Line, 
+    use_fore: true, 
+    use_back: true, 
+    fill_mode: false, 
+    attr: TextAttribute::DEFAULT, 
+    char_code: b'#'
+};
+
+pub static mut ELLIPSE_TOOL: draw_ellipse_tool::DrawEllipseTool = draw_ellipse_tool::DrawEllipseTool {
+    draw_mode: DrawMode::Line, 
+    use_fore: true, 
+    use_back: true, 
+    fill_mode: false, 
+    attr: TextAttribute::DEFAULT, 
+    char_code: b'#'
+};
+
 pub static mut BRUSH_TOOL: brush_tool::BrushTool = brush_tool::BrushTool { size: 3, brush_type: brush_tool::BrushType::Gradient };
 pub static mut ERASE_TOOL: erase_tool::EraseTool = erase_tool::EraseTool { size: 3, brush_type: erase_tool::EraseType::Gradient };
+pub static mut PIPETTE_TOOL: pipette_tool::PipetteTool = pipette_tool::PipetteTool { };
 pub static mut FILL_TOOL: fill_tool::FillTool = fill_tool::FillTool {
     use_char: true,
     use_fore: true,
     use_back: true,
-    char_code: 219,
+    char_code: b'#',
     attr: TextAttribute::DEFAULT
 };
+pub static mut FLIP_TOOL: flip_tool::FlipTool = flip_tool::FlipTool { };
 
 pub fn init_tools()
 {
     unsafe {
         // FONT_TOOL.load_fonts();
         TOOLS.push(&mut CLICK_TOOL);
-//        TOOLS.push(&paint_tool::PaintTool{});
+        
         TOOLS.push(&mut BRUSH_TOOL);
         TOOLS.push(&mut ERASE_TOOL);
+        TOOLS.push(&mut PIPETTE_TOOL);
+
         TOOLS.push(&mut LINE_TOOL);
         TOOLS.push(&mut RECT_TOOL);
         TOOLS.push(&mut ELLIPSE_TOOL);
         
         TOOLS.push(&mut FILL_TOOL);
+        TOOLS.push(&mut FLIP_TOOL);
         TOOLS.push(&mut FONT_TOOL);
     }
 }
-

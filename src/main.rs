@@ -13,7 +13,9 @@ pub const DEFAULT_FONT: &[u8] = include_bytes!("../data/font.fnt");
 
 pub struct Workspace {
     selected_tool: usize,
-    selected_attribute: TextAttribute
+    selected_attribute: TextAttribute,
+
+    font_dimensions: model::Size
 }
 
 impl Workspace {
@@ -23,11 +25,17 @@ impl Workspace {
             std::boxed::Box::new(t)
         }
     }
+    pub fn get_font_dimensions(&self) -> model::Size { self.font_dimensions }
+    pub fn get_font_scanline(&self, ch: u8, y: usize) -> u32
+    {
+        DEFAULT_FONT[ch as usize * 16 + y] as u32
+    }
 }
 
 pub static mut WORKSPACE: Workspace = Workspace {
     selected_tool: 0,
-    selected_attribute: TextAttribute::DEFAULT
+    selected_attribute: TextAttribute::DEFAULT,
+    font_dimensions: model::Size { width: 8, height: 16 }
 };
 
 pub fn sync_workbench_state(editor: &mut Editor) {

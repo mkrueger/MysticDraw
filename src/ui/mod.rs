@@ -12,3 +12,13 @@ pub use tool::*;
 
 mod gtk_main;
 pub use gtk_main::*;
+
+mod char_button;
+pub use char_button::*;
+
+mod char_selector_dialog;
+pub use char_selector_dialog::*;
+
+mod new_file_dialog;
+pub use new_file_dialog::*;
+

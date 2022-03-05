@@ -1,10 +1,25 @@
-use crate::model::{tool::handle_outline_insertion, Layer, TextAttribute, DosChar};
+use crate::model::{tool::handle_outline_insertion, TextAttribute};
 
-use super::{Editor, Event, MKey, MKeyCode, MModifiers, Position, Tool};
+use super::{Editor, Event, MKey, MKeyCode, MModifiers, Position, Tool, DrawMode, Plottable, plot_point};
 use std::{cell::RefCell, rc::Rc};
 
 pub struct LineTool {
+    pub draw_mode: DrawMode,
+
+    pub use_fore: bool,
+    pub use_back: bool,
+    pub attr: TextAttribute,
+    pub char_code: u8,
+
     pub old_pos: Position
+}
+
+impl Plottable for LineTool {
+    fn get_draw_mode(&self) -> DrawMode { self.draw_mode }
+
+    fn get_use_fore(&self) -> bool { self.use_fore }
+    fn get_use_back(&self) -> bool { self.use_back }
+    fn get_char_code(&self) -> u8 { self.char_code }
 }
 
 const CORNER_UPPER_LEFT:i32 = 0;
@@ -259,12 +274,10 @@ impl Tool for LineTool {
 
     fn handle_drag(&self, editor: Rc<RefCell<Editor>>, start: Position, cur: Position) -> Event
     {
-        let mut editor = editor.borrow_mut();
-        let attr = editor.cursor.get_attribute();
-        if let Some(layer) = editor.get_overlay_layer() {
+        if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
             layer.clear();
-            plot_line(layer, attr, start, cur);
         }
+        plot_line(&editor, self, start, cur);
         Event::None
     }
 
@@ -279,10 +292,9 @@ impl Tool for LineTool {
     }
 }
 
-
 // simple https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
 // maybe worth to explore https://en.wikipedia.org/wiki/Xiaolin_Wu%27s_line_algorithm
-pub fn plot_line(layer: &mut Layer, attribute: TextAttribute, mut pos0: Position, pos1: Position) {
+pub fn plot_line(editor: &Rc<RefCell<Editor>>, tool: &LineTool, mut pos0: Position, pos1: Position) {
     let dx = (pos1.x - pos0.x).abs();
     let sx = if pos0.x < pos1.x { 1 } else { -1 };
     let dy = -(pos1.y - pos0.y).abs();
@@ -290,7 +302,7 @@ pub fn plot_line(layer: &mut Layer, attribute: TextAttribute, mut pos0: Position
     let mut error = dx + dy;
     
     loop {
-        layer.set_char(pos0, DosChar{ char_code: 219, attribute });
+        plot_point(editor, tool, pos0);
         if pos0.x == pos1.x && pos0.y == pos1.y { break; }
         let e2 = 2 * error;
         if e2 >= dy {

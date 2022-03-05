@@ -28,7 +28,7 @@ impl Tool for FillTool
             let attr = editor.cursor.get_attribute();
             let ch = editor.buf.get_char(pos);
             if self.use_back || self.use_fore || self.use_char {
-                fill(&mut editor, attr, pos, ch,  DosChar{ char_code: self.char_code, attribute: self.attr });
+                fill(&mut editor, attr, pos, ch,  DosChar{ char_code: self.char_code, attribute: attr });
             }
         }
         Event::None

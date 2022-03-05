@@ -1,13 +1,29 @@
-use crate::model::{DosChar, Layer, TextAttribute};
+use crate::model::{TextAttribute};
 
-use super::{Editor, Event, Position, Tool};
+use super::{Editor, Event, Position, Tool, DrawMode, Plottable, plot_point};
 use std::{
     cell::RefCell,
     cmp::{max, min},
     rc::Rc,
 };
 
-pub struct DrawEllipseTool {}
+pub struct DrawEllipseTool {
+    pub draw_mode: DrawMode,
+
+    pub use_fore: bool,
+    pub use_back: bool,
+    pub fill_mode: bool,
+    pub attr: TextAttribute,
+    pub char_code: u8
+}
+
+impl Plottable for DrawEllipseTool {
+    fn get_draw_mode(&self) -> DrawMode { self.draw_mode }
+
+    fn get_use_fore(&self) -> bool { self.use_fore }
+    fn get_use_back(&self) -> bool { self.use_back }
+    fn get_char_code(&self) -> u8 { self.char_code }
+}
 
 impl Tool for DrawEllipseTool {
     fn get_icon_name(&self) -> &'static str {
@@ -18,16 +34,14 @@ impl Tool for DrawEllipseTool {
     fn use_selection(&self) -> bool { false }
     
     fn handle_drag(&self, editor: Rc<RefCell<Editor>>, start: Position, cur: Position) -> Event {
-        let mut editor = editor.borrow_mut();
-        let attr = editor.cursor.get_attribute();
-        if let Some(layer) = editor.get_overlay_layer() {
+        if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
             layer.clear();
+        }
 
-            if start < cur {
-                plot_ellipse(layer, attr, start, cur);
-            } else {
-                plot_ellipse(layer, attr, cur, start);
-            }
+        if start < cur {
+            plot_ellipse(&editor, self, start, cur);
+        } else {
+            plot_ellipse(&editor, self, cur, start);
         }
         Event::None
     }
@@ -49,8 +63,8 @@ impl Tool for DrawEllipseTool {
 }
 
 pub fn plot_ellipse(
-    layer: &mut Layer,
-    attribute: TextAttribute,
+    editor: &Rc<RefCell<Editor>>,
+    tool: &DrawEllipseTool,
     pos0: Position,
     pos1: Position,
 ) {
@@ -72,34 +86,10 @@ pub fn plot_ellipse(
     let mut dy = 2.0 * rx * rx * y;
 
     while dx < dy {
-        layer.set_char(
-            Position::from((x + xc) as i32, (y + yc) as i32),
-            DosChar {
-                char_code: 219,
-                attribute,
-            },
-        );
-        layer.set_char(
-            Position::from((-x + xc) as i32, (y + yc) as i32),
-            DosChar {
-                char_code: 219,
-                attribute,
-            },
-        );
-        layer.set_char(
-            Position::from((x + xc) as i32, (-y + yc) as i32),
-            DosChar {
-                char_code: 219,
-                attribute,
-            },
-        );
-        layer.set_char(
-            Position::from((-x + xc) as i32, (-y + yc) as i32),
-            DosChar {
-                char_code: 219,
-                attribute,
-            },
-        );
+        plot_point(editor, tool, Position::from((x + xc) as i32, (y + yc) as i32));
+        plot_point(editor, tool, Position::from((-x + xc) as i32, (y + yc) as i32));
+        plot_point(editor, tool, Position::from((x + xc) as i32, (-y + yc) as i32));
+        plot_point(editor, tool, Position::from((-x + xc) as i32, (-y + yc) as i32));
 
         if d1 < 0.0 {
             x += 1.0;
@@ -118,34 +108,10 @@ pub fn plot_ellipse(
         - (rx * rx * ry * ry);
 
     while y >= 0.0 {
-        layer.set_char(
-            Position::from((x + xc) as i32, (y + yc) as i32),
-            DosChar {
-                char_code: 219,
-                attribute,
-            },
-        );
-        layer.set_char(
-            Position::from((-x + xc) as i32, (y + yc) as i32),
-            DosChar {
-                char_code: 219,
-                attribute,
-            },
-        );
-        layer.set_char(
-            Position::from((x + xc) as i32, (-y + yc) as i32),
-            DosChar {
-                char_code: 219,
-                attribute,
-            },
-        );
-        layer.set_char(
-            Position::from((-x + xc) as i32, (-y + yc) as i32),
-            DosChar {
-                char_code: 219,
-                attribute,
-            },
-        );
+        plot_point(editor, tool, Position::from((x + xc) as i32, (y + yc) as i32));
+        plot_point(editor, tool, Position::from((-x + xc) as i32, (y + yc) as i32));
+        plot_point(editor, tool, Position::from((x + xc) as i32, (-y + yc) as i32));
+        plot_point(editor, tool, Position::from((-x + xc) as i32, (-y + yc) as i32));
 
         if d2 > 0.0 {
             y -= 1.0;

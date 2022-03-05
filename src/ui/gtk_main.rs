@@ -10,7 +10,7 @@ use adw::{prelude::*, TabBar, TabPage, TabView};
 use adw::{ApplicationWindow, HeaderBar};
 use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType};
 
-use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, FILL_TOOL};
+use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS};
 
 use super::{AnsiView, ColorPicker, layer_view};
 
@@ -116,12 +116,24 @@ impl MainWindow {
             //  let rc = rc.clone();
             let open_action = SimpleAction::new("new", None);
             open_action.connect_activate(clone!(@strong main_window => move |_,_| {
-                let mut buffer = Buffer::new();
-                buffer.file_name = None;
-                buffer.width  = 80;
-                buffer.height = 25;
-                main_window.load_page(buffer);
-                main_window.update_layer_view();
+
+                let nfd = crate::ui::new_file_dialog::display_newfile_dialog(&main_window);
+                let ws = Rc::new(nfd.width_spin_button);
+                let hs = Rc::new(nfd.height_spin_button);
+                
+                nfd.dialog.connect_response(clone!(@strong main_window => move |dialog, r| {
+                    if let ResponseType::Ok = r {
+                        let mut buffer = Buffer::new();
+                        buffer.file_name = None;
+                        buffer.width  = ws.value() as usize;
+                        buffer.height = hs.value() as usize;
+                        main_window.load_page(buffer);
+                        main_window.update_layer_view();
+                    } 
+                    dialog.close();
+                    main_window.update_layer_view();
+                    main_window.update_editor();
+                }));
             }));
             app.add_action(&open_action);
         }
@@ -330,9 +342,6 @@ impl MainWindow {
                 let path = name.parent().unwrap().to_str().unwrap();
                 self.title.set_subtitle(path);
             }
-            unsafe {
-                FILL_TOOL.attr = editor.borrow().cursor.get_attribute();
-            }
         }
         self.update_layer_view();
     }
@@ -526,9 +535,16 @@ impl MainWindow {
             .build();
         self.tool_container_box.insert(&button, -1);
         let mut page_content = Box::new(Orientation::Vertical, 0);
+        
 
         if tool.get_icon_name() == "md-tool-fill" {
             super::add_fill_tool_page(&mut page_content);
+        } else if tool.get_icon_name() == "md-tool-rectangle" {
+            super::add_rectangle_tool_page(&mut page_content);
+        } else if tool.get_icon_name() == "md-tool-circle" {
+            super::add_ellipse_tool_page(&mut page_content);
+        } else if tool.get_icon_name() == "md-tool-line" {
+            super::add_line_tool_page(&mut page_content);
         }
 
         let page_num = self.tool_notebook.append_page(&page_content, Option::<&gtk4::Widget>::None);
@@ -576,7 +592,7 @@ impl MainWindow {
         let page = Rc::new(self.tab_view.add_page(&page_box, None));
         let handle = Rc::new(RefCell::new(Editor::new(0, buf)));
 
-        handle.borrow_mut().cursor.changed = std::boxed::Box::new(move |p| {
+        handle.borrow_mut().cursor.pos_changed = std::boxed::Box::new(move |p| {
             caret_pos_label.set_text(format!("({:>2},{:>3})", p.x + 1, p.y + 1).as_str());
         });
 

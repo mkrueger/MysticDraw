@@ -30,7 +30,7 @@ pub use sauce_handling::*;
 mod editor;
 pub use editor::*;
 
-mod tool;
+pub(crate) mod tool;
 pub use tool::*;
 
 #[derive(Copy, Clone, Debug, Default)]

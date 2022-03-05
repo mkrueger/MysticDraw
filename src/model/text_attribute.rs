@@ -100,7 +100,6 @@ impl TextAttribute
     }
 }
 
-
 impl PartialEq for TextAttribute {
     fn eq(&self, other: &TextAttribute) -> bool {
         self.0 == other.0

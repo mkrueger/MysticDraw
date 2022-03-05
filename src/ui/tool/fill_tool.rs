@@ -1,8 +1,8 @@
 use std::{rc::Rc, cell::RefCell};
 
-use gtk4::{traits::{BoxExt, CheckButtonExt}, CheckButton};
+use gtk4::{traits::{BoxExt, CheckButtonExt, WidgetExt, StyleContextExt, ToggleButtonExt}, CheckButton, ToggleButton, Orientation, Align};
 
-use crate::{model::{FILL_TOOL, Buffer, Editor, Position, DosChar, TextAttribute}, ui::AnsiView};
+use crate::{model::{FILL_TOOL, Buffer, Editor, DosChar, TextAttribute}, ui::{AnsiView}};
 
 pub fn create_char_view() -> (AnsiView, Rc<RefCell<Editor>>)
 {
@@ -40,41 +40,66 @@ pub unsafe fn get_preview_char() -> DosChar
 pub fn add_fill_tool_page(content_box: &mut gtk4::Box)
 {
     unsafe {
-        let mut fg_button = CheckButton::builder()
-            .label("Foreground")
+        content_box.set_margin_top(20);
+        content_box.set_margin_bottom(20);
+        content_box.set_margin_start(20);
+        content_box.set_spacing(20);
+        
+        let color_box = gtk4::Box::builder()
+            .orientation(Orientation::Horizontal)
+            .halign(Align::Center)
+            .build();
+        color_box.style_context().add_class("linked");
+
+        let fg_button = ToggleButton::builder()
+            .label("Fg")
             .active(FILL_TOOL.use_fore)
             .build();
-        content_box.append(&fg_button);
+        color_box.append(&fg_button);
 
-        let bg_button = CheckButton::builder()
-            .label("Background")
+        let bg_button = ToggleButton::builder()
+            .label("Bg")
             .active(FILL_TOOL.use_back)
             .build();
-        content_box.append(&bg_button);
-    
-        let char_button = CheckButton::builder()
+        color_box.append(&bg_button);
+
+        content_box.append(&color_box);
+        
+
+        let char_container = gtk4::Box::builder()
+            .orientation(Orientation::Horizontal)
+            .halign(Align::Start)
+            .build();
+
+        let char_checkbox = CheckButton::builder()
             .label("Character")
             .active(FILL_TOOL.use_char)
             .build();
-        content_box.append(&char_button);
+        char_container.append(&char_checkbox);
 
-        let (ansi_view, editor) = create_char_view();
-        content_box.append(&ansi_view);
+        let button = crate::ui::CharButton::new(FILL_TOOL.char_code);
+        char_container.append(&button);
+        content_box.append(&char_container);
 
-        editor.borrow_mut().buf.set_char(0, Position::new(), get_preview_char());
-        let editor2 = editor.clone();
+        //let (ansi_view, editor) = create_char_view();
+        //content_box.append(&ansi_view);
+
+        //editor.borrow_mut().buf.set_char(0, Position::new(), get_preview_char());
+
+
+        //let editor2 = editor.clone();
         fg_button.connect_toggled(move |x| {
             FILL_TOOL.use_fore = x.is_active();
-            editor2.borrow_mut().buf.set_char(0, Position::new(), get_preview_char());
+          //  editor2.borrow_mut().buf.set_char(0, Position::new(), get_preview_char());
         });
 
-        let editor2 = editor;
+//        let editor2 = editor;
         bg_button.connect_toggled(move |x| {
             FILL_TOOL.use_back = x.is_active();
-            editor2.borrow_mut().buf.set_char(0, Position::new(), get_preview_char());
+  //          editor2.borrow_mut().buf.set_char(0, Position::new(), get_preview_char());
         });
 
-        char_button.connect_toggled(|x| {
+        char_checkbox.connect_toggled(|x| {
             FILL_TOOL.use_char = x.is_active();
         });
     }

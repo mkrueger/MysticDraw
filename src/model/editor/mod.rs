@@ -1,13 +1,14 @@
 use std::{cmp::{max, min}, path::Path, io::Write, fs::File, ffi::OsStr};
 use crate::model::{Buffer, Position, TextAttribute, Rectangle, convert_to_ans, convert_to_asc, convert_to_avt, convert_to_binary, convert_to_pcb, convert_to_xb};
 
-use super::{DosChar, Layer};
+use super::{DosChar, OverlayLayer};
 
 pub struct Cursor {
     pos: Position,
     attr: TextAttribute,
     pub insert_mode: bool,
-    pub changed: std::boxed::Box<dyn Fn(Position)>
+    pub pos_changed: std::boxed::Box<dyn Fn(Position)>,
+    pub attr_changed: std::boxed::Box<dyn Fn(TextAttribute)>
 }
 
 impl Cursor {
@@ -19,7 +20,7 @@ impl Cursor {
     pub fn set_position(&mut self, pos: Position)
     {
         self.pos = pos;
-        (self.changed)(pos);
+        (self.pos_changed)(pos);
     }
 
     pub fn get_attribute(&self) -> TextAttribute
@@ -29,12 +30,18 @@ impl Cursor {
 
     pub fn set_attribute(&mut self, attr: TextAttribute)
     {
+        if attr == self.attr {
+            return;
+        }
         self.attr = attr;
 
         // HACK: FILL tool needs the current editor color, 
         unsafe {
+            super::LINE_TOOL.attr = attr;
+            super::RECT_TOOL.attr = attr;
             super::FILL_TOOL.attr = attr;
         }
+        (self.attr_changed)(attr);
     }
 }
 
@@ -46,7 +53,7 @@ impl std::fmt::Debug for Cursor {
 
 impl Default for Cursor {
     fn default() -> Self {
-        Self { pos: Position::default(), attr: TextAttribute::default(), insert_mode: Default::default(), changed: Box::new(|_| {}) }
+        Self { pos: Position::default(), attr: TextAttribute::default(), insert_mode: Default::default(), pos_changed: Box::new(|_| {}), attr_changed: Box::new(|_| {}) }
     }
 }
 
@@ -136,7 +143,7 @@ impl Editor
         }
     }
     
-    pub fn get_overlay_layer(&mut self) -> &mut Option<Layer>
+    pub fn get_overlay_layer(&mut self) -> &mut Option<OverlayLayer>
     {
         self.buf.get_overlay_layer()
     }
@@ -235,6 +242,10 @@ impl Editor
         Ok(DEFAULT_OUTLINE_TABLE[outline as usize][i as usize])
     }
     
+    pub fn get_char(&self, pos: Position) -> DosChar {
+        self.buf.get_char(pos)
+    }
+
     pub fn set_char(&mut self, pos: Position, dos_char: DosChar) {
         if self.point_is_valid(pos) {
             self.buf.set_char(self.cur_layer as usize, pos, dos_char);
@@ -266,6 +277,24 @@ impl Editor
             attribute: self.cursor.attr,
         });
         self.set_cursor(pos.x + 1, pos.y);
+    }
+
+    pub fn delete_selection(&mut self) {
+        if let Some(selection) = &self.cur_selection {
+            let mut pos = selection.rectangle.start;
+            let ch = DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT };
+            for _ in 0..selection.rectangle.size.height {
+                for _ in 0..selection.rectangle.size.width {
+                    self.buf.set_char(self.cur_layer as usize, pos, ch);
+                    pos.x += 1;
+                }
+                pos.y += 1;
+                pos.x = selection.rectangle.start.x;
+            }
+
+            self.cur_selection = None;
+        }
+
     }
 }
 

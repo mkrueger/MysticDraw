@@ -131,7 +131,7 @@ impl AnsiView {
         self.imp().editor.replace(handle.clone());
 
         let mut char_img =
-            gtk4::cairo::ImageSurface::create(gtk4::cairo::Format::ARgb32, 8, 16).unwrap();
+            gtk4::cairo::ImageSurface::create(gtk4::cairo::Format::ARgb32, font_dimensions.width as i32, font_dimensions.height as i32).unwrap();
         // let dialog = Dialog { payload: editor };
         if !handle.borrow().is_inactive {
             let drag = gtk4::GestureDrag::new();
@@ -202,10 +202,11 @@ impl AnsiView {
             gesture.set_button(1);
             gesture.connect_pressed(glib::clone!(@strong self as this => move |e, _clicks, x, y| {
                 sync_workbench_state(&mut handle1.borrow_mut());
+                
                 let x = min(handle1.borrow().buf.width as i32, max(0, x as i32 / font_dimensions.width as i32));
                 let y = min(handle1.borrow().buf.height as i32, max(0, y as i32 / font_dimensions.height as i32));
                 unsafe {
-                    TOOLS[WORKSPACE.selected_tool].handle_click(handle1.clone(), e.button(),Position::from(x, y));
+                    TOOLS[WORKSPACE.selected_tool].handle_click(handle1.clone(), e.button(), Position::from(x, y));
                 }
                 this.queue_draw();
                 this.grab_focus();
@@ -254,11 +255,9 @@ impl AnsiView {
             let buffer = &editor.buf;
 
             let font_dimensions = buffer.get_font_dimensions();
-
             for y in 0..buffer.height {
                 for x in 0..buffer.width {
                     let ch = buffer.get_char(Position::from(x as i32, y as i32));
-
                     cr.rectangle(
                         x as f64 * font_dimensions.width as f64,
                         y as f64 * font_dimensions.height as f64,

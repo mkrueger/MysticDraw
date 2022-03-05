@@ -6,7 +6,7 @@ use std::{
 };
 use std::ffi::OsStr;
 
-use super::{Layer, read_xb, Sauce, read_sauce, SauceDataType, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size};
+use super::{Layer, read_xb, Sauce, read_sauce, SauceDataType, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size, OverlayLayer};
 
 #[derive(Debug, Default)]
 #[allow(dead_code)]
@@ -22,7 +22,7 @@ pub struct Buffer {
     pub width: usize,
     pub height: usize,
     pub custom_palette: Option<Vec<u8>>,
-    overlay_layer: Option<Layer>,
+    overlay_layer: Option<OverlayLayer>,
 
     pub font: Option<BitFont>,
     pub layers: Vec<Layer>,
@@ -52,10 +52,10 @@ impl Buffer {
         }
     }
 
-    pub fn get_overlay_layer(&mut self) -> &mut Option<Layer>
+    pub fn get_overlay_layer(&mut self) -> &mut Option<OverlayLayer>
     {
         if self.overlay_layer.is_none() {
-            self.overlay_layer = Some(Layer::new());
+            self.overlay_layer = Some(OverlayLayer::new());
         }
 
         &mut self.overlay_layer
@@ -69,7 +69,7 @@ impl Buffer {
     pub fn join_overlay(&mut self, i: i32)
     {
         if let Some(layer) = &self.overlay_layer {
-            self.layers[i as usize].join(layer);
+            self.layers[i as usize].join_overlay(layer);
             self.remove_overlay();
         }
     }
@@ -102,8 +102,7 @@ impl Buffer {
 
     pub fn get_char(&self, pos: Position) -> DosChar {
         if let Some(overlay) = &self.overlay_layer  {
-            let ch = overlay.get_char(pos);
-            if !ch.is_transparent() {
+            if let Some(ch) = overlay.get_char(pos) {
                 return ch;
             }
         }
