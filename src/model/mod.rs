@@ -41,6 +41,11 @@ pub struct Size {
 
 impl Size 
 {
+    pub fn new() -> Self
+    {
+        Size::from(0, 0)
+    }
+
     pub fn from(width: usize, height: usize) -> Self
     {
         Size { width, height }

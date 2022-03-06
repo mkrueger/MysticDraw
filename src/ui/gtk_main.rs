@@ -10,7 +10,7 @@ use adw::{prelude::*, TabBar, TabPage, TabView};
 use adw::{ApplicationWindow, HeaderBar};
 use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType};
 
-use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS};
+use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, Layer};
 
 use super::{AnsiView, ColorPicker, layer_view};
 
@@ -314,11 +314,111 @@ impl MainWindow {
             }));
             app.add_action(&action);
 
+
+            let action = SimpleAction::new("cut", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                main_window.cut_to_clipboard();
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("copy", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                main_window.copy_to_clipboard();
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("paste", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                main_window.paste_from_clipboard();
+            }));
+            app.add_action(&action);
+
             app.set_accels_for_action("app.open", &["<primary>o"]);
             app.set_accels_for_action("app.preferences", &["<primary>comma"]);
+            app.set_accels_for_action("app.cut", &["<primary>x"]);
+            app.set_accels_for_action("app.copy", &["<primary>c"]);
+            app.set_accels_for_action("app.paste", &["<primary>v"]);
         }
-
     }
+
+    fn paste_from_clipboard(&self) -> bool {
+        unsafe {
+            if !crate::WORKSPACE.cur_tool().use_selection() || !crate::WORKSPACE.cur_tool().use_caret()  { return false; }
+        }
+        let cur = self.get_current_ansi_view();
+        if let Some(editor) = cur.map(|view| view.get_editor()) {
+
+            let display = gtk4::gdk::Display::default().unwrap();
+            let clipboard = display.clipboard();
+            unsafe {
+                if let Some(data) = clipboard.data::<Layer>("MysticDraw.Layer") {
+                    let layer = data.as_ref();
+                    let mut opos = Position::new();
+                    let mut pos = editor.borrow_mut().cursor.get_position();
+                    let x1 = pos.x;
+
+                    for _ in 0..layer.size.height {
+                        for _ in 0..layer.size.width {
+                            editor.borrow_mut().set_char(pos, layer.get_char(opos));
+                            pos.x += 1;
+                            opos.x += 1;
+                        }
+                        pos.y += 1;
+                        opos.y += 1;
+                        opos.x = 0;
+                        pos.x = x1;
+                    }
+                    self.get_current_ansi_view().unwrap().queue_draw();
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    fn cut_to_clipboard(&self) {
+        if !self.copy_to_clipboard() { return; }
+        let cur = self.get_current_ansi_view();
+        if let Some(editor) = cur.map(|view| view.get_editor()) {
+            editor.borrow_mut().delete_selection();
+        }
+    }
+    
+    fn copy_to_clipboard(&self) -> bool {
+        unsafe {
+            if !crate::WORKSPACE.cur_tool().use_selection() || !crate::WORKSPACE.cur_tool().use_caret()  { return false; }
+        }
+        let cur = self.get_current_ansi_view();
+        if let Some(editor) = cur.map(|view| view.get_editor()) {
+            if let Some(selection) = &editor.borrow().cur_selection {
+                let mut pos = selection.rectangle.start;
+                let mut opos = Position::new();
+
+                let mut copy_layer = Layer::new();
+                copy_layer.size = selection.rectangle.size;
+                for _ in 0..copy_layer.size.height {
+                    for _ in 0..copy_layer.size.width {
+                        copy_layer.set_char(opos, editor.borrow().get_char(pos));
+                        pos.x += 1;
+                        opos.x += 1;
+                    }
+                    pos.y += 1;
+                    opos.y += 1;
+                    opos.x = 0;
+                    pos.x = selection.rectangle.start.x;
+                }
+
+                let display = gtk4::gdk::Display::default().unwrap();
+                let clipboard = display.clipboard();
+                unsafe {
+                    clipboard.set_data("MysticDraw.Layer", copy_layer);
+                }
+                self.get_current_ansi_view().unwrap().queue_draw();
+                return true;
+            }
+        }
+        false
+   }
 
     fn page_swap(&self) {
         let cur = self.get_current_ansi_view();
