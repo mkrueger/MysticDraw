@@ -1,10 +1,13 @@
-use crate::model::TheDrawFont;
+use std::{rc::Rc, cell::RefCell};
 
-use super::{Tool};
+use crate::{model::TheDrawFont, WORKSPACE};
+
+use super::{Tool, MKey, Event, Editor, MKeyCode, MModifiers};
 use walkdir::{DirEntry, WalkDir};
 pub struct FontTool {
     pub selected_font: i32,
-    pub fonts: Vec<TheDrawFont>
+    pub fonts: Vec<TheDrawFont>,
+    pub last_height: i32
 }
 
 impl FontTool 
@@ -17,27 +20,32 @@ impl FontTool
         
     pub fn load_fonts(&mut self)
     {
-        let walker = WalkDir::new("/home/mkrueger/Dokumente/THEDRAWFONTS").into_iter();
-        for entry in walker.filter_entry(|e| !FontTool::is_hidden(e)) {
-             let entry = entry.unwrap();
-             let path = entry.path();
+        if let Some(path) = unsafe { &WORKSPACE.settings.font_path } {
+            let walker = WalkDir::new(path).into_iter();
+            for entry in walker.filter_entry(|e| !FontTool::is_hidden(e)) {
+                if let Err(e) = entry {
+                    eprintln!("Can't load tdf font library: {}", e);
+                    break;
+                }
+                let entry = entry.unwrap();
+                let path = entry.path();
 
-             if path.is_dir() {
-                continue;
-             }
-             let extension = path.extension();
-             if extension.is_none() { continue; }
-             let extension = extension.unwrap().to_str();
-             if extension.is_none() { continue; }
-             let extension = extension.unwrap().to_lowercase();
+                if path.is_dir() {
+                    continue;
+                }
+                let extension = path.extension();
+                if extension.is_none() { continue; }
+                let extension = extension.unwrap().to_str();
+                if extension.is_none() { continue; }
+                let extension = extension.unwrap().to_lowercase();
 
-             if extension == "tdf" {
-                if let Some(font) = TheDrawFont::load(path) {
-                    self.fonts.push(font);
+                if extension == "tdf" {
+                    if let Some(font) = TheDrawFont::load(path) {
+                        self.fonts.push(font);
+                    }
                 }
             }
         }
-
         println!("{} fonts read.", self.fonts.len());
     }
 }
@@ -45,77 +53,73 @@ impl FontTool
 impl Tool for FontTool
 {
     fn get_icon_name(&self) -> &'static str { "md-tool-font" }
-/*
-    fn add_tool_page(&self, window: &ApplicationWindow,parent: &mut gtk4::Box)
-    {
-        crate::ui::add_font_tool_page(window, parent);
-    }
-    
-    fn handle_click(&self, editor: &mut Editor, _button: u32, x: i32, y: i32) -> Event
-    {
-        editor.cursor.pos = Position::from(x, y);
-        Event::None
-    }
 
-    fn handle_key(&self, editor: &mut Editor, key: Key, _key_code: u32, _modifier: ModifierType) -> Event
+    fn handle_key(&mut self, editor: Rc<RefCell<Editor>>, key: MKey, key_code: MKeyCode, modifier: MModifiers) -> Event
     {
         if self.selected_font < 0 || self.selected_font >= self.fonts.len() as i32 {
             return Event::None;
         }
         let font = &self.fonts[self.selected_font as usize];
+        let pos = editor.borrow().cursor.get_position();
+        let mut editor = editor.borrow_mut();
 
         match key {
-            Key::Down => {
-                editor.set_cursor(editor.cursor.pos.x, editor.cursor.pos.y + 1);
+            MKey::Down => {
+                editor.set_cursor(pos.x, pos.y + 1);
             }
-            Key::Up => {
-                editor.set_cursor(editor.cursor.pos.x, editor.cursor.pos.y - 1);
+            MKey::Up => {
+                editor.set_cursor(pos.x, pos.y - 1);
             }
-            Key::Left => {
-                editor.set_cursor(editor.cursor.pos.x - 1, editor.cursor.pos.y);
+            MKey::Left => {
+                editor.set_cursor(pos.x - 1, pos.y);
             }
-            Key::Right => {
-                editor.set_cursor(editor.cursor.pos.x + 1, editor.cursor.pos.y);
-            }
-            
-            Key::Page_Down |
-            Key::Page_Up => {
-                // TODO
+            MKey::Right => {
+                editor.set_cursor(pos.x + 1, pos.y);
             }
             
-            Key::Home | Key::KP_Home => {
-                editor.set_cursor(0, editor.cursor.pos.y);
-            }
-            
-            Key::End | Key::KP_End => {
-                editor.set_cursor(editor.buf.width as i32 - 1, editor.cursor.pos.y);
-            }
-
-            Key::Return | Key::KP_Enter => {
-                editor.set_cursor(0,editor.cursor.pos.y + font.get_font_height() as i32);
-            }
-
-            _ => { 
-                if let Some(key) = key.to_unicode() {
-                    if key.len_utf8() == 1 {
-                        let mut dst = [0];
-                        key.encode_utf8(&mut dst);
-
-                        let width = font.render(&mut editor.buf, editor.cursor.pos, editor.cursor.attr, dst[0]);
-                        if width > 0 {
-                            editor.set_cursor(editor.cursor.pos.x + width + font.spaces, editor.cursor.pos.y);
-                        } else {
-                            editor.buf.set_char(editor.cursor.pos, crate::model::DosChar {
-                                char_code: dst[0],
-                                attribute: editor.cursor.attr,
-                            });
-                            editor.set_cursor(editor.cursor.pos.x + 1, editor.cursor.pos.y);
+            MKey::Home  => {
+                if let MModifiers::Control = modifier {
+                    for i in 0..editor.buf.width {
+                        if !editor.get_char_from_cur_layer(pos.with_x(i as i32)).is_transparent() {
+                            editor.set_cursor(i as i32, pos.y);
+                            return Event::None;
                         }
                     }
                 }
+                editor.set_cursor(0, pos.y);
             }
+
+            MKey::End => {
+                if let MModifiers::Control = modifier {
+                    for i in (0..editor.buf.width).rev()  {
+                        if !editor.get_char_from_cur_layer(pos.with_x(i as i32)).is_transparent() {
+                            editor.set_cursor(i as i32, pos.y);
+                            return Event::None;
+                        }
+                    }
+                }
+                let w = editor.buf.width as i32;
+                editor.set_cursor(w - 1, pos.y);
+            }
+
+            MKey::Return => {
+                editor.set_cursor(0,pos.y + self.last_height);
+            }
+
+            MKey::Character(ch) => { 
+                let cpos = editor.cursor.get_position();
+                let attr = editor.cursor.get_attribute();
+                let optSize = font.render(&mut editor, cpos, attr, ch);
+                if let Some(size) = optSize  {
+                    editor.set_cursor(cpos.x + size.width as i32 + font.spaces, cpos.y);
+                    self.last_height = size.height as i32;
+                } else {
+                    editor.type_key(ch);
+                    self.last_height = 1;
+                }
+            }
+            _ => {}
         }
         Event::None
-    }*/
-
+    }
 }

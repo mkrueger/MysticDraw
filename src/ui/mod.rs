@@ -22,3 +22,6 @@ pub use char_selector_dialog::*;
 mod new_file_dialog;
 pub use new_file_dialog::*;
 
+mod settings_dialog;
+pub use settings_dialog::*;
+

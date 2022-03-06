@@ -1,4 +1,4 @@
-use std::{rc::Rc, cell::{RefCell, RefMut}};
+use std::{rc::Rc, cell::{RefCell, RefMut}, cmp::{max, min}};
 
 use super::{TextAttribute, DosChar};
 pub use super::{Editor, Event, Position};
@@ -93,12 +93,6 @@ pub trait Tool
     {
         // TODO Keys:
 
-        // ALT+Left Delete current column
-        // ALT+Right Insert a colum
-
-        // ALT-F1-10 select char set 1-10
-        // CTRL-F1-5 Select char set 11-15
-
         // Tab - Next tab
         // Shift+Tab - Prev tab
 
@@ -148,6 +142,19 @@ pub trait Tool
             MKey::PageUp => {
                 // TODO
                 println!("pgup");
+            }
+
+            MKey::Tab => {
+                let tab_size = unsafe { crate::WORKSPACE.settings.tab_size } ;
+                if let MModifiers::Control = modifier {
+                    let tabs = max(0, (pos.x / tab_size) - 1);
+                    let next_tab = tabs * tab_size;
+                    editor.set_cursor(next_tab, pos.y);
+                } else {
+                    let tabs = 1 + pos.x / tab_size;
+                    let next_tab = min(editor.buf.width as i32 - 1, tabs * tab_size);
+                    editor.set_cursor(next_tab, pos.y);
+                }
             }
             MKey::Home  => {
                 if let MModifiers::Control = modifier {
@@ -400,7 +407,7 @@ pub static SHADE_GRADIENT: [u8;4] = [176, 177, 178, 219];
 pub static mut TOOLS: Vec<&mut dyn Tool> = Vec::new();
 
 pub static mut CLICK_TOOL: click_tool::ClickTool = click_tool::ClickTool { };
-pub static mut FONT_TOOL: font_tool::FontTool = font_tool::FontTool { fonts: Vec::new(), selected_font: -1  };
+pub static mut FONT_TOOL: font_tool::FontTool = font_tool::FontTool { fonts: Vec::new(), selected_font: -1, last_height: -1  };
 
 pub static mut LINE_TOOL: line_tool::LineTool = line_tool::LineTool {
     draw_mode: DrawMode::Line, 
@@ -451,7 +458,7 @@ pub static mut FLIP_TOOL: flip_tool::FlipTool = flip_tool::FlipTool { };
 pub fn init_tools()
 {
     unsafe {
-        // FONT_TOOL.load_fonts();
+        FONT_TOOL.load_fonts();
         TOOLS.push(&mut CLICK_TOOL);
         
         TOOLS.push(&mut BRUSH_TOOL);

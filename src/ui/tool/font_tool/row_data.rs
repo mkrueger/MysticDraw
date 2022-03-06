@@ -1,11 +1,11 @@
 use gtk4::glib;
 
 glib::wrapper! {
-    pub struct RowData(ObjectSubclass<super::row_data_imp::RowData>);
+    pub struct FontRowData(ObjectSubclass<super::row_data_imp::FontRowDataImpl>);
 }
 
-impl RowData {
-    pub fn new(name: &str, count: u32) -> RowData {
+impl FontRowData {
+    pub fn new(name: &str, count: u32) -> FontRowData {
         glib::Object::new(&[("name", &name), ("count", &count)]).expect("Failed to create row data")
     }
 }

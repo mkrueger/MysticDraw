@@ -1,6 +1,6 @@
-use crate::model::{DosChar, TextAttribute};
+use crate::model::{TextAttribute};
 
-use super::{Editor, Event, Position, Tool, SHADE_GRADIENT, DrawMode, Plottable, plot_point};
+use super::{Editor, Event, Position, Tool, DrawMode, Plottable, plot_point};
 use std::{
     cell::{RefCell},
     cmp::{max, min},

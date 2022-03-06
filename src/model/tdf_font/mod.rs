@@ -1,6 +1,6 @@
 use std::{path::Path, fs::File, io::{Read}};
 
-use super::{ Position, TextAttribute, DosChar, Editor};
+use super::{ Position, TextAttribute, DosChar, Editor, Size};
 
 #[derive(Copy, Clone, Debug)]
 pub enum TheDrawFontType {
@@ -100,31 +100,29 @@ impl TheDrawFont
         self.font_data[1]
     }
     
-    pub fn render(&self, editor: &mut Editor, pos: Position, color: TextAttribute, char_code: u8) -> i32
+    pub fn render(&self, editor: &mut std::cell::RefMut<Editor>, pos: Position, color: TextAttribute, char_code: u8) -> Option<Size>
     {
         let char_offset = (char_code as i32) - b' '  as i32 - 1;
         if char_offset < 0 || char_offset > self.char_table.len() as i32 {
-            return -1;
+            return None;
         }
         let mut char_offset = self.char_table[char_offset as usize] as usize;
         if char_offset == 0xFFFF {
-            return -1;
+            return None;
         }
         let max_x = self.font_data[char_offset];
         char_offset += 1;
         // let max_y = self.font_data[char_offset];
         char_offset += 1;
-        let mut x = pos.x;
-        let mut y = pos.y;
+        let mut cur = pos;
         loop {
             let ch = self.font_data[char_offset];
             char_offset += 1;
             if ch == 0 { break; }
             if ch == 13 {
-                x = pos.x;
-                y += 1;
+                cur.x = pos.x;
+                cur.y += 1;
             } else {
-                let dest_pos = Position::from(x, y);
                 let dos_char = match self.font_type {
                     TheDrawFontType::Outline => {
                         DosChar { char_code: TheDrawFont::transform_outline(ch), attribute: color }
@@ -138,14 +136,14 @@ impl TheDrawFont
                         DosChar { char_code: ch, attribute: ch_attr }
                     }
                 };
-                if dest_pos.x >= 0 && dest_pos.y >= 0 && dest_pos.x < editor.buf.width as i32 && dest_pos.y < editor.buf.height as i32 {
-                    editor.set_char(dest_pos, dos_char);
+                if cur.x >= 0 && cur.y >= 0 && cur.x < editor.buf.width as i32 && cur.y < editor.buf.height as i32 {
+                    editor.set_char(cur, dos_char);
                 }
-                x += 1;
+                cur.x += 1;
             }
         }
 
-        max_x as i32
+        Some(Size::from(max_x as usize, (cur.y - pos.y + 1) as usize))
     }
 
     const OUTLINE_CHAR_SET : [[u8; 17]; 19] = [

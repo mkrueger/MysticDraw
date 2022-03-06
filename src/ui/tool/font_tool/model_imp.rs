@@ -7,23 +7,23 @@ use gtk4::{
 
 use std::cell::RefCell;
 
-use super::row_data::RowData;
+use super::row_data::FontRowData;
 
 #[derive(Debug, Default)]
-pub struct Model(pub(super) RefCell<Vec<RowData>>);
+pub struct FontModel(pub(super) RefCell<Vec<FontRowData>>);
 
 #[glib::object_subclass]
-impl ObjectSubclass for Model {
-    const NAME: &'static str = "Model";
-    type Type = super::model::Model;
+impl ObjectSubclass for FontModel {
+    const NAME: &'static str = "FontModel";
+    type Type = super::model::FontModel;
     type Interfaces = (ListModel,);
 }
 
-impl ObjectImpl for Model {}
+impl ObjectImpl for FontModel {}
 
-impl ListModelImpl for Model {
+impl ListModelImpl for FontModel {
     fn item_type(&self, _list_model: &Self::Type) -> glib::Type {
-        RowData::static_type()
+        FontRowData::static_type()
     }
     fn n_items(&self, _list_model: &Self::Type) -> u32 {
         self.0.borrow().len() as u32

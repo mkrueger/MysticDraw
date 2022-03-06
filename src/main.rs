@@ -1,6 +1,6 @@
 use gtk4::{gio::{ApplicationFlags, self}};
 use libadwaita as adw;
-
+use directories::{ ProjectDirs};
 use adw::{prelude::*};
 use gtk4::{Application};
 use model::{init_tools, Editor, TextAttribute, Tool, TOOLS};
@@ -11,7 +11,13 @@ pub mod ui;
 
 pub const DEFAULT_FONT: &[u8] = include_bytes!("../data/font.fnt");
 
+pub struct Settings {
+    font_path: Option<std::path::PathBuf>,
+    tab_size: i32
+}
+
 pub struct Workspace {
+    pub settings: Settings,
     selected_tool: usize,
     selected_attribute: TextAttribute,
 
@@ -33,6 +39,7 @@ impl Workspace {
 }
 
 pub static mut WORKSPACE: Workspace = Workspace {
+    settings: Settings { tab_size: 8, font_path: None},
     selected_tool: 0,
     selected_attribute: TextAttribute::DEFAULT,
     font_dimensions: model::Size { width: 8, height: 16 }
@@ -51,6 +58,12 @@ const RESOURCES_BYTES:&[u8] = include_bytes!("../data/resources.gresource");
 
 
 fn main() {
+    if let Some(proj_dirs) = ProjectDirs::from("github.com", "mkrueger",  "Mystic Draw") {
+        unsafe {
+            WORKSPACE.settings.font_path = Some(proj_dirs.data_dir().to_path_buf().join("fonts"));
+        }
+    }
+
     init_tools();
     gtk4::init().expect("failed to init gtk");
 

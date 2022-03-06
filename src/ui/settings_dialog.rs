@@ -1,23 +1,21 @@
-use gtk4::{ResponseType, traits::{DialogExt,  WidgetExt, BoxExt, GtkWindowExt}, SpinButton, Orientation, Align};
-use libadwaita::{ PreferencesGroup, ActionRow, traits::{PreferencesGroupExt, ActionRowExt}, HeaderBar};
+use gtk4::{ traits::{ WidgetExt, BoxExt, GtkWindowExt, EditableExt}, SpinButton, Orientation, Align };
+use libadwaita::{ PreferencesGroup, ActionRow, traits::{PreferencesGroupExt, ActionRowExt}, HeaderBar };
+
+use crate::WORKSPACE;
 
 use super::MainWindow;
 
-pub struct NewFileDialog {
-    pub dialog: libadwaita::Window,
+pub struct SettingsDialog {
+    pub dialog: libadwaita::PreferencesWindow,
     pub open_button: gtk4::Button,
-
-    pub width_spin_button: SpinButton,
-    pub height_spin_button: SpinButton
 }
 
-pub fn display_newfile_dialog(main_window: &MainWindow) -> NewFileDialog
+pub fn display_settings_dialog(main_window: &MainWindow) -> SettingsDialog
 {
     let main_area = gtk4::Box::builder()
     .orientation(Orientation::Vertical)
     .build();
-
-    let dialog = libadwaita::Window::builder()
+    let dialog = libadwaita::PreferencesWindow::builder()
         .default_width(280)
         .default_height(240)
         .modal(true)
@@ -25,8 +23,9 @@ pub fn display_newfile_dialog(main_window: &MainWindow) -> NewFileDialog
         .content(&main_area)
         .build();
     dialog.set_transient_for(Some(&main_window.window));
+
     let hb = HeaderBar::builder()
-        .title_widget(&libadwaita::WindowTitle::builder().title("New file").build())
+        .title_widget(&libadwaita::WindowTitle::builder().title("Preferences").build())
         .show_end_title_buttons(true)
         .build();
     let open_button = gtk4::Button::builder()
@@ -47,32 +46,36 @@ pub fn display_newfile_dialog(main_window: &MainWindow) -> NewFileDialog
     let group = PreferencesGroup::new();
     group.set_title("Set size");
 
-    let width_spin_button = SpinButton::with_range(0.0, 10000.0, 10.0);
-    width_spin_button.set_valign(Align::Center);
-    width_spin_button.set_value(80.0);
+    let tab_size_spin_button = SpinButton::with_range(0.0, 10000.0, 10.0);
+    unsafe {
+        tab_size_spin_button.set_value(WORKSPACE.settings.tab_size as f64);
+    }
+
     let row = ActionRow::builder()
-        .title("Width")
+        .title("Tab size")
         .build();
-    row.add_suffix(&width_spin_button);
+    row.add_suffix(&tab_size_spin_button);
     group.add(&row);
 
-    let height_spin_button = SpinButton::with_range(0.0, 10000.0, 10.0);
-    height_spin_button.set_valign(Align::Center);
-    height_spin_button.set_value(100.0);
+    let name_entry = gtk4::Entry::new();
+    name_entry.set_valign(Align::Center);
+    unsafe {
+        if let Some(path) = &WORKSPACE.settings.font_path  {
+            name_entry.set_text(path.to_str().unwrap());
+        }
+    }
     let row = ActionRow::builder()
-        .title("Height")
+        .title("Name")
         .build();
-    row.add_suffix(&height_spin_button);
+    row.add_suffix(&name_entry);
     group.add(&row);
 
     content_area.append(&group);
     main_area.append(&content_area);
-    dialog.show();
 
-    NewFileDialog {
+    dialog.show();
+    SettingsDialog {
         dialog,
         open_button,
-        width_spin_button,
-        height_spin_button
     }
 }

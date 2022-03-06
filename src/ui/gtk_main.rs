@@ -100,7 +100,7 @@ impl MainWindow {
             if let Some(e) = main_window.get_current_editor() {
                 let res = Rc::new(layer_view::display_edit_layer_dialog(&main_window.window, &e.borrow_mut().buf.layers[idx as usize]));
                 let rd = &res.clone().open_button;
-                rd.connect_clicked(clone!(@strong main_window => move |dialog| {
+                rd.connect_clicked(clone!(@strong main_window => move |_| {
                     res.set_layer_values(&mut e.borrow_mut().buf.layers[idx as usize]);
                     res.dialog.close();
                     main_window.update_layer_view();
@@ -118,19 +118,17 @@ impl MainWindow {
                 let ws = Rc::new(nfd.width_spin_button);
                 let hs = Rc::new(nfd.height_spin_button);
                 
-                nfd.dialog.connect_response(clone!(@strong main_window => move |dialog, r| {
-                    if let ResponseType::Ok = r {
-                        let mut buffer = Buffer::new();
-                        buffer.file_name = None;
-                        buffer.width  = ws.value() as usize;
-                        buffer.height = hs.value() as usize;
-                        let editor = main_window.load_page(buffer);
-                        editor.borrow_mut().request_refresh = std::boxed::Box::new(clone!(@strong main_window => move || {
-                            main_window.update_editor();
-                        }));
-                        main_window.update_layer_view();
-                    } 
-                    dialog.close();
+                nfd.open_button.connect_clicked(clone!(@strong main_window => move |_| {
+                    let mut buffer = Buffer::new();
+                    buffer.file_name = None;
+                    buffer.width  = ws.value() as usize;
+                    buffer.height = hs.value() as usize;
+                    let editor = main_window.load_page(buffer);
+                    editor.borrow_mut().request_refresh = std::boxed::Box::new(clone!(@strong main_window => move || {
+                        main_window.update_editor();
+                    }));
+                    main_window.update_layer_view();
+                    nfd.dialog.close();
                     main_window.update_layer_view();
                     main_window.update_editor();
 
@@ -364,6 +362,19 @@ impl MainWindow {
             }));
             app.add_action(&action);
 
+            let action = SimpleAction::new("preferences", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                let dialog = super::display_settings_dialog(&main_window);
+                dialog.open_button.connect_clicked(clone!(@strong main_window => move |_| {
+                   
+                    dialog.dialog.close();
+                    main_window.update_layer_view();
+                    main_window.update_editor();
+                }));
+
+            }));
+            app.add_action(&action);
+
             app.set_accels_for_action("app.open", &["<primary>o"]);
             app.set_accels_for_action("app.preferences", &["<primary>comma"]);
             app.set_accels_for_action("app.cut", &["<primary>x"]);
@@ -553,10 +564,9 @@ impl MainWindow {
 
         let menu = gtk4::gio::Menu::new();
         menu.append(Some("Save as…"), Some("app.saveas"));
-        menu.append(Some("Settings"), Some("app.settings"));
+        menu.append(Some("Preferences"), Some("app.preferences"));
         menu.append(Some("Keyboard Map"), Some("app.keymap"));
         menu.append(Some("About"), Some("app.about"));
-
 
         hb.pack_end(
             &gtk4::MenuButton::builder()
@@ -581,7 +591,7 @@ impl MainWindow {
             for t in TOOLS.iter().skip(1) {
                 self.add_tool(*t).set_group(Some(&first));
             }
-            first.activate();
+            first.set_active(true);
         }
         self.tool_notebook.set_page(0);
         result.append(&self.tool_container_box);
@@ -704,6 +714,8 @@ impl MainWindow {
             super::add_brush_tool_page(&mut page_content);
         } else if tool.get_icon_name() == "md-tool-erase" {
             super::add_erase_tool_page(&mut page_content);
+        } else if tool.get_icon_name() == "md-tool-font" {
+            super::add_font_tool_page(&self.window, &mut page_content);
         }
 
         let page_num = self.tool_notebook.append_page(&page_content, Option::<&gtk4::Widget>::None);

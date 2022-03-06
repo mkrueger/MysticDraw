@@ -6,21 +6,21 @@ use gtk4::{
     subclass::prelude::*,
 };
 
-use super::RowData;
+use super::FontRowData;
 
 #[derive(Default, Debug)]
-pub struct ListBoxRow {
-    pub row_data: RefCell<Option<RowData>>,
+pub struct FontListBoxRowImpl {
+    pub row_data: RefCell<Option<FontRowData>>,
 }
 
 #[glib::object_subclass]
-impl ObjectSubclass for ListBoxRow {
-    const NAME: &'static str = "ExListBoxRow";
+impl ObjectSubclass for FontListBoxRowImpl {
+    const NAME: &'static str = "FontListBoxRow";
     type ParentType = gtk4::ListBoxRow;
-    type Type = super::list_box_row::ListBoxRow;
+    type Type = super::list_box_row::FontListBoxRow;
 }
 
-impl ObjectImpl for ListBoxRow {
+impl ObjectImpl for FontListBoxRowImpl {
     fn properties() -> &'static [ParamSpec] {
         use once_cell::sync::Lazy;
         static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
@@ -28,7 +28,7 @@ impl ObjectImpl for ListBoxRow {
                 "row-data",
                 "Row Data",
                 "Row Data",
-                RowData::static_type(),
+                FontRowData::static_type(),
                 glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
             )]
         });
@@ -66,5 +66,5 @@ impl ObjectImpl for ListBoxRow {
     }
 }
 
-impl WidgetImpl for ListBoxRow {}
-impl ListBoxRowImpl for ListBoxRow {}
+impl WidgetImpl for FontListBoxRowImpl {}
+impl ListBoxRowImpl for FontListBoxRowImpl {}

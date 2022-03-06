@@ -1,18 +1,18 @@
 use gtk4::subclass::prelude::*;
 
-use super::row_data::RowData;
+use super::row_data::FontRowData;
 use gtk4::{gio, glib, prelude::*};
 
 glib::wrapper! {
-    pub struct Model(ObjectSubclass<super::model_imp::Model>) @implements gio::ListModel;
+    pub struct FontModel(ObjectSubclass<super::model_imp::FontModel>) @implements gio::ListModel;
 }
 
-impl Model {
-    pub fn new() -> Model {
+impl FontModel {
+    pub fn new() -> FontModel {
         glib::Object::new(&[]).expect("Failed to create Model")
     }
 
-    pub fn append(&self, obj: &RowData) {
+    pub fn append(&self, obj: &FontRowData) {
         let imp = self.imp();
         let index = {
             let mut data = imp.0.borrow_mut();
@@ -30,7 +30,7 @@ impl Model {
     }
 }
 
-impl Default for Model {
+impl Default for FontModel {
     fn default() -> Self {
         Self::new()
     }

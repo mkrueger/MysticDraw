@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+directories = "4.0.1"
 gtk4 = "0.4.6"
 libadwaita = "0.1.0"
 glib = "0.15.6"

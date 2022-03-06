@@ -7,18 +7,18 @@ use gtk4::{
 };
 
 #[derive(Default)]
-pub struct RowData {
+pub struct FontRowDataImpl {
     name: RefCell<Option<String>>,
     count: Cell<u32>,
 }
 
 #[glib::object_subclass]
-impl ObjectSubclass for RowData {
-    const NAME: &'static str = "RowData";
-    type Type = super::row_data::RowData;
+impl ObjectSubclass for FontRowDataImpl {
+    const NAME: &'static str = "FontData";
+    type Type = super::row_data::FontRowData;
 }
 
-impl ObjectImpl for RowData {
+impl ObjectImpl for FontRowDataImpl {
     fn properties() -> &'static [ParamSpec] {
         use once_cell::sync::Lazy;
         static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
