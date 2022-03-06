@@ -6,9 +6,9 @@ use std::{
 
 use glib::subclass::types::ObjectSubclassIsExt;
 use gtk4::{
-    gdk::{self, Key, ModifierType},
+    gdk::{self, Key, ModifierType, Rectangle},
     glib,
-    traits::{GestureDragExt, GestureExt, GestureSingleExt, WidgetExt},
+    traits::{GestureDragExt, GestureExt, GestureSingleExt, WidgetExt, ComboBoxExt, PopoverExt},
 };
 
 use crate::{
@@ -204,15 +204,27 @@ impl AnsiView {
             let gesture = gtk4::GestureClick::new();
             let handle1 = handle.clone();
             gesture.set_button(3);
+
+            let menu_model = gtk4::gio::Menu::new();
+            menu_model.append(Some("Cut"), Some("app.cut"));
+            menu_model.append(Some("Copy"), Some("app.copy"));
+            menu_model.append(Some("Paste"), Some("app.paste"));
+            menu_model.append(Some("Erase"), Some("app.erase"));
+            
+            menu_model.append(Some("Left justify"), Some("app.left_justify"));
+            menu_model.append(Some("Center"), Some("app.center_justify"));
+            menu_model.append(Some("Right justify"), Some("app.right_justify"));
+
+            menu_model.append(Some("Rotate"), Some("app.right_justify"));
+            menu_model.append(Some("Flip X"), Some("app.flip_x"));
+            menu_model.append(Some("Flip Y"), Some("app.flip_y"));
+
+            let menu = gtk4::PopoverMenu::from_model(Some(&menu_model));
+            menu.set_parent(self);
+
             gesture.connect_pressed(glib::clone!(@strong self as this => move |e, _clicks, x, y| {
-                sync_workbench_state(&mut handle1.borrow_mut());
-                let x = min(handle1.borrow().buf.width as i32, max(0, x as i32 / font_dimensions.width as i32));
-                let y = min(handle1.borrow().buf.height as i32, max(0, y as i32 / font_dimensions.height as i32));
-                unsafe {
-                    TOOLS[WORKSPACE.selected_tool].handle_click(handle1.clone(), e.button(), Position::from(x, y));
-                }
-                this.queue_draw();
-                this.grab_focus();
+                menu.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
+                menu.popup();
             }));
             self.add_controller(&gesture);
 

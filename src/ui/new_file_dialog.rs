@@ -1,4 +1,5 @@
-use gtk4::{ traits::{ WidgetExt, BoxExt, GtkWindowExt}, SpinButton, Orientation, Align};
+use glib::ObjectExt;
+use gtk4::{ traits::{ WidgetExt, BoxExt, GtkWindowExt}, SpinButton, Orientation, Align, prelude::DisplayExt};
 use libadwaita::{ PreferencesGroup, ActionRow, traits::{PreferencesGroupExt, ActionRowExt}, HeaderBar};
 
 use super::MainWindow;
@@ -47,9 +48,21 @@ pub fn display_newfile_dialog(main_window: &MainWindow) -> NewFileDialog
     let group = PreferencesGroup::new();
     group.set_title("Set size");
 
+    let mut width = 80.0;
+    let mut height = 100.0;
+    let display = gtk4::gdk::Display::default().unwrap();
+    let clipboard = display.clipboard();
+    unsafe {
+        if let Some(data) = clipboard.data::<crate::model::Layer>("MysticDraw.Layer") {
+            let layer = data.as_ref();
+            width = layer.size.width as f64;
+            height = layer.size.height as f64;
+        }
+    }
+
     let width_spin_button = SpinButton::with_range(0.0, 10000.0, 10.0);
     width_spin_button.set_valign(Align::Center);
-    width_spin_button.set_value(80.0);
+    width_spin_button.set_value(width);
     let row = ActionRow::builder()
         .title("Width")
         .build();
@@ -58,7 +71,7 @@ pub fn display_newfile_dialog(main_window: &MainWindow) -> NewFileDialog
 
     let height_spin_button = SpinButton::with_range(0.0, 10000.0, 10.0);
     height_spin_button.set_valign(Align::Center);
-    height_spin_button.set_value(100.0);
+    height_spin_button.set_value(height);
     let row = ActionRow::builder()
         .title("Height")
         .build();

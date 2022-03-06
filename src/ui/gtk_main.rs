@@ -394,6 +394,15 @@ impl MainWindow {
             }));
             app.add_action(&action);
 
+            let action = SimpleAction::new("erase", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    editor.borrow_mut().delete_selection();
+                 }
+                 main_window.update_editor();
+            }));
+            app.add_action(&action);
+
             app.set_accels_for_action("app.open", &["<primary>o"]);
             app.set_accels_for_action("app.preferences", &["<primary>comma"]);
             app.set_accels_for_action("app.cut", &["<primary>x"]);
@@ -592,7 +601,6 @@ impl MainWindow {
         menu.append(Some("Preferences"), Some("app.preferences"));
         menu.append(Some("Keyboard Map"), Some("app.keymap"));
         menu.append(Some("About"), Some("app.about"));
-
         hb.pack_end(
             &gtk4::MenuButton::builder()
                 .icon_name("open-menu-symbolic")
