@@ -99,12 +99,10 @@ impl MainWindow {
             let idx = row.index();
             if let Some(e) = main_window.get_current_editor() {
                 let res = Rc::new(layer_view::display_edit_layer_dialog(&main_window.window, &e.borrow_mut().buf.layers[idx as usize]));
-                let rd = &res.clone().dialog;
-                rd.connect_response(clone!(@strong main_window => move |dialog, r| {
-                    if let ResponseType::Ok = r {
-                        res.set_layer_values(&mut e.borrow_mut().buf.layers[idx as usize])
-                    } 
-                    dialog.close();
+                let rd = &res.clone().open_button;
+                rd.connect_clicked(clone!(@strong main_window => move |dialog| {
+                    res.set_layer_values(&mut e.borrow_mut().buf.layers[idx as usize]);
+                    res.dialog.close();
                     main_window.update_layer_view();
                     main_window.update_editor();
                 }));
@@ -312,6 +310,24 @@ impl MainWindow {
             }));
             app.add_action(&action);
 
+            let action = SimpleAction::new("layer-copy", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let row = main_window.layer_listbox.row_at_index(0);
+                    if let Some(row)= row {
+                        let idx = row.index();
+                        let mut new_layer= editor.borrow_mut().buf.layers[idx as usize].clone();
+                        new_layer.name = format!("{} copy", new_layer.name);
+                        editor.borrow_mut().buf.layers.insert(0, new_layer);
+                        main_window.update_layer_view();
+
+                        main_window.layer_listbox.select_row(Some(&row));
+                        main_window.get_current_ansi_view().unwrap().queue_draw();
+                    }
+                }
+            }));
+            app.add_action(&action);
+
             let action = SimpleAction::new("layer-delete", None);
             action.connect_activate(clone!(@strong main_window => move |_,_| {
                 let cur = main_window.get_current_ansi_view();
@@ -391,8 +407,11 @@ impl MainWindow {
     fn cut_to_clipboard(&self) {
         if !self.copy_to_clipboard() { return; }
         let cur = self.get_current_ansi_view();
+
         if let Some(editor) = cur.map(|view| view.get_editor()) {
+            let pos = editor.borrow().cur_selection.as_ref().unwrap().rectangle.start;
             editor.borrow_mut().delete_selection();
+            editor.borrow_mut().cursor.set_position(pos);
         }
     }
 
@@ -631,6 +650,13 @@ impl MainWindow {
             .action_name("app.layer-down")
             .build();
         toolbar.append(&layer_down_button);
+
+        let layer_copy_button = gtk4::Button::builder()
+            .icon_name("md-layer-copy")
+            .action_name("app.layer-copy")
+            .build();
+        
+        toolbar.append(&layer_copy_button);
 
         let layer_delete_button = gtk4::Button::builder()
             .icon_name("md-layer-delete")

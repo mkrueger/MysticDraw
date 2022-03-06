@@ -157,15 +157,13 @@ impl Editor
 
     pub fn delete_line(&mut self, line: i32)
     {
-        let layer = &mut self.buf.layers[0];
-        assert!(!(line < 0 || line >= self.buf.height as i32), "line out of range");
-        layer.lines.remove(line as usize);
+        let layer = &mut self.buf.layers[self.cur_layer as usize];
+        layer.remove_line(line);
     }
 
     pub fn insert_line(&mut self, line: i32) {
-        let layer = &mut self.buf.layers[0];
-        assert!(!(line < 0 || line >= self.buf.height as i32), "line out of range");
-        layer.lines.insert(line as usize, super::Line::new());
+        let layer = &mut self.buf.layers[self.cur_layer as usize];
+        layer.insert_line(line, super::Line::new());
     }
 
     pub fn pickup_color(&mut self, pos: Position)

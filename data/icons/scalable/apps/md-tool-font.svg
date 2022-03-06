@@ -1,41 +1,43 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg
-   width="76px"
-   height="76px"
-   viewBox="0 0 76 76"
-   version="1.1"
-   enable-background="new 0 0 76.00 76.00"
-   xml:space="preserve"
-   id="svg4"
-   sodipodi:docname="md-tool-font.svg"
-   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg"><defs
-   id="defs8" /><sodipodi:namedview
-   id="namedview6"
-   pagecolor="#ffffff"
-   bordercolor="#666666"
-   borderopacity="1.0"
-   inkscape:pageshadow="2"
-   inkscape:pageopacity="0.0"
-   inkscape:pagecheckerboard="0"
-   showgrid="false"
-   inkscape:zoom="10.223684"
-   inkscape:cx="38"
-   inkscape:cy="38"
-   inkscape:window-width="3840"
-   inkscape:window-height="1015"
-   inkscape:window-x="0"
-   inkscape:window-y="32"
-   inkscape:window-maximized="1"
-   inkscape:current-layer="svg4" />
-	<path
-   fill="#000000"
-   fill-opacity="1"
-   stroke-width="0.399879"
-   stroke-linejoin="round"
-   d="m 19.257308,76.152395 v -5.83164 c 6.993489,0 11.996378,-3.748869 11.996378,-11.66308 V 18.169896 c 0,-6.119352 -4.50244,-7.997585 -10.621793,-7.997585 -6.119353,0 -10.371869,1.878233 -10.371869,7.997585 H 3.2621359 V 0.17532832 H 71.241616 V 18.169896 h -6.997888 c 0,-6.119352 -4.252716,-7.997585 -10.371869,-7.997585 -6.119353,0 -10.621793,1.878233 -10.621793,7.997585 v 40.487779 c 0,7.914211 5.002889,11.66308 11.996379,11.66308 v 5.83164 z"
-   id="path2" />
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="94.63px" height="94.63px" viewBox="0 0 94.63 94.63" style="enable-background:new 0 0 94.63 94.63;" xml:space="preserve"
+	>
+<g>
+	<path d="M93.949,91.792L59.861,1.295C59.568,0.516,58.822,0,57.989,0H37.522c-0.827,0-1.568,0.509-1.866,1.28L0.686,91.91
+		c-0.237,0.615-0.156,1.308,0.216,1.852c0.373,0.543,0.99,0.868,1.649,0.868h17.268c0.835,0,1.583-0.521,1.875-1.304l7.782-20.92
+		H64.37l7.199,20.746c0.279,0.806,1.038,1.345,1.891,1.345h18.619c0.655,0,1.271-0.322,1.645-0.862
+		C94.098,93.096,94.181,92.406,93.949,91.792z M59.277,57.126H34.775l12.638-38.098L59.277,57.126z"/>
+</g>
+<g>
+</g>
+<g>
+</g>
+<g>
+</g>
+<g>
+</g>
+<g>
+</g>
+<g>
+</g>
+<g>
+</g>
+<g>
+</g>
+<g>
+</g>
+<g>
+</g>
+<g>
+</g>
+<g>
+</g>
+<g>
+</g>
+<g>
+</g>
+<g>
+</g>
 </svg>

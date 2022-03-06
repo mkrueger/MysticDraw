@@ -1,41 +1,55 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   width="76px"
-   height="76px"
-   viewBox="0 0 76 76"
+   width="24px"
+   height="24px"
+   viewBox="0 0 24 24"
    version="1.1"
-   enable-background="new 0 0 76.00 76.00"
-   xml:space="preserve"
-   id="svg4"
-   sodipodi:docname="md-tool-erase.svg"
+   id="svg9"
+   sodipodi:docname="erase-svgrepo-com.svg"
    inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg"><defs
-   id="defs8" /><sodipodi:namedview
-   id="namedview6"
-   pagecolor="#ffffff"
-   bordercolor="#666666"
-   borderopacity="1.0"
-   inkscape:pageshadow="2"
-   inkscape:pageopacity="0.0"
-   inkscape:pagecheckerboard="0"
-   showgrid="false"
-   inkscape:zoom="10.223684"
-   inkscape:cx="38"
-   inkscape:cy="38"
-   inkscape:window-width="3840"
-   inkscape:window-height="1015"
-   inkscape:window-x="0"
-   inkscape:window-y="32"
-   inkscape:window-maximized="1"
-   inkscape:current-layer="svg4" />
-	<path
-   fill="#000000"
-   fill-opacity="1"
-   stroke-width="0.368713"
-   stroke-linejoin="round"
-   d="m 31.986327,38.63445 9.050229,9.050228 V 58.480576 L 0.17106123,70.74321 Z M 58.697139,3.6067774 61.595771,6.5299296 38.117645,29.877532 v 5.838007 l 5.838006,5.837822 h 5.837822 l 23.364195,-23.36401 2.906559,2.931262 -26.270754,26.270754 H 43.955651 L 32.279638,35.715539 V 29.877532 Z M 38.536133,32.191939 67.432487,3.2955845 69.49654,5.3596358 40.600184,34.25599 Z m 6.1492,6.878882 28.896354,-28.896354 2.064051,2.064051 -28.896354,28.896354 z M 41.036556,36.570397 69.932911,7.6740431 71.996962,9.7380957 43.100607,38.63445 Z"
-   id="path2" />
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs13" />
+  <sodipodi:namedview
+     id="namedview11"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     showgrid="false"
+     inkscape:zoom="32.375"
+     inkscape:cx="11.984556"
+     inkscape:cy="12"
+     inkscape:window-width="3840"
+     inkscape:window-height="1015"
+     inkscape:window-x="0"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg9" />
+  <!-- Uploaded to SVGRepo https://www.svgrepo.com -->
+  <title
+     id="title2">ic_fluent_erase_24_regular</title>
+  <desc
+     id="desc4">Created with Sketch.</desc>
+  <g
+     id="🔍-Product-Icons"
+     stroke="none"
+     stroke-width="1"
+     fill="none"
+     fill-rule="evenodd"
+     transform="matrix(1.2650818,0,0,1.2650818,-3.192486,-2.525091)">
+    <g
+       id="ic_fluent_erase_24_regular"
+       fill="#212121"
+       fill-rule="nonzero">
+      <path
+         d="m 15.869869,2.6688131 4.968526,4.9685256 c 0.87868,0.8786797 0.87868,2.3033009 0,3.1819803 l -8.6818,8.680484 L 18.25448,19.5 c 0.379696,0 0.693491,0.282154 0.743153,0.648229 L 19.00448,20.25 c 0,0.379696 -0.282154,0.693491 -0.648229,0.743153 L 18.25448,21 9.8444623,21.00125 C 9.2282528,21.034873 8.6008519,20.816324 8.1301307,20.345603 L 3.1616051,15.377077 c -0.8786797,-0.878679 -0.8786797,-2.303301 0,-3.18198 L 12.687889,2.6688131 c 0.87868,-0.8786796 2.303301,-0.8786796 3.18198,0 z M 5.7085953,11.767803 4.2222652,13.255757 c -0.2928932,0.292893 -0.2928932,0.767767 0,1.06066 l 4.9685257,4.968526 c 0.1464466,0.146447 0.3383883,0.21967 0.53033,0.21967 L 9.75,19.5 9.788496,19.5016 c 0.168908,-0.01515 0.333662,-0.08736 0.462955,-0.216656 l 1.486144,-1.48714 z m 8.0399537,-8.0383297 -6.9789537,6.9773297 6.0289997,6.03 6.97914,-6.9781439 c 0.292893,-0.2928932 0.292893,-0.767767 0,-1.0606602 L 14.809209,3.7294733 c -0.292893,-0.2928932 -0.767767,-0.2928932 -1.06066,0 z"
+         id="🎨-Color" />
+    </g>
+  </g>
 </svg>

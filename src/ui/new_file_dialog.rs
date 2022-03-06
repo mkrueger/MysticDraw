@@ -27,14 +27,11 @@ pub fn display_newfile_dialog(main_window: &MainWindow) -> NewFileDialog
     content_area.set_margin_bottom(20);
     content_area.set_margin_start(20);
     content_area.set_margin_end(20);
-    
-
     let group = PreferencesGroup::new();
     group.set_title("New file size");
 
     let width_spin_button = SpinButton::with_range(0.0, 500.0, 10.0);
     width_spin_button.set_value(80.0);
-
     let row = ActionRow::builder()
     .title("Width")
     .build();
