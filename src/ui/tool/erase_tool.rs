@@ -1,5 +1,5 @@
 use gtk4::{traits::{BoxExt, CheckButtonExt, WidgetExt, OrientableExt}, CheckButton, Orientation, Align, Label, SpinButton};
-use crate::{model::{ERASE_TOOL, erase_tool::EraseType}};
+use crate::{model::{ERASE_TOOL, erase_imp::EraseType}};
 
 pub fn add_erase_tool_page(content_box: &mut gtk4::Box)
 {

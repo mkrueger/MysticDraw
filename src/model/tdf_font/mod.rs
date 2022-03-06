@@ -31,12 +31,12 @@ impl TheDrawFont
         f.read_to_end(&mut bytes).expect("error while reading file");
 
         if bytes.len() < THE_DRAW_FONT_HEADER_SIZE  {
-            eprintln!("no ttf file - file too short");
+            eprintln!("'{}' is no ttf file - file too short", file_name.as_os_str().to_string_lossy());
             return None;
         }
         
         if bytes[0] != 19 || THE_DRAW_FONT_ID != &bytes[1..19] {
-            eprintln!("no ttf file - wrong id");
+            eprintln!("'{}' is no ttf file - wrong id", file_name.as_os_str().to_string_lossy());
             return None;
         }
         // skip data
@@ -45,7 +45,7 @@ impl TheDrawFont
         let font_name_len = bytes[o] as usize;
         o += 1;
         if font_name_len > 16 {
-            eprintln!("invalid ttf font - name length was: {}", font_name_len);
+            eprintln!("'{}' invalid ttf font - name length was: {}", file_name.as_os_str().to_string_lossy(), font_name_len,);
             return None;
         }
         let name = String::from_utf8_lossy(&bytes[o..(o + font_name_len)]).to_string();
@@ -56,7 +56,7 @@ impl TheDrawFont
             1 => TheDrawFontType::Block,
             2 => TheDrawFontType::Color,
             _ => { 
-                eprintln!("unsupported ttf font type {}", bytes[o]);
+                eprintln!("'{}' unsupported ttf font type {}", file_name.as_os_str().to_string_lossy(), bytes[o]);
                 return None;
             }
         };
@@ -69,7 +69,6 @@ impl TheDrawFont
         let mut char_table= Vec::new();
     	for _ in 0..94 {
             let cur_char = bytes[o] as u16 | ((bytes[o + 1] as u16) << 8);
-            // println!("{}:{:>04X}", char::from_u32((i as u32 ) + (b' ' as u32) + 1).unwrap(),  cur_char);
             char_table.push(cur_char);
             o += 2;
         }

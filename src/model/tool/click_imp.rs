@@ -42,6 +42,11 @@ impl Tool for ClickTool
 
     fn handle_drag_end(&self, editor: Rc<RefCell<Editor>>, start: Position, cur: Position) -> Event {
         let mut editor = editor.borrow_mut();
+        let mut cur = cur;
+        if start < cur {
+            cur = cur + Position::from(1, 1);
+        }
+
         if start == cur { 
             editor.cur_selection = None;
         } else {

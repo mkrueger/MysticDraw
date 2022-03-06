@@ -50,8 +50,6 @@ glib::wrapper! {
 
 impl CharSelectorDialog {
     pub fn new(_model: ApplicationWindow) -> Self {
-        let dialog =
-            glib::Object::new::<CharSelectorDialog>(&[]).expect("Failed to create ProvidersDialog");
-        dialog
+        glib::Object::new::<CharSelectorDialog>(&[]).expect("Failed to create ProvidersDialog")
     }
 }

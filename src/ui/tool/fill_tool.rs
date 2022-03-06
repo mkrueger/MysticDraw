@@ -19,21 +19,23 @@ pub fn create_char_view() -> (AnsiView, Rc<RefCell<Editor>>)
     (ansi_view, editor_handle)
 }
 
-pub unsafe fn get_preview_char() -> DosChar
+pub fn get_preview_char() -> DosChar
 {
-    let mut color = TextAttribute::DEFAULT;
-    
-    if FILL_TOOL.use_back {
-        color.set_background_ice(FILL_TOOL.attr.get_background_ice());
-    }
+    unsafe {
+        let mut color = TextAttribute::DEFAULT;
+        
+        if FILL_TOOL.use_back {
+            color.set_background_ice(FILL_TOOL.attr.get_background_ice());
+        }
 
-    if FILL_TOOL.use_fore {
-        color.set_foreground(FILL_TOOL.attr.get_foreground());
-    }
-    
-    crate::model::DosChar {
-        char_code: FILL_TOOL.char_code, 
-        attribute: color 
+        if FILL_TOOL.use_fore {
+            color.set_foreground(FILL_TOOL.attr.get_foreground());
+        }
+        
+        crate::model::DosChar {
+            char_code: FILL_TOOL.char_code, 
+            attribute: color 
+        }
     }
 }
 

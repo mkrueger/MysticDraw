@@ -1,4 +1,4 @@
-use gtk4::{ResponseType, traits::{DialogExt,  WidgetExt, BoxExt, GtkWindowExt}, SpinButton, Orientation, Align};
+use gtk4::{ traits::{ WidgetExt, BoxExt, GtkWindowExt}, SpinButton, Orientation, Align};
 use libadwaita::{ PreferencesGroup, ActionRow, traits::{PreferencesGroupExt, ActionRowExt}, HeaderBar};
 
 use super::MainWindow;

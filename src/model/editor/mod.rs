@@ -231,7 +231,7 @@ impl Editor
         Ok(DEFAULT_OUTLINE_TABLE[self.cur_outline as usize][i as usize])
     }
     
-    pub fn get_outline_char_code_from(&self, outline:i32, i: i32) -> Result<u8, &str>
+    pub fn get_outline_char_code_from(outline:i32, i: i32) -> Result<u8, &'static str>
     {
         if outline < 0 || outline >= DEFAULT_OUTLINE_TABLE.len() as i32 {
             return Err("current outline out of range.");
@@ -256,6 +256,21 @@ impl Editor
     pub fn set_char(&mut self, pos: Position, dos_char: DosChar) {
         if self.point_is_valid(pos) {
             self.buf.set_char(self.cur_layer as usize, pos, dos_char);
+        }
+    }
+
+    pub fn fill(&mut self, rect: Rectangle, dos_char: DosChar) {
+
+        println!("{:?}", rect);
+        let mut pos = rect.start;
+        for _ in 0..rect.size.height {
+            for _ in 0..rect.size.width {
+                println!("{}", pos);
+                self.set_char(pos, dos_char);
+                pos.x += 1;
+            }
+            pos.y += 1;
+            pos.x = rect.start.x;
         }
     }
 

@@ -12,11 +12,7 @@ glib::wrapper! {
 
 impl CharButton {
     pub fn new(char_code: u8) -> Self {
-        let o = glib::Object::new(&[("charcode", &char_code)]).expect("Failed to create a AnsiEditorArea");
-
-       // let x = o.imp();
-       // x.main_window.replace(main_window.borrow());
-        o
+        glib::Object::new(&[("charcode", &char_code)]).expect("Failed to create a AnsiEditorArea")
     }
 /* 
     fn constructed(&self, obj: &Self::Type) {

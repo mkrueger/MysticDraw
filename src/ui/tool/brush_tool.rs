@@ -1,5 +1,5 @@
 use gtk4::{traits::{BoxExt, CheckButtonExt, WidgetExt, StyleContextExt, ToggleButtonExt, OrientableExt}, CheckButton, ToggleButton, Orientation, Align, Label, SpinButton};
-use crate::{model::{BRUSH_TOOL, brush_tool::BrushType}};
+use crate::{model::{BRUSH_TOOL, brush_imp::BrushType}};
 
 pub fn add_brush_tool_page(content_box: &mut gtk4::Box)
 {

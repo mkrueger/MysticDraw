@@ -59,17 +59,15 @@ impl LineTool {
     {
         let pos = editor.cursor.get_position();
         if old_char == editor.get_outline_char_code(VERTICAL_CHAR).unwrap() {
-            if self.old_pos.y > pos.y {
-                Some(editor.get_outline_char_code(if to_left {CORNER_UPPER_RIGHT} else { CORNER_UPPER_LEFT}).unwrap())
-            } else if self.old_pos.y < pos.y {
-                Some(editor.get_outline_char_code(if to_left {CORNER_LOWER_RIGHT} else { CORNER_LOWER_LEFT}).unwrap())
-            } else {
-                None
+            match self.old_pos.y.cmp(&pos.y) {
+                std::cmp::Ordering::Greater => Some(editor.get_outline_char_code(if to_left {CORNER_UPPER_RIGHT} else { CORNER_UPPER_LEFT}).unwrap()),
+                std::cmp::Ordering::Less => Some(editor.get_outline_char_code(if to_left {CORNER_LOWER_RIGHT} else { CORNER_LOWER_LEFT}).unwrap()),
+                std::cmp::Ordering::Equal => None
             }
         } else if old_char == editor.get_outline_char_code(VERT_LEFT_CHAR).unwrap() || old_char == editor.get_outline_char_code(VERT_RIGHT_CHAR).unwrap()  {
             let cur =editor.get_cur_outline();
             if cur < 4  {
-                let ck = editor.get_outline_char_code_from(4, cur);
+                let ck = Editor::get_outline_char_code_from(4, cur);
                 Some(ck.unwrap())
             } else { None}
         } else {
@@ -98,16 +96,14 @@ impl LineTool {
     {
         let pos = editor.cursor.get_position();
         if old_char == editor.get_outline_char_code(HORIZONTAL_CHAR).unwrap() {
-            if self.old_pos.x > pos.x {
-                Some(editor.get_outline_char_code(if to_left {CORNER_LOWER_LEFT} else { CORNER_UPPER_LEFT}).unwrap())
-            } else if self.old_pos.x < pos.x {
-                Some(editor.get_outline_char_code(if to_left {CORNER_LOWER_RIGHT} else { CORNER_UPPER_RIGHT}).unwrap())
-            } else {
-                None
+            match self.old_pos.x.cmp(&pos.x) {
+                std::cmp::Ordering::Greater => Some(editor.get_outline_char_code(if to_left {CORNER_LOWER_RIGHT} else { CORNER_UPPER_RIGHT}).unwrap()),
+                std::cmp::Ordering::Less => Some(editor.get_outline_char_code(if to_left {CORNER_LOWER_LEFT} else { CORNER_UPPER_LEFT}).unwrap()),
+                std::cmp::Ordering::Equal => None
             }
         } else if old_char == editor.get_outline_char_code(HORIZ_UP_CHAR).unwrap() || old_char == editor.get_outline_char_code(HORIZ_DOWN_CHAR).unwrap()  {
             if editor.get_cur_outline() < 4  {
-                Some(editor.get_outline_char_code_from(4, editor.get_cur_outline()).unwrap())
+                Some(Editor::get_outline_char_code_from(4, editor.get_cur_outline()).unwrap())
             } else { None}
         } else {
             None

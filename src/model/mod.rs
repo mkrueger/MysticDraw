@@ -12,6 +12,9 @@ pub use dos_char::*;
 mod layer;
 pub use layer::*;
 
+mod overlay_layer;
+pub use overlay_layer::*;
+
 mod position;
 pub use position::*;
 

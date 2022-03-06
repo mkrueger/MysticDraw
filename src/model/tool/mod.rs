@@ -3,16 +3,16 @@ use std::{rc::Rc, cell::{RefCell, RefMut}, cmp::{max, min}};
 use super::{TextAttribute, DosChar};
 pub use super::{Editor, Event, Position};
 
-pub mod brush_tool;
-mod click_tool;
-pub mod draw_rectangle_tool;
-mod draw_ellipse_tool;
-pub mod erase_tool;
-mod fill_tool;
-mod font_tool;
-mod pipette_tool;
-mod line_tool;
-mod flip_tool;
+pub mod brush_imp;
+mod click_imp;
+pub mod draw_rectangle_imp;
+mod draw_ellipse_imp;
+pub mod erase_imp;
+mod fill_imp;
+mod font_imp;
+mod pipette_imp;
+mod line_imp;
+mod flip_imp;
 
 #[derive(Copy, Clone, Debug)]
  pub enum MKey {
@@ -406,10 +406,10 @@ pub static SHADE_GRADIENT: [u8;4] = [176, 177, 178, 219];
 
 pub static mut TOOLS: Vec<&mut dyn Tool> = Vec::new();
 
-pub static mut CLICK_TOOL: click_tool::ClickTool = click_tool::ClickTool { };
-pub static mut FONT_TOOL: font_tool::FontTool = font_tool::FontTool { fonts: Vec::new(), selected_font: -1, last_height: -1  };
+pub static mut CLICK_TOOL: click_imp::ClickTool = click_imp::ClickTool { };
+pub static mut FONT_TOOL: font_imp::FontTool = font_imp::FontTool { fonts: Vec::new(), selected_font: -1, sizes: Vec::new() };
 
-pub static mut LINE_TOOL: line_tool::LineTool = line_tool::LineTool {
+pub static mut LINE_TOOL: line_imp::LineTool = line_imp::LineTool {
     draw_mode: DrawMode::Line, 
     use_fore: true, 
     use_back: true, 
@@ -418,7 +418,7 @@ pub static mut LINE_TOOL: line_tool::LineTool = line_tool::LineTool {
     old_pos: Position { x: 0, y: 0 }
 };
 
-pub static mut RECT_TOOL: draw_rectangle_tool::DrawRectangleTool = draw_rectangle_tool::DrawRectangleTool { 
+pub static mut RECT_TOOL: draw_rectangle_imp::DrawRectangleTool = draw_rectangle_imp::DrawRectangleTool { 
     draw_mode: DrawMode::Line, 
     use_fore: true, 
     use_back: true, 
@@ -427,7 +427,7 @@ pub static mut RECT_TOOL: draw_rectangle_tool::DrawRectangleTool = draw_rectangl
     char_code: b'#'
 };
 
-pub static mut ELLIPSE_TOOL: draw_ellipse_tool::DrawEllipseTool = draw_ellipse_tool::DrawEllipseTool {
+pub static mut ELLIPSE_TOOL: draw_ellipse_imp::DrawEllipseTool = draw_ellipse_imp::DrawEllipseTool {
     draw_mode: DrawMode::Line, 
     use_fore: true, 
     use_back: true, 
@@ -436,24 +436,24 @@ pub static mut ELLIPSE_TOOL: draw_ellipse_tool::DrawEllipseTool = draw_ellipse_t
     char_code: b'#'
 };
 
-pub static mut BRUSH_TOOL: brush_tool::BrushTool = brush_tool::BrushTool {
+pub static mut BRUSH_TOOL: brush_imp::BrushTool = brush_imp::BrushTool {
     size: 3, 
     use_back: true,
     use_fore: true,
-    brush_type: brush_tool::BrushType::Shade,
+    brush_type: brush_imp::BrushType::Shade,
     char_code: b'#',
  };
 
-pub static mut ERASE_TOOL: erase_tool::EraseTool = erase_tool::EraseTool { size: 3, brush_type: erase_tool::EraseType::Shade };
-pub static mut PIPETTE_TOOL: pipette_tool::PipetteTool = pipette_tool::PipetteTool { };
-pub static mut FILL_TOOL: fill_tool::FillTool = fill_tool::FillTool {
+pub static mut ERASE_TOOL: erase_imp::EraseTool = erase_imp::EraseTool { size: 3, brush_type: erase_imp::EraseType::Shade };
+pub static mut PIPETTE_TOOL: pipette_imp::PipetteTool = pipette_imp::PipetteTool { };
+pub static mut FILL_TOOL: fill_imp::FillTool = fill_imp::FillTool {
     use_char: true,
     use_fore: true,
     use_back: true,
     char_code: b'#',
     attr: TextAttribute::DEFAULT
 };
-pub static mut FLIP_TOOL: flip_tool::FlipTool = flip_tool::FlipTool { };
+pub static mut FLIP_TOOL: flip_imp::FlipTool = flip_imp::FlipTool { };
 
 pub fn init_tools()
 {

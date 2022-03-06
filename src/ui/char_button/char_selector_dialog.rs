@@ -4,8 +4,8 @@ use libadwaita::ApplicationWindow;
 pub struct CharSelectorDialog {
     pub dialog: gtk4::Dialog,
 
-    check_box: gtk4::CheckButton,
-    name_entry: gtk4::Entry
+    pub check_box: gtk4::CheckButton,
+    pub name_entry: gtk4::Entry
 }
 
 pub fn display_char_selector_dialog() -> CharSelectorDialog
