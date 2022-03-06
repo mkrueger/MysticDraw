@@ -152,7 +152,7 @@ pub trait Tool
             MKey::Home  => {
                 if let MModifiers::Control = modifier {
                     for i in 0..editor.buf.width {
-                        if !editor.buf.get_char(pos.with_x(i as i32)).is_transparent() {
+                        if !editor.get_char_from_cur_layer(pos.with_x(i as i32)).is_transparent() {
                             editor.set_cursor(i as i32, pos.y);
                             return Event::None;
                         }
@@ -163,7 +163,7 @@ pub trait Tool
             MKey::End => {
                 if let MModifiers::Control = modifier {
                     for i in (0..editor.buf.width).rev()  {
-                        if !editor.buf.get_char(pos.with_x(i as i32)).is_transparent() {
+                        if !editor.get_char_from_cur_layer(pos.with_x(i as i32)).is_transparent() {
                             editor.set_cursor(i as i32, pos.y);
                             return Event::None;
                         }
@@ -181,7 +181,7 @@ pub trait Tool
                 } else {
                     let pos = editor.cursor.get_position();
                     for i in pos.x..(editor.buf.width as i32 - 1) {
-                        let next = editor.buf.get_char( Position::from(i + 1, pos.y));
+                        let next = editor.get_char_from_cur_layer( Position::from(i + 1, pos.y));
                         editor.set_char(Position::from(i, pos.y), next);
                     }
                     let last_pos = Position::from(editor.buf.width as i32 - 1, pos.y);
@@ -207,7 +207,7 @@ pub trait Tool
                         editor.cursor.set_position(pos + Position::from(-1, 0));
                     if editor.cursor.insert_mode {
                         for i in pos.x..(editor.buf.width as i32 - 1) {
-                            let next = editor.buf.get_char( Position::from(i + 1, pos.y));
+                            let next = editor.get_char_from_cur_layer( Position::from(i + 1, pos.y));
                             editor.set_char(Position::from(i, pos.y), next);
                         }
                         let last_pos = Position::from(editor.buf.width as i32 - 1, pos.y);
@@ -326,7 +326,7 @@ trait Plottable {
 
 fn plot_point(editor: &Rc<RefCell<Editor>>, tool: &dyn Plottable, pos: Position)
 {
-    let ch = editor.borrow().get_char(pos);
+    let ch = editor.borrow().get_char_from_cur_layer(pos);
     let editor_attr = editor.borrow().cursor.get_attribute();
     let mut attribute= ch.attribute;
     if tool.get_use_back() {

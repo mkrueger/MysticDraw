@@ -246,6 +246,13 @@ impl Editor
         self.buf.get_char(pos)
     }
 
+    pub fn get_char_from_cur_layer(&self, pos: Position) -> DosChar {
+        if self.cur_layer >= self.buf.layers.len() as i32 {
+            return DosChar::new();
+        }
+        self.buf.layers[self.cur_layer as usize].get_char(pos)
+    }
+
     pub fn set_char(&mut self, pos: Position, dos_char: DosChar) {
         if self.point_is_valid(pos) {
             self.buf.set_char(self.cur_layer as usize, pos, dos_char);
@@ -267,7 +274,7 @@ impl Editor
         let pos = self.cursor.pos;
         if self.cursor.insert_mode {
             for i in (self.buf.width as i32 - 1)..=pos.x {
-                let next = self.buf.get_char( Position::from(i - 1, pos.y));
+                let next = self.get_char_from_cur_layer( Position::from(i - 1, pos.y));
                 self.set_char(Position::from(i, pos.y), next);
             }
         }

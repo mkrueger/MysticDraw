@@ -29,7 +29,7 @@ impl BrushTool {
             for x in 0..self.size {
                 match self.brush_type {
                     BrushType::Shade => {    
-                        let ch = editor.buf.get_char(center + Position::from(x, y));
+                        let ch = editor.get_char_from_cur_layer(center + Position::from(x, y));
                        
                         let attribute= editor.cursor.get_attribute();
 
@@ -55,7 +55,7 @@ impl BrushTool {
                         editor.set_char(center + Position::from(x, y), crate::model::DosChar { char_code: self.char_code, attribute });
                     },
                     BrushType::Color => {
-                        let ch = editor.buf.get_char(center + Position::from(x, y));
+                        let ch = editor.get_char_from_cur_layer(center + Position::from(x, y));
                         let mut attribute = ch.attribute;
 
                         if self.use_fore {

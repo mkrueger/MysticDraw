@@ -69,7 +69,9 @@ impl Buffer {
     pub fn join_overlay(&mut self, i: i32)
     {
         if let Some(layer) = &self.overlay_layer {
-            self.layers[i as usize].join_overlay(layer);
+            if i < self.layers.len() as i32 {
+                self.layers[i as usize].join_overlay(layer);
+            }
             self.remove_overlay();
         }
     }
@@ -94,7 +96,7 @@ impl Buffer {
     }
 
     pub fn set_char(&mut self, layer: usize, pos: Position, dos_char: DosChar) {
-        assert!(layer < self.layers.len(), "invalid layer.");
+        if layer >= self.layers.len() { return; }
 
         let cur_layer  = &mut self.layers[layer];
         cur_layer.set_char(pos, dos_char);

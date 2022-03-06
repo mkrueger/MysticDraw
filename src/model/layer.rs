@@ -78,7 +78,7 @@ impl Layer {
 
     pub fn set_char(&mut self, pos: Position, dos_char: DosChar) {
         let pos = pos - self.offset;
-        if pos.x < 0 || pos.y < 0 || self.is_locked {
+        if pos.x < 0 || pos.y < 0 || self.is_locked || !self.is_visible {
             return;
         }
 
@@ -110,7 +110,7 @@ impl Layer {
 
     pub fn remove_line(&mut self, index: i32)
     {
-        if self.is_locked {
+        if self.is_locked || !self.is_visible {
             return;
         }
         assert!(!(index < 0 || index >= self.lines.len() as i32), "line out of range");
@@ -119,7 +119,7 @@ impl Layer {
 
     pub fn insert_line(&mut self, index: i32, line: Line)
     {
-        if self.is_locked {
+        if self.is_locked || !self.is_visible {
             return;
         }
         assert!(!(index < 0 || index > self.lines.len() as i32), "line out of range");

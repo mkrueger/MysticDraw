@@ -147,6 +147,7 @@ impl MainWindow {
                     .title("Open file")
                     .action(FileChooserAction::Open)
                     .transient_for(&main_window.window)
+                    .modal(true)
                     .width_request(640)
                     .height_request(480)
                     .build();
@@ -194,6 +195,7 @@ impl MainWindow {
                     .title("Save file")
                     .action(FileChooserAction::Save)
                     .transient_for(&main_window.window)
+                    .modal(true)
                     .width_request(640)
                     .height_request(480)
                     .build();
@@ -227,6 +229,7 @@ impl MainWindow {
                     .title("Save file")
                     .action(FileChooserAction::Save)
                     .transient_for(&main_window.window)
+                    .modal(true)
                     .width_request(640)
                     .height_request(480)
                     .build();

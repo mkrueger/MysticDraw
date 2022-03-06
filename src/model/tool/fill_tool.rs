@@ -25,6 +25,7 @@ impl Tool for FillTool
     fn handle_click(&mut self, editor: Rc<RefCell<Editor>>, button: u32, pos: Position) -> Event {
         if button == 1 {
             let mut editor = editor.borrow_mut();
+            if editor.cur_layer >= editor.buf.layers.len() as i32 { return Event::None; }
             let attr = editor.cursor.get_attribute();
             let ch = editor.buf.get_char(pos);
             if self.use_back || self.use_fore || self.use_char {

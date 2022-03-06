@@ -187,8 +187,8 @@ impl Tool for LineTool {
         }
 
         let new_pos = e.cursor.get_position();
-        let new_char = e.buf.get_char(new_pos);
-        let old_char = e.buf.get_char(old_pos);
+        let new_char = e.get_char_from_cur_layer(new_pos);
+        let old_char = e.get_char_from_cur_layer(old_pos);
 
         let b = (new_pos.x - old_pos.x).signum();
         let a = (new_pos.y - old_pos.y).signum();
