@@ -146,6 +146,7 @@ impl Tool for FontTool
 
             MKey::Character(ch) => { 
                 let c_pos = editor.cursor.get_position();
+                editor.begin_atomic_undo();
                 let attr = editor.cursor.get_attribute();
                 let opt_size = font.render(&mut editor, c_pos, attr, ch);
                 if let Some(size) = opt_size  {
@@ -156,6 +157,7 @@ impl Tool for FontTool
                     editor.type_key(ch);
                     self.sizes.push(Size::from(1, 1));
                 }
+                editor.end_atomic_undo();
             }
             _ => {}
         }

@@ -22,6 +22,8 @@ impl EraseTool {
         let center = pos + mid;
         let gradient = [ 219, 178, 177, 176, b' '];
         let mut editor = editor.borrow_mut();
+        editor.begin_atomic_undo();
+
         for y in 0..self.size {
             for x in 0..self.size {
                 match self.brush_type {
@@ -59,6 +61,8 @@ impl EraseTool {
                 }
             }                
         }
+        editor.end_atomic_undo();
+
     }
     
 }

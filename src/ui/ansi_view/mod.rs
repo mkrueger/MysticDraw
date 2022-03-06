@@ -31,12 +31,6 @@ impl Default for AnsiView {
     }
 }
 
-/*
-struct Dialog {
-    payload: Editor,
- }
-*/
-
 static mut DRAG_POS: Position = Position {x:-1, y:-1};
 
 impl AnsiView {

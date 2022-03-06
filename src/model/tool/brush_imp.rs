@@ -25,6 +25,8 @@ impl BrushTool {
         let center = pos + mid;
         let gradient = [176, 177, 178, 219];
         let mut editor = editor.borrow_mut();
+        editor.begin_atomic_undo();
+
         for y in 0..self.size {
             for x in 0..self.size {
                 match self.brush_type {
@@ -73,6 +75,8 @@ impl BrushTool {
                 }
             }                
         }
+        editor.end_atomic_undo();
+
     }
     
 }

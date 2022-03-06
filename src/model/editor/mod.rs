@@ -1,7 +1,7 @@
 use std::{cmp::{max, min}, path::Path, io::Write, fs::File, ffi::OsStr};
 use crate::model::{Buffer, Position, TextAttribute, Rectangle, convert_to_ans, convert_to_asc, convert_to_avt, convert_to_binary, convert_to_pcb, convert_to_xb};
 
-use super::{DosChar, OverlayLayer};
+use super::{DosChar, OverlayLayer, UndoSetChar};
 
 pub struct Cursor {
     pos: Position,
@@ -68,13 +68,13 @@ pub enum Event {
     CursorPositionChange(Position, Position)
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Shape {
     Rectangle,
     Elipse
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Selection
 {
     pub shape: Shape,
@@ -112,6 +112,7 @@ pub struct Editor {
     pub cur_layer: i32,
     pub outline_changed: std::boxed::Box<dyn Fn(&Editor)>,
     pub request_refresh: Box<dyn Fn ()>,
+    atomic_undo_stack: Vec<usize>
 }
 
 impl std::fmt::Debug for Editor {
@@ -141,7 +142,8 @@ impl Editor
             is_inactive: false,
             outline_changed: Box::new(|_| {}),
             request_refresh: Box::new(|| {}),
-            cur_layer: 0
+            cur_layer: 0,
+            atomic_undo_stack: Vec::new()
         }
     }
     
@@ -152,16 +154,31 @@ impl Editor
     
     pub fn join_overlay(&mut self)
     {
-        self.buf.join_overlay(self.cur_layer);
+        self.begin_atomic_undo();
+        let opt_layer = self.buf.remove_overlay();
+
+        if let Some(layer) = &opt_layer {
+            for y in 0..layer.lines.len() {
+                let line = &layer.lines[y];
+                for x in 0..line.chars.len() {
+                    if let Some(ch) = line.chars[x] {
+                        self.set_char(Position::from(x as i32, y as i32), ch);
+                    }
+                }
+            }
+        }
+        self.end_atomic_undo();
     }
 
     pub fn delete_line(&mut self, line: i32)
     {
+        // TODO: Undo
         let layer = &mut self.buf.layers[self.cur_layer as usize];
         layer.remove_line(line);
     }
 
     pub fn insert_line(&mut self, line: i32) {
+        // TODO: Undo
         let layer = &mut self.buf.layers[self.cur_layer as usize];
         layer.insert_line(line, super::Line::new());
     }
@@ -255,7 +272,40 @@ impl Editor
 
     pub fn set_char(&mut self, pos: Position, dos_char: DosChar) {
         if self.point_is_valid(pos) {
+            self.buf.redo_stack.clear();
+            let old = self.buf.get_char_from_layer(self.cur_layer as usize, pos);
             self.buf.set_char(self.cur_layer as usize, pos, dos_char);
+            self.buf.undo_stack.push(Box::new(UndoSetChar { pos, layer: self.cur_layer as usize, old, new: dos_char } ));
+        }
+    }
+    pub fn begin_atomic_undo(&mut self) {
+        self.atomic_undo_stack.push(self.buf.undo_stack.len());
+    }
+
+    pub fn end_atomic_undo(&mut self) {
+        let base_count = self.atomic_undo_stack.pop().unwrap();
+        let count = self.buf.undo_stack.len();
+        if base_count == count { return; }
+
+        let mut stack = Vec::new();
+        while base_count < self.buf.undo_stack.len() {
+            let op = self.buf.undo_stack.pop().unwrap();
+            stack.push(op);
+        }
+        self.buf.undo_stack.push(Box::new(super::AtomicUndo { stack }));
+    }
+
+    pub fn undo(&mut self) {
+        if let Some(op) = self.buf.undo_stack.pop() {
+            op.undo(&mut self.buf);
+            self.buf.redo_stack.push(op);
+        }
+    }
+
+    pub fn redo(&mut self) {
+        if let Some(op) = self.buf.redo_stack.pop() {
+            op.redo(&mut self.buf);
+            self.buf.undo_stack.push(op);
         }
     }
 
@@ -302,12 +352,12 @@ impl Editor
     }
 
     pub fn delete_selection(&mut self) {
-        if let Some(selection) = &self.cur_selection {
+        if let Some(selection) = &self.cur_selection.clone() {
             let mut pos = selection.rectangle.start;
             let ch = DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT };
             for _ in 0..selection.rectangle.size.height {
                 for _ in 0..selection.rectangle.size.width {
-                    self.buf.set_char(self.cur_layer as usize, pos, ch);
+                    self.set_char(pos, ch);
                     pos.x += 1;
                 }
                 pos.y += 1;

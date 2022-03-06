@@ -59,17 +59,7 @@ impl Layer {
         }
     }
 
-    pub fn join_overlay(&mut self, layer: &super::OverlayLayer)
-    {  
-        for y in 0..layer.lines.len() {
-            let line = &layer.lines[y];
-            for x in 0..line.chars.len() {
-                if let Some(ch) = line.chars[x] {
-                    self.set_char(Position::from(x as i32, y as i32), ch);
-                }
-            }
-        }
-    }
+        
 
     pub fn clear(&mut self)
     {

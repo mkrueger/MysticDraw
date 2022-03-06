@@ -6,7 +6,7 @@ use std::{
 };
 use std::ffi::OsStr;
 
-use super::{Layer, read_xb, Sauce, read_sauce, SauceDataType, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size, OverlayLayer};
+use super::{Layer, read_xb, Sauce, read_sauce, SauceDataType, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size, OverlayLayer, UndoOperation};
 
 #[derive(Debug, Default)]
 #[allow(dead_code)]
@@ -22,11 +22,14 @@ pub struct Buffer {
     pub width: usize,
     pub height: usize,
     pub custom_palette: Option<Vec<u8>>,
-    overlay_layer: Option<OverlayLayer>,
+    pub overlay_layer: Option<OverlayLayer>,
 
     pub font: Option<BitFont>,
     pub layers: Vec<Layer>,
     pub sauce: Option<Sauce>,
+
+    pub undo_stack: Vec<Box<dyn UndoOperation>>,
+    pub redo_stack: Vec<Box<dyn UndoOperation>>,
 }
 
 impl std::fmt::Debug for Buffer {
@@ -48,7 +51,9 @@ impl Buffer {
             overlay_layer: None,
             layers: vec!(Layer::new()),
             sauce: None,
-            file_name_changed: Box::new(|| {})
+            file_name_changed: Box::new(|| {}),
+            undo_stack: Vec::new(),
+            redo_stack: Vec::new()
         }
     }
 
@@ -60,21 +65,12 @@ impl Buffer {
 
         &mut self.overlay_layer
     }
-    
-    pub fn remove_overlay(&mut self)
+
+    pub fn remove_overlay(&mut self) -> Option<OverlayLayer>
     {
-        self.overlay_layer = None;
+        std::mem::replace( &mut self.overlay_layer, None)
     }
 
-    pub fn join_overlay(&mut self, i: i32)
-    {
-        if let Some(layer) = &self.overlay_layer {
-            if i < self.layers.len() as i32 {
-                self.layers[i as usize].join_overlay(layer);
-            }
-            self.remove_overlay();
-        }
-    }
 
     pub fn get_font_scanline(&self, ch: u8, y: usize) -> u32
     {
@@ -100,6 +96,14 @@ impl Buffer {
 
         let cur_layer  = &mut self.layers[layer];
         cur_layer.set_char(pos, dos_char);
+    }
+
+    pub fn get_char_from_layer(&mut self, layer: usize, pos: Position) -> DosChar {
+        if let Some(layer) = self.layers.get(layer) {
+            layer.get_char(pos)
+        } else {
+            DosChar::new()
+        }
     }
 
     pub fn get_char(&self, pos: Position) -> DosChar {

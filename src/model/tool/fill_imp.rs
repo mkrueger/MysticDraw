@@ -29,14 +29,17 @@ impl Tool for FillTool
             let attr = editor.cursor.get_attribute();
             let ch = editor.buf.get_char(pos);
             if self.use_back || self.use_fore || self.use_char {
+                editor.begin_atomic_undo();
                 fill(&mut editor, attr, pos, ch,  DosChar{ char_code: self.char_code, attribute: attr });
+                editor.end_atomic_undo();
+
             }
         }
         Event::None
     }
 }
 
-pub fn fill(editor: &mut RefMut<Editor>, attribute: TextAttribute, pos: Position, old_ch: DosChar, new_ch: DosChar) {
+fn fill(editor: &mut RefMut<Editor>, attribute: TextAttribute, pos: Position, old_ch: DosChar, new_ch: DosChar) {
     if !editor.point_is_valid(pos) {
         return;
     }

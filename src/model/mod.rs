@@ -36,6 +36,10 @@ pub use editor::*;
 pub(crate) mod tool;
 pub use tool::*;
 
+mod undo_stack;
+pub use undo_stack::*;
+
+
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Size {
     pub width: usize,
