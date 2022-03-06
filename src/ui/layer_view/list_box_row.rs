@@ -5,7 +5,7 @@ use super::{list_box_row_imp, RowData};
 
 glib::wrapper! {
     pub struct ListBoxRow(ObjectSubclass<list_box_row_imp::ListBoxRow>)
-        @extends gtk4::Widget, gtk4::ListBoxRow;
+    @extends gtk4::Widget, gtk4::ListBoxRow;
 }
 
 impl ListBoxRow {
@@ -13,7 +13,7 @@ impl ListBoxRow {
         glib::Object::new(&[("row-data", &row_data)]).unwrap()
     }
 
-    pub fn index(&self) -> RowData {
+    pub fn get_data(&self) -> RowData {
         self.property_value("row-data").get::<RowData>().unwrap()
     }
 }

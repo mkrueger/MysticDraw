@@ -1,8 +1,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-
-use glib::clone;
+use glib::{clone};
 use gtk4::gio::SimpleAction;
 use libadwaita as adw;
 
@@ -127,12 +126,16 @@ impl MainWindow {
                         buffer.file_name = None;
                         buffer.width  = ws.value() as usize;
                         buffer.height = hs.value() as usize;
-                        main_window.load_page(buffer);
+                        let editor = main_window.load_page(buffer);
+                        editor.borrow_mut().request_refresh = std::boxed::Box::new(clone!(@strong main_window => move || {
+                            main_window.update_editor();
+                        }));
                         main_window.update_layer_view();
                     } 
                     dialog.close();
                     main_window.update_layer_view();
                     main_window.update_editor();
+
                 }));
             }));
             app.add_action(&open_action);
@@ -159,7 +162,10 @@ impl MainWindow {
                         let filename = file.path().expect("Couldn't get file path");
                         let buffer = Buffer::load_buffer(filename.as_path());
                         if let Ok(buf) = buffer {
-                            main_window.load_page(buf);
+                            let editor = main_window.load_page(buf);
+                            editor.borrow_mut().request_refresh = std::boxed::Box::new(clone!(@strong main_window => move || {
+                                main_window.update_editor();
+                            }));
                             std::env::set_current_dir(filename.parent().unwrap()).expect("can't set current path.");
                         }
                     }
@@ -257,6 +263,12 @@ impl MainWindow {
                     new_layer.name = "New layer".to_string();
                     editor.borrow_mut().buf.layers.insert(0, new_layer);
                     main_window.update_layer_view();
+
+                    let row = main_window.layer_listbox.row_at_index(0);
+                    if let Some(row)= row {
+                        main_window.layer_listbox.select_row(Some(&row));
+                    }
+                    main_window.get_current_ansi_view().unwrap().queue_draw();
                 }
             }));
             app.add_action(&action);
@@ -383,7 +395,7 @@ impl MainWindow {
             editor.borrow_mut().delete_selection();
         }
     }
-    
+
     fn copy_to_clipboard(&self) -> bool {
         unsafe {
             if !crate::WORKSPACE.cur_tool().use_selection() || !crate::WORKSPACE.cur_tool().use_caret()  { return false; }
@@ -452,6 +464,20 @@ impl MainWindow {
         if let Some(editor) = self.get_current_editor() {
             for b in &editor.borrow().buf.layers {
                 self.layer_listbox_model.append(&layer_view::RowData::new(&b.name, b.is_visible));
+            }
+            for i in 0..editor.borrow().buf.layers.len() {
+                let row = self.layer_listbox.row_at_index(i as i32);
+                if let Some(row)= row {
+                    row.connect_local("isvisiblechanged", false,clone!(@strong editor => @default-return None, move |args| {
+                        let row = args.get(0).unwrap().get::<gtk4::ListBoxRow>().unwrap();
+                        let is_visible = args.get(1).unwrap().get::<bool>().unwrap();
+                        if let Some(layer) = editor.borrow_mut().buf.layers.get_mut(row.index() as usize) {
+                            layer.is_visible = is_visible;
+                        }
+                        (editor.borrow().request_refresh)();
+                        None
+                    }));
+                }
             }
             let len = editor.borrow().buf.layers.len();
             if len > 0 {
@@ -662,7 +688,7 @@ impl MainWindow {
         button
     }
 
-    fn load_page(&self, buf: Buffer) {
+    fn load_page(&self, buf: Buffer) -> Rc<RefCell<Editor>> {
         let child2 = AnsiView::new();
         let scroller = gtk4::ScrolledWindow::builder()
             .hexpand(true)
@@ -723,6 +749,8 @@ impl MainWindow {
         handle2.borrow_mut().buf.file_name_changed = std::boxed::Box::new(move || {
             MainWindow::set_file_name_for_page(&page, &handle3);
         });
+
+        handle2
     }
 
     fn set_file_name_for_page(page: &Rc<TabPage>, editor: &Rc<RefCell<Editor>>)

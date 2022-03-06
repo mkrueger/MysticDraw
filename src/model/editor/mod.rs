@@ -110,7 +110,8 @@ pub struct Editor {
     pub is_inactive: bool,
 
     pub cur_layer: i32,
-    pub outline_changed: std::boxed::Box<dyn Fn(&Editor)>
+    pub outline_changed: std::boxed::Box<dyn Fn(&Editor)>,
+    pub request_refresh: Box<dyn Fn ()>,
 }
 
 impl std::fmt::Debug for Editor {
@@ -139,6 +140,7 @@ impl Editor
             cur_outline: 0,
             is_inactive: false,
             outline_changed: Box::new(|_| {}),
+            request_refresh: Box::new(|| {}),
             cur_layer: 0
         }
     }

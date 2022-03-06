@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 
+use glib::{subclass::Signal, clone};
 use gtk4::{
     glib::{self, ParamSpec, ParamSpecObject, Value},
     prelude::*,
@@ -51,6 +52,14 @@ impl ObjectImpl for ListBoxRow {
             _ => unimplemented!(),
         }
     }
+    
+    fn signals() -> &'static [Signal] {
+        use once_cell::sync::Lazy;
+        static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
+            vec![Signal::builder("isvisiblechanged", &[bool::static_type().into()], <()>::static_type().into()).build()]
+        });
+        SIGNALS.as_ref()
+    }
 
     fn constructed(&self, obj: &Self::Type) {
         let item = self.row_data.borrow();
@@ -71,6 +80,11 @@ impl ObjectImpl for ListBoxRow {
         hbox.append(&label);
         
         obj.set_child(Some(&hbox));
+        obj.index();
+
+        check_button.connect_toggled(clone!(@weak obj => move |x| {
+            obj.emit_by_name::<()>("isvisiblechanged", &[&x.is_active()]);
+        }));
     }
 }
 

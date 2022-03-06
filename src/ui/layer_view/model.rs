@@ -12,14 +12,13 @@ impl Model {
         glib::Object::new(&[]).expect("Failed to create Model")
     }
 
-
     pub fn clear(&self) {
         let imp = self.imp();
         let len = imp.0.borrow().len();
         imp.0.borrow_mut().clear();
         self.items_changed(0, len as u32, 0);    
     }
-
+    
     pub fn append(&self, obj: &RowData) {
         let imp = self.imp();
         let index = {
