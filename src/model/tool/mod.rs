@@ -159,7 +159,7 @@ pub trait Tool
             MKey::Home  => {
                 if let MModifiers::Control = modifier {
                     for i in 0..editor.buf.width {
-                        if !editor.get_char_from_cur_layer(pos.with_x(i as i32)).is_transparent() {
+                        if !editor.get_char_from_cur_layer(pos.with_x(i as i32)).unwrap_or_default().is_transparent() {
                             editor.set_cursor(i as i32, pos.y);
                             return Event::None;
                         }
@@ -170,7 +170,7 @@ pub trait Tool
             MKey::End => {
                 if let MModifiers::Control = modifier {
                     for i in (0..editor.buf.width).rev()  {
-                        if !editor.get_char_from_cur_layer(pos.with_x(i as i32)).is_transparent() {
+                        if !editor.get_char_from_cur_layer(pos.with_x(i as i32)).unwrap_or_default().is_transparent() {
                             editor.set_cursor(i as i32, pos.y);
                             return Event::None;
                         }
@@ -192,7 +192,7 @@ pub trait Tool
                         editor.set_char(Position::from(i, pos.y), next);
                     }
                     let last_pos = Position::from(editor.buf.width as i32 - 1, pos.y);
-                    editor.set_char(last_pos, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
+                    editor.set_char(last_pos, None);
                 }
             }
             MKey::Insert => {
@@ -218,10 +218,10 @@ pub trait Tool
                             editor.set_char(Position::from(i, pos.y), next);
                         }
                         let last_pos = Position::from(editor.buf.width as i32 - 1, pos.y);
-                        editor.set_char(last_pos, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
+                        editor.set_char(last_pos, None);
                     } else  {
                         let pos = editor.cursor.get_position();
-                        editor.set_char(pos, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
+                        editor.set_char(pos, None);
                     } 
                 }
             }
@@ -333,7 +333,7 @@ trait Plottable {
 
 fn plot_point(editor: &Rc<RefCell<Editor>>, tool: &dyn Plottable, pos: Position)
 {
-    let ch = editor.borrow().get_char_from_cur_layer(pos);
+    let ch = editor.borrow().get_char_from_cur_layer(pos).unwrap_or_default();
     let editor_attr = editor.borrow().cursor.get_attribute();
     let mut attribute= ch.attribute;
     if tool.get_use_back() {
@@ -348,10 +348,10 @@ fn plot_point(editor: &Rc<RefCell<Editor>>, tool: &dyn Plottable, pos: Position)
             if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
                 layer.set_char(
                     pos,
-                    DosChar {
+                    Some(DosChar {
                         char_code: 219,
                         attribute,
-                    },
+                    }),
                 );
             }
         },
@@ -359,10 +359,10 @@ fn plot_point(editor: &Rc<RefCell<Editor>>, tool: &dyn Plottable, pos: Position)
             if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
                 layer.set_char(
                     pos,
-                    DosChar {
+                    Some(DosChar {
                         char_code: tool.get_char_code(),
                         attribute,
-                    },
+                    }),
                 );
             }
         },
@@ -381,10 +381,10 @@ fn plot_point(editor: &Rc<RefCell<Editor>>, tool: &dyn Plottable, pos: Position)
             if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
                 layer.set_char(
                     pos,
-                    DosChar {
+                    Some(DosChar {
                         char_code,
                         attribute,
-                    },
+                    }),
                 );
             }
         }
@@ -392,10 +392,10 @@ fn plot_point(editor: &Rc<RefCell<Editor>>, tool: &dyn Plottable, pos: Position)
             if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
                 layer.set_char(
                     pos,
-                    DosChar {
+                    Some(DosChar {
                         char_code: ch.char_code,
                         attribute,
-                    },
+                    }),
                 );
             }
         }

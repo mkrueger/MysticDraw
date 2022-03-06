@@ -39,54 +39,58 @@ impl Tool for FillTool
     }
 }
 
-fn fill(editor: &mut RefMut<Editor>, attribute: TextAttribute, pos: Position, old_ch: DosChar, new_ch: DosChar) {
+fn fill(editor: &mut RefMut<Editor>, attribute: TextAttribute, pos: Position, opt_old_ch: Option<DosChar>, new_ch: DosChar) {
     if !editor.point_is_valid(pos) {
         return;
     }
-    let cur_char = editor.buf.get_char(pos);
+    let opt_cur_char = editor.buf.get_char(pos);
     unsafe {
-        if FILL_TOOL.use_char && FILL_TOOL.use_fore && FILL_TOOL.use_back {
-            if cur_char != old_ch || cur_char == new_ch {
-                return;
-            }
-        } else if FILL_TOOL.use_fore && FILL_TOOL.use_back {
-            if cur_char.attribute != old_ch.attribute || cur_char.attribute == new_ch.attribute {
-                return;
-            }
-        } else if FILL_TOOL.use_char && FILL_TOOL.use_fore  {
-            if cur_char.char_code != old_ch.char_code && cur_char.attribute.get_foreground() != old_ch.attribute.get_foreground() || 
-               cur_char.char_code == new_ch.char_code && cur_char.attribute.get_foreground() == new_ch.attribute.get_foreground() {
-                return;
-            }
-        } else if FILL_TOOL.use_char && FILL_TOOL.use_back  {
-            if cur_char.char_code != old_ch.char_code && cur_char.attribute.get_background_ice() != old_ch.attribute.get_background_ice() || 
-               cur_char.char_code == new_ch.char_code && cur_char.attribute.get_background_ice() == new_ch.attribute.get_background_ice() {
-                return;
-            }
-        } else if FILL_TOOL.use_char {
-            if cur_char.char_code != old_ch.char_code || cur_char.char_code == new_ch.char_code {
-                return;
-            }
-        } else if FILL_TOOL.use_fore  {
-            if cur_char.attribute.get_foreground() != old_ch.attribute.get_foreground() || cur_char.attribute.get_foreground() == new_ch.attribute.get_foreground() {
-                return;
-            }
-        } else if FILL_TOOL.use_back {
-            if cur_char.attribute.get_background_ice() != old_ch.attribute.get_background_ice()  || cur_char.attribute.get_background_ice() == new_ch.attribute.get_background_ice() {
-                return;
-            }
-        } else {
-            panic!("should never happen!");
-        }
-        let mut repl_ch = cur_char;
-        if FILL_TOOL.use_char { repl_ch.char_code = new_ch.char_code; }
-        if FILL_TOOL.use_fore { repl_ch.attribute.set_foreground(new_ch.attribute.get_foreground()) }
-        if FILL_TOOL.use_back { repl_ch.attribute.set_background_ice(new_ch.attribute.get_background_ice()) }
+        if let Some(cur_char) = opt_cur_char {
+            if let Some(old_ch) = opt_old_ch {
+                if FILL_TOOL.use_char && FILL_TOOL.use_fore && FILL_TOOL.use_back {
+                    if cur_char != old_ch || cur_char == new_ch {
+                        return;
+                    }
+                } else if FILL_TOOL.use_fore && FILL_TOOL.use_back {
+                    if cur_char.attribute != old_ch.attribute || cur_char.attribute == new_ch.attribute {
+                        return;
+                    }
+                } else if FILL_TOOL.use_char && FILL_TOOL.use_fore  {
+                    if cur_char.char_code != old_ch.char_code && cur_char.attribute.get_foreground() != old_ch.attribute.get_foreground() || 
+                    cur_char.char_code == new_ch.char_code && cur_char.attribute.get_foreground() == new_ch.attribute.get_foreground() {
+                        return;
+                    }
+                } else if FILL_TOOL.use_char && FILL_TOOL.use_back  {
+                    if cur_char.char_code != old_ch.char_code && cur_char.attribute.get_background_ice() != old_ch.attribute.get_background_ice() || 
+                    cur_char.char_code == new_ch.char_code && cur_char.attribute.get_background_ice() == new_ch.attribute.get_background_ice() {
+                        return;
+                    }
+                } else if FILL_TOOL.use_char {
+                    if cur_char.char_code != old_ch.char_code || cur_char.char_code == new_ch.char_code {
+                        return;
+                    }
+                } else if FILL_TOOL.use_fore  {
+                    if cur_char.attribute.get_foreground() != old_ch.attribute.get_foreground() || cur_char.attribute.get_foreground() == new_ch.attribute.get_foreground() {
+                        return;
+                    }
+                } else if FILL_TOOL.use_back {
+                    if cur_char.attribute.get_background_ice() != old_ch.attribute.get_background_ice()  || cur_char.attribute.get_background_ice() == new_ch.attribute.get_background_ice() {
+                        return;
+                    }
+                } else {
+                    panic!("should never happen!");
+                }
+                let mut repl_ch = cur_char;
+                if FILL_TOOL.use_char { repl_ch.char_code = new_ch.char_code; }
+                if FILL_TOOL.use_fore { repl_ch.attribute.set_foreground(new_ch.attribute.get_foreground()) }
+                if FILL_TOOL.use_back { repl_ch.attribute.set_background_ice(new_ch.attribute.get_background_ice()) }
 
-        editor.set_char(pos, repl_ch);
+                editor.set_char(pos, Some(repl_ch));
+            }
+        }
     }
-    fill(editor, attribute, pos + Position::from(-1, 0), old_ch, new_ch);
-    fill(editor, attribute, pos + Position::from(1, 0), old_ch, new_ch);
-    fill(editor, attribute, pos + Position::from(    0, -1), old_ch, new_ch);
-    fill(editor, attribute, pos + Position::from(0, 1), old_ch, new_ch);
+    fill(editor, attribute, pos + Position::from(-1, 0), opt_old_ch, new_ch);
+    fill(editor, attribute, pos + Position::from(1, 0), opt_old_ch, new_ch);
+    fill(editor, attribute, pos + Position::from(    0, -1), opt_old_ch, new_ch);
+    fill(editor, attribute, pos + Position::from(0, 1), opt_old_ch, new_ch);
 }

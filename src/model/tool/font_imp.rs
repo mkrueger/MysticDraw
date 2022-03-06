@@ -91,7 +91,7 @@ impl Tool for FontTool
             MKey::Home  => {
                 if let MModifiers::Control = modifier {
                     for i in 0..editor.buf.width {
-                        if !editor.get_char_from_cur_layer(pos.with_x(i as i32)).is_transparent() {
+                        if !editor.get_char_from_cur_layer(pos.with_x(i as i32)).unwrap_or_default().is_transparent() {
                             editor.set_cursor(i as i32, pos.y);
                             return Event::None;
                         }
@@ -103,7 +103,7 @@ impl Tool for FontTool
             MKey::End => {
                 if let MModifiers::Control = modifier {
                     for i in (0..editor.buf.width).rev()  {
-                        if !editor.get_char_from_cur_layer(pos.with_x(i as i32)).is_transparent() {
+                        if !editor.get_char_from_cur_layer(pos.with_x(i as i32)).unwrap_or_default().is_transparent() {
                             editor.set_cursor(i as i32, pos.y);
                             return Event::None;
                         }
@@ -136,10 +136,10 @@ impl Tool for FontTool
                             editor.set_char(Position::from(i, pos.y), next);
                         }
                         let last_pos = Position::from(editor.buf.width as i32 - (letter_size.width as i32), pos.y);
-                        editor.fill(Rectangle{ start: last_pos, size: letter_size }, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
+                        editor.fill(Rectangle{ start: last_pos, size: letter_size }, Some(super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT }));
                     } else {
                         let pos = editor.cursor.get_position();
-                        editor.fill(Rectangle{ start: pos, size: letter_size }, super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
+                        editor.fill(Rectangle{ start: pos, size: letter_size }, Some(super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT }));
                     } 
                 }
             }

@@ -28,7 +28,7 @@ impl EraseTool {
             for x in 0..self.size {
                 match self.brush_type {
                     EraseType::Shade => {    
-                        let ch = editor.get_char_from_cur_layer(center + Position::from(x, y));
+                        let ch = editor.get_char_from_cur_layer(center + Position::from(x, y)).unwrap_or_default();
                        
                         let mut attribute= ch.attribute;
 
@@ -49,14 +49,14 @@ impl EraseTool {
                         }
 
                         if found {
-                            editor.set_char(center + Position::from(x, y), crate::model::DosChar { 
+                            editor.set_char(center + Position::from(x, y), Some(crate::model::DosChar { 
                                 char_code, 
                                 attribute
-                            });
+                            }));
                         }
                     },
                     EraseType::Solid => {
-                        editor.set_char(center + Position::from(x, y), crate::model::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT });
+                        editor.set_char(center + Position::from(x, y), Some(crate::model::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT }));
                     }
                 }
             }                

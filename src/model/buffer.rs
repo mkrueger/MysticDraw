@@ -6,7 +6,7 @@ use std::{
 };
 use std::ffi::OsStr;
 
-use super::{Layer, read_xb, Sauce, read_sauce, SauceDataType, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size, OverlayLayer, UndoOperation};
+use super::{Layer, read_xb, Sauce, read_sauce, SauceDataType, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size, UndoOperation};
 
 #[derive(Debug, Default)]
 #[allow(dead_code)]
@@ -22,7 +22,7 @@ pub struct Buffer {
     pub width: usize,
     pub height: usize,
     pub custom_palette: Option<Vec<u8>>,
-    pub overlay_layer: Option<OverlayLayer>,
+    pub overlay_layer: Option<Layer>,
 
     pub font: Option<BitFont>,
     pub layers: Vec<Layer>,
@@ -57,20 +57,26 @@ impl Buffer {
         }
     }
 
-    pub fn get_overlay_layer(&mut self) -> &mut Option<OverlayLayer>
+    pub fn create(width: usize, height: usize) -> Self {
+        let mut res = Buffer::new();
+        res.width = width;
+        res.height = height;
+
+        res
+    }
+    pub fn get_overlay_layer(&mut self) -> &mut Option<Layer>
     {
         if self.overlay_layer.is_none() {
-            self.overlay_layer = Some(OverlayLayer::new());
+            self.overlay_layer = Some(Layer::new());
         }
 
         &mut self.overlay_layer
     }
 
-    pub fn remove_overlay(&mut self) -> Option<OverlayLayer>
+    pub fn remove_overlay(&mut self) -> Option<Layer>
     {
         std::mem::replace( &mut self.overlay_layer, None)
     }
-
 
     pub fn get_font_scanline(&self, ch: u8, y: usize) -> u32
     {
@@ -91,37 +97,42 @@ impl Buffer {
         }
     }
 
-    pub fn set_char(&mut self, layer: usize, pos: Position, dos_char: DosChar) {
+    pub fn set_char(&mut self, layer: usize, pos: Position, dos_char: Option<DosChar>) {
         if layer >= self.layers.len() { return; }
 
         let cur_layer  = &mut self.layers[layer];
         cur_layer.set_char(pos, dos_char);
     }
 
-    pub fn get_char_from_layer(&mut self, layer: usize, pos: Position) -> DosChar {
+    pub fn get_char_from_layer(&mut self, layer: usize, pos: Position) -> Option<DosChar> {
         if let Some(layer) = self.layers.get(layer) {
             layer.get_char(pos)
         } else {
-            DosChar::new()
+            None
         }
     }
 
-    pub fn get_char(&self, pos: Position) -> DosChar {
+    pub fn get_char(&self, pos: Position) ->  Option<DosChar> {
         if let Some(overlay) = &self.overlay_layer  {
-            if let Some(ch) = overlay.get_char(pos) {
+            let ch = overlay.get_char(pos);
+            if ch.is_some() {
                 return ch;
             }
         }
 
-        for cur_layer in &self.layers {
+        for i in 0..self.layers.len() {
+            let cur_layer = &self.layers[i];
             if !cur_layer.is_visible { continue; }
             let ch = cur_layer.get_char(pos);
-            if !ch.is_transparent() {
+            if ch.is_some() {
                 return ch;
+            }
+            if i == self.layers.len() - 1 {
+                return Some(DosChar::new());
             }
         }
 
-        DosChar::new()
+        None
     }
 
     pub fn load_buffer(file_name: &Path) -> io::Result<Buffer> {
@@ -237,10 +248,10 @@ impl Buffer {
                     result.set_char(
                         0,
                         data.cur_pos,
-                        DosChar {
+                        Some(DosChar {
                             char_code: ch,
                             attribute: data.text_attr,
-                        },
+                        }),
                     );
                     data.cur_pos.x += 1;
                     if data.cur_pos.x >= screen_width {
@@ -346,9 +357,10 @@ impl Buffer {
         let mut pos = Position::from(0, line);
         for x in 0..(self.width as i32) {
             pos.x = x;
-            let ch = self.get_char(pos);
-            if !ch.is_transparent() {
-                length = x + 1;
+            if let Some(ch) = self.get_char(pos) {
+                if !ch.is_transparent() {
+                    length = x + 1;
+                }
             }
         }
         length

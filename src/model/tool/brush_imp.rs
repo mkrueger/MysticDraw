@@ -31,7 +31,7 @@ impl BrushTool {
             for x in 0..self.size {
                 match self.brush_type {
                     BrushType::Shade => {    
-                        let ch = editor.get_char_from_cur_layer(center + Position::from(x, y));
+                        let ch = editor.get_char_from_cur_layer(center + Position::from(x, y)).unwrap_or_default();
                        
                         let attribute= editor.cursor.get_attribute();
 
@@ -46,18 +46,18 @@ impl BrushTool {
                                 }
                             }
                         }
-                        editor.set_char(center + Position::from(x, y), crate::model::DosChar { 
+                        editor.set_char(center + Position::from(x, y), Some(crate::model::DosChar { 
                             char_code, 
                             attribute
-                        });
+                        }));
 
                     },
                     BrushType::Solid => {
                         let attribute= editor.cursor.get_attribute();
-                        editor.set_char(center + Position::from(x, y), crate::model::DosChar { char_code: self.char_code, attribute });
+                        editor.set_char(center + Position::from(x, y), Some(crate::model::DosChar { char_code: self.char_code, attribute }));
                     },
                     BrushType::Color => {
-                        let ch = editor.get_char_from_cur_layer(center + Position::from(x, y));
+                        let ch = editor.get_char_from_cur_layer(center + Position::from(x, y)).unwrap_or_default();
                         let mut attribute = ch.attribute;
 
                         if self.use_fore {
@@ -67,10 +67,10 @@ impl BrushTool {
                             attribute.set_background_ice(editor.cursor.get_attribute().get_background_ice());
                         }
 
-                        editor.set_char(center + Position::from(x, y), crate::model::DosChar { 
+                        editor.set_char(center + Position::from(x, y), Some(crate::model::DosChar { 
                             char_code:ch.char_code, 
                             attribute
-                        });
+                        }));
                     },
                 }
             }                

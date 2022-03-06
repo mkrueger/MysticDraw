@@ -35,7 +35,7 @@ pub fn convert_to_pcb(buf: &Buffer) -> Vec<u8>
         }
 
         while pos.x < line_length {
-            let ch = buf.get_char(pos);
+            let ch = buf.get_char(pos).unwrap_or_default();
 
             if first_char || ch.attribute != last_attr {
                 result.extend_from_slice(b"@X");

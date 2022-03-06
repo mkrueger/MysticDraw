@@ -58,9 +58,24 @@ impl WidgetImpl for GtkAnsiView {
 
     fn snapshot(&self, widget: &Self::Type, snapshot: &gtk4::Snapshot) {
         snapshot.append_color(
-            &gdk::RGBA::WHITE,
+            &gdk::RGBA::new(0.6, 0.6, 0.6, 1.0),
             &graphene::Rect::new(0.0, 0.0, widget.width() as f32, widget.height() as f32),
         );
+        let mut y = 0.0; 
+        let mut b = true;
+        while y < widget.height() as f32 {
+            let mut x = if b { 0.0 } else { 8.0 }; 
+            b = !b;
+            while x  < widget.width() as f32 {
+                snapshot.append_color(
+                    &gdk::RGBA::new(0.4, 0.4, 0.4, 1.0),
+                    &graphene::Rect::new(x, y, 8.0, 8.0),
+                );
+                x += 16.0;
+            }
+            y += 8.0;
+        }
+
         let editor = &self.editor.borrow();
         let editor = editor.borrow();
         let buffer = &editor.buf;
@@ -69,6 +84,8 @@ impl WidgetImpl for GtkAnsiView {
         for y in 0..buffer.height {
             for x in 0..buffer.width {
                 let ch = buffer.get_char(Position::from(x as i32, y as i32));
+                if ch.is_none() { continue; }
+                let ch = ch.unwrap();
                 let bg = buffer.get_rgb_f64(ch.attribute.get_background());
                 let fg = ch.attribute.get_foreground() as usize;
                 let bounds = graphene::Rect::new(

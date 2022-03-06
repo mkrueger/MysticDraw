@@ -184,13 +184,13 @@ pub fn convert_to_ans(buf: &Buffer) -> Vec<u8>
         }
         while pos.x < line_length {
             let mut space_count = 0;
-            let mut ch = buf.get_char(pos);
+            let mut ch = buf.get_char(pos).unwrap_or_default();
             let mut cur_attr = ch.attribute;
 
             while (ch.char_code == b' ' || ch.char_code == 0) && last_attr.get_background() == cur_attr.get_background() && pos.x < line_length {
                 space_count += 1;
                 pos.x += 1;                     
-                ch = buf.get_char(pos);
+                ch = buf.get_char(pos).unwrap_or_default();
             }
 
             // optimize color output for empty space lines.
@@ -298,31 +298,31 @@ mod tests {
     fn test_ansi_sequence() {
       let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[0;40;37mFoo-\x1B[1mB\x1B[0ma\x1B[35mr");
        
-      let ch = buf.get_char(Position::from(0, 0));
+      let ch = buf.get_char(Position::from(0, 0)).unwrap_or_default();
       assert_eq!(b'F', ch.char_code);
        assert_eq!(7, ch.attribute.as_u8());
 
-       let ch = buf.get_char(Position::from(1, 0));
+       let ch = buf.get_char(Position::from(1, 0)).unwrap_or_default();
        assert_eq!(b'o', ch.char_code);
        assert_eq!(7, ch.attribute.as_u8());
 
-       let ch = buf.get_char(Position::from(2, 0));
+       let ch = buf.get_char(Position::from(2, 0)).unwrap_or_default();
        assert_eq!(b'o', ch.char_code);
        assert_eq!(7, ch.attribute.as_u8());
 
-       let ch = buf.get_char(Position::from(3, 0));
+       let ch = buf.get_char(Position::from(3, 0)).unwrap_or_default();
        assert_eq!(b'-', ch.char_code);
        assert_eq!(7, ch.attribute.as_u8());
 
-       let ch = buf.get_char(Position::from(4, 0));
+       let ch = buf.get_char(Position::from(4, 0)).unwrap_or_default();
        assert_eq!(b'B', ch.char_code);
        assert_eq!(15, ch.attribute.as_u8());
 
-       let ch = buf.get_char(Position::from(5, 0));
+       let ch = buf.get_char(Position::from(5, 0)).unwrap_or_default();
        assert_eq!(b'a', ch.char_code);
        assert_eq!(7, ch.attribute.as_u8());
 
-       let ch = buf.get_char(Position::from(6, 0));
+       let ch = buf.get_char(Position::from(6, 0)).unwrap_or_default();
        assert_eq!(b'r', ch.char_code);
        assert_eq!(5, ch.attribute.as_u8());
     }
@@ -330,13 +330,13 @@ mod tests {
     #[test]
     fn test_ansi_30() {
        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[1;35mA\x1B[30mB\x1B[0mC");
-       let ch = buf.get_char(Position::from(0, 0));
+       let ch = buf.get_char(Position::from(0, 0)).unwrap_or_default();
        assert_eq!(b'A', ch.char_code);
        assert_eq!(13, ch.attribute.as_u8());
-       let ch = buf.get_char(Position::from(1, 0));
+       let ch = buf.get_char(Position::from(1, 0)).unwrap_or_default();
        assert_eq!(b'B', ch.char_code);
        assert_eq!(8, ch.attribute.as_u8());
-       let ch = buf.get_char(Position::from(2, 0));
+       let ch = buf.get_char(Position::from(2, 0)).unwrap_or_default();
        assert_eq!(b'C', ch.char_code);
        assert_eq!(7, ch.attribute.as_u8());
     }
@@ -345,25 +345,25 @@ mod tests {
     fn test_bg_colorrsequence() {
         let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.ans"), &None, b"\x1B[1;30m1\x1B[0;34m2\x1B[33m3\x1B[1;41m4\x1B[40m5\x1B[43m6\x1B[40m7");
        
-        let ch = buf.get_char(Position::from(0, 0));
+        let ch = buf.get_char(Position::from(0, 0)).unwrap_or_default();
        assert_eq!(b'1', ch.char_code);
        assert_eq!(8, ch.attribute.as_u8());
-       let ch = buf.get_char(Position::from(1, 0));
+       let ch = buf.get_char(Position::from(1, 0)).unwrap_or_default();
        assert_eq!(b'2', ch.char_code);
        assert_eq!(1, ch.attribute.as_u8());
-       let ch = buf.get_char(Position::from(2, 0));
+       let ch = buf.get_char(Position::from(2, 0)).unwrap_or_default();
        assert_eq!(b'3', ch.char_code);
        assert_eq!(6, ch.attribute.as_u8());
-       let ch = buf.get_char(Position::from(3, 0));
+       let ch = buf.get_char(Position::from(3, 0)).unwrap_or_default();
        assert_eq!(b'4', ch.char_code);
        assert_eq!(14 + (4 << 4), ch.attribute.as_u8());
-       let ch = buf.get_char(Position::from(4, 0));
+       let ch = buf.get_char(Position::from(4, 0)).unwrap_or_default();
        assert_eq!(b'5', ch.char_code);
        assert_eq!(14, ch.attribute.as_u8());
-       let ch = buf.get_char(Position::from(5, 0));
+       let ch = buf.get_char(Position::from(5, 0)).unwrap_or_default();
        assert_eq!(b'6', ch.char_code);
        assert_eq!(14 + (6 << 4), ch.attribute.as_u8());
-       let ch = buf.get_char(Position::from(6, 0));
+       let ch = buf.get_char(Position::from(6, 0)).unwrap_or_default();
        assert_eq!(b'7', ch.char_code);
        assert_eq!(14, ch.attribute.as_u8());
     }
@@ -372,20 +372,20 @@ mod tests {
     fn test_linebreak_bug() {
         let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.ans"), &None, b"XX");
        
-        assert_eq!(0x16, buf.get_char(Position {x: 1, y: 0}).char_code);
+        assert_eq!(0x16, buf.get_char(Position {x: 1, y: 0}).unwrap_or_default().char_code);
     }
 
     #[test]
     fn test_char_missing_bug() {
         let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[1;35mA\x1B[30mB\x1B[0mC");
        
-        let ch = buf.get_char(Position::from(0, 0));
+        let ch = buf.get_char(Position::from(0, 0)).unwrap_or_default();
         assert_eq!(b'A', ch.char_code);
         assert_eq!(13, ch.attribute.as_u8());
-        let ch = buf.get_char(Position::from(1, 0));
+        let ch = buf.get_char(Position::from(1, 0)).unwrap_or_default();
         assert_eq!(b'B', ch.char_code);
         assert_eq!(8, ch.attribute.as_u8());
-        let ch = buf.get_char(Position::from(2, 0));
+        let ch = buf.get_char(Position::from(2, 0)).unwrap_or_default();
         assert_eq!(b'C', ch.char_code);
         assert_eq!(7, ch.attribute.as_u8());
     }
@@ -393,7 +393,7 @@ mod tests {
     #[test]
     fn test_cursor_forward() {
         let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[70Ctest_me\x1B[20CF");
-        let ch = buf.get_char(Position::from(79, 0));
+        let ch = buf.get_char(Position::from(79, 0)).unwrap_or_default();
         assert_eq!(b'F', ch.char_code);
  
     }
@@ -401,14 +401,14 @@ mod tests {
     #[test]
     fn test_cursor_forward_at_eol() {
         let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[75CTEST_\x1B[2CF");
-        let ch = buf.get_char(Position::from(2, 1));
+        let ch = buf.get_char(Position::from(2, 1)).unwrap_or_default();
         assert_eq!(b'F', ch.char_code);
     }
 
     #[test]
     fn test_char0_bug() {
         let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x00A");
-        let ch = buf.get_char(Position::from(1, 0));
+        let ch = buf.get_char(Position::from(1, 0)).unwrap_or_default();
         assert_eq!(b'A', ch.char_code);
     }
 

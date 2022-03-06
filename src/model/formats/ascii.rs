@@ -15,7 +15,7 @@ pub fn convert_to_asc(buf: &Buffer) -> Vec<u8>
         }
 
         while pos.x < line_length {
-            let ch = buf.get_char(pos);
+            let ch = buf.get_char(pos).unwrap_or_default();
             result.push(if ch.char_code == 0 { b' ' } else { ch.char_code });
             pos.x += 1;
         }

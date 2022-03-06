@@ -1,7 +1,7 @@
 use std::{cmp::{max, min}, path::Path, io::Write, fs::File, ffi::OsStr};
 use crate::model::{Buffer, Position, TextAttribute, Rectangle, convert_to_ans, convert_to_asc, convert_to_avt, convert_to_binary, convert_to_pcb, convert_to_xb};
 
-use super::{DosChar, OverlayLayer, UndoSetChar};
+use super::{DosChar, UndoSetChar};
 
 pub struct Cursor {
     pos: Position,
@@ -147,7 +147,7 @@ impl Editor
         }
     }
     
-    pub fn get_overlay_layer(&mut self) -> &mut Option<OverlayLayer>
+    pub fn get_overlay_layer(&mut self) -> &mut Option<super::Layer>
     {
         self.buf.get_overlay_layer()
     }
@@ -161,7 +161,8 @@ impl Editor
             for y in 0..layer.lines.len() {
                 let line = &layer.lines[y];
                 for x in 0..line.chars.len() {
-                    if let Some(ch) = line.chars[x] {
+                    let ch =line.chars[x];
+                    if ch.is_some()  {
                         self.set_char(Position::from(x as i32, y as i32), ch);
                     }
                 }
@@ -186,7 +187,9 @@ impl Editor
     pub fn pickup_color(&mut self, pos: Position)
     {
         let ch = self.buf.get_char(pos);
-        self.cursor.attr = ch.attribute;
+        if let Some(ch) = ch {
+            self.cursor.attr = ch.attribute;
+        }
     }
 
     pub fn set_cursor(&mut self, x: i32, y: i32) -> Event
@@ -259,18 +262,18 @@ impl Editor
         Ok(DEFAULT_OUTLINE_TABLE[outline as usize][i as usize])
     }
     
-    pub fn get_char(&self, pos: Position) -> DosChar {
+    pub fn get_char(&self, pos: Position) -> Option<DosChar> {
         self.buf.get_char(pos)
     }
 
-    pub fn get_char_from_cur_layer(&self, pos: Position) -> DosChar {
+    pub fn get_char_from_cur_layer(&self, pos: Position) -> Option<DosChar> {
         if self.cur_layer >= self.buf.layers.len() as i32 {
-            return DosChar::new();
+            return None;
         }
         self.buf.layers[self.cur_layer as usize].get_char(pos)
     }
 
-    pub fn set_char(&mut self, pos: Position, dos_char: DosChar) {
+    pub fn set_char(&mut self, pos: Position, dos_char: Option<DosChar>) {
         if self.point_is_valid(pos) {
             self.buf.redo_stack.clear();
             let old = self.buf.get_char_from_layer(self.cur_layer as usize, pos);
@@ -309,20 +312,20 @@ impl Editor
         }
     }
 
-    pub fn fill(&mut self, rect: Rectangle, dos_char: DosChar) {
-
-        println!("{:?}", rect);
+    pub fn fill(&mut self, rect: Rectangle, dos_char: Option<DosChar>) {
         let mut pos = rect.start;
+        self.begin_atomic_undo();
         for _ in 0..rect.size.height {
             for _ in 0..rect.size.width {
-                println!("{}", pos);
                 self.set_char(pos, dos_char);
                 pos.x += 1;
             }
             pos.y += 1;
             pos.x = rect.start.x;
         }
+        self.end_atomic_undo();
     }
+
 
     pub fn point_is_valid(&self, pos: Position) -> bool {
         if let Some(selection) = &self.cur_selection {
@@ -344,20 +347,19 @@ impl Editor
             }
         }
 
-        self.set_char(pos, crate::model::DosChar {
+        self.set_char(pos, Some(crate::model::DosChar {
             char_code,
             attribute: self.cursor.attr,
-        });
+        }));
         self.set_cursor(pos.x + 1, pos.y);
     }
 
     pub fn delete_selection(&mut self) {
         if let Some(selection) = &self.cur_selection.clone() {
             let mut pos = selection.rectangle.start;
-            let ch = DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT };
             for _ in 0..selection.rectangle.size.height {
                 for _ in 0..selection.rectangle.size.width {
-                    self.set_char(pos, ch);
+                    self.set_char(pos, None);
                     pos.x += 1;
                 }
                 pos.y += 1;

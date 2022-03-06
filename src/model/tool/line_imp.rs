@@ -183,8 +183,8 @@ impl Tool for LineTool {
         }
 
         let new_pos = e.cursor.get_position();
-        let new_char = e.get_char_from_cur_layer(new_pos);
-        let old_char = e.get_char_from_cur_layer(old_pos);
+        let new_char = e.get_char_from_cur_layer(new_pos).unwrap_or_default();
+        let old_char = e.get_char_from_cur_layer(old_pos).unwrap_or_default();
 
         let b = (new_pos.x - old_pos.x).signum();
         let a = (new_pos.y - old_pos.y).signum();
@@ -194,28 +194,28 @@ impl Tool for LineTool {
             let attribute = e.cursor.get_attribute();
             e.set_char(
                 new_pos,
-                crate::model::DosChar {
+                Some(crate::model::DosChar {
                     char_code,
                     attribute,
-                },
+                }),
             );
 
             if old_char.is_transparent() {
                 let char_code = e.get_outline_char_code(HORIZONTAL_CHAR).unwrap();
                 e.set_char(
                     old_pos,
-                    crate::model::DosChar {
+                    Some(crate::model::DosChar {
                         char_code,
                         attribute,
-                    },
+                    }),
                 );
             } else if let Some(char_code) = self.get_old_vert_char(&e, old_char.char_code, a == -1) {
                 e.set_char(
                     old_pos,
-                    crate::model::DosChar {
+                    Some(crate::model::DosChar {
                         char_code,
                         attribute,
-                    },
+                    }),
                 );   
             }
         }
@@ -227,28 +227,28 @@ impl Tool for LineTool {
             let attribute = e.cursor.get_attribute();
             e.set_char(
                 new_pos,
-                crate::model::DosChar {
+                Some(crate::model::DosChar {
                     char_code,
                     attribute,
-                },
+                }),
             );
 
             if old_char.is_transparent() {
                 let char_code = e.get_outline_char_code(VERTICAL_CHAR).unwrap();
                 e.set_char(
                     old_pos,
-                    crate::model::DosChar {
+                    Some(crate::model::DosChar {
                         char_code,
                         attribute,
-                    },
+                    }),
                 );
             } else if let Some(char_code) = self.get_old_horiz_char(&e, old_char.char_code, b == -1) {
                 e.set_char(
                     old_pos,
-                    crate::model::DosChar {
+                    Some(crate::model::DosChar {
                         char_code,
                         attribute,
-                    },
+                    }),
                 );   
             }
         }

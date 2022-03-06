@@ -8,8 +8,8 @@ pub trait UndoOperation {
 pub struct UndoSetChar {
     pub pos: Position,
     pub layer: usize,
-    pub old: DosChar,
-    pub new: DosChar
+    pub old: Option<DosChar>,
+    pub new: Option<DosChar>
 }
 
 impl UndoOperation for UndoSetChar {

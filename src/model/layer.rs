@@ -2,7 +2,7 @@ use super::{DosChar, Position, Size};
 
 #[derive(Clone, Debug, Default)]
 pub struct Line {
-    pub chars: Vec<DosChar>,
+    pub chars: Vec<Option<DosChar>>,
 }
 
 impl Line {
@@ -20,7 +20,7 @@ pub struct Layer {
 
     offset: Position,
     pub size: Size,
-    lines: Vec<Line>,
+    pub lines: Vec<Line>,
 }
 
 impl Layer {
@@ -53,20 +53,19 @@ impl Layer {
             let line = &layer.lines[y];
             for x in 0..line.chars.len() {
                 let ch = line.chars[x];
-                if ch.is_transparent() { continue; }
-                self.set_char(Position::from(x as i32, y as i32), ch);
+                if ch.is_some() {
+                    self.set_char(Position::from(x as i32, y as i32), ch);
+                }
             }
         }
     }
-
-        
 
     pub fn clear(&mut self)
     {
         self.lines.clear();
     }
 
-    pub fn set_char(&mut self, pos: Position, dos_char: DosChar) {
+    pub fn set_char(&mut self, pos: Position, dos_char: Option<DosChar>) {
         let pos = pos - self.offset;
         if pos.x < 0 || pos.y < 0 || self.is_locked || !self.is_visible {
             return;
@@ -78,24 +77,24 @@ impl Layer {
 
         let cur_line = &mut self.lines[pos.y as usize];
         if pos.x >= cur_line.chars.len() as i32 {
-            cur_line.chars.resize(pos.x as usize + 1, DosChar::new());
+            cur_line.chars.resize(pos.x as usize + 1, None);
         }
         cur_line.chars[pos.x as usize] = dos_char;
     }
 
-    pub fn get_char(&self, pos: Position) -> DosChar {
+    pub fn get_char(&self, pos: Position) -> Option<DosChar> {
         let pos = pos - self.offset;
         let y = pos.y as usize;
-        if self.lines.len() <= y { return DosChar::new(); }
+        if self.lines.len() <= y { return None; }
         
         let cur_line = &self.lines[y];
         if pos.x >= 0 && pos.x < cur_line.chars.len() as i32 {
             let ch = cur_line.chars[pos.x as usize];
-            if !ch.is_transparent() {
+            if ch.is_some() {
                 return ch;
             }
         }
-        DosChar::new()
+        None
     }
 
     pub fn remove_line(&mut self, index: i32)

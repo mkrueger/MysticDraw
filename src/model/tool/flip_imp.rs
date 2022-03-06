@@ -12,7 +12,7 @@ impl Tool for FlipTool
     
     fn handle_click(&mut self, editor: Rc<RefCell<Editor>>, button: u32, pos: Position) -> Event {
         if button == 1 {
-            let mut ch = editor.borrow().get_char(pos);
+            let mut ch = editor.borrow().get_char(pos).unwrap_or_default();
 
             if ch.char_code == 222 {
                 ch.char_code = 221;
@@ -22,7 +22,7 @@ impl Tool for FlipTool
                 ch.char_code = 222;
             }
             
-            editor.borrow_mut().set_char(pos, ch);
+            editor.borrow_mut().set_char(pos, Some(ch));
         }
         Event::None
     }

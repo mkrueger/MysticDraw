@@ -136,7 +136,7 @@ impl TheDrawFont
                     }
                 };
                 if cur.x >= 0 && cur.y >= 0 && cur.x < editor.buf.width as i32 && cur.y < editor.buf.height as i32 {
-                    editor.set_char(cur, dos_char);
+                    editor.set_char(cur, Some(dos_char));
                 }
                 cur.x += 1;
             }

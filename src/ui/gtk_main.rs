@@ -119,10 +119,8 @@ impl MainWindow {
                 let hs = Rc::new(nfd.height_spin_button);
                 
                 nfd.open_button.connect_clicked(clone!(@strong main_window => move |_| {
-                    let mut buffer = Buffer::new();
+                    let mut buffer = Buffer::create(ws.value() as usize, hs.value() as usize);
                     buffer.file_name = None;
-                    buffer.width  = ws.value() as usize;
-                    buffer.height = hs.value() as usize;
                     let editor = main_window.load_page(buffer);
                     editor.borrow_mut().request_refresh = std::boxed::Box::new(clone!(@strong main_window => move || {
                         main_window.update_editor();
@@ -837,113 +835,113 @@ impl MainWindow {
         let mut x = 0;
         out_buf.set_char(0,
             Position::from(x, 0),
-            DosChar {
+            Some(DosChar {
                 char_code: b'S',
                 attribute: TextAttribute::from_color(9, 0),
-            },
+            }),
         );
         x += 1;
         out_buf.set_char(0,
             Position::from(x, 0),
-            DosChar {
+            Some(DosChar {
                 char_code: b'e',
                 attribute: TextAttribute::from_color(9, 0),
-            },
+            }),
         );
         x += 1;
         out_buf.set_char(0,
             Position::from(x, 0),
-            DosChar {
+            Some(DosChar {
                 char_code: b't',
                 attribute: TextAttribute::from_color(9, 0),
-            },
+            }),
         );
         x += 1;
         out_buf.set_char(0,
             Position::from(x, 0),
-            DosChar {
+            Some(DosChar {
                 char_code: b' ',
                 attribute: TextAttribute::from_color(9, 0),
-            },
+            }),
         );
         x += 1;
         let outline = editor.get_cur_outline();
         out_buf.set_char(0,
             Position::from(x, 0),
-            DosChar {
+            Some(DosChar {
                 char_code: if outline > 8 { b'1' } else { b' ' },
                 attribute: TextAttribute::from_color(9, 0),
-            },
+            }),
         );
         x += 1;
         out_buf.set_char(0,
             Position::from(x, 0),
-            DosChar {
+            Some(DosChar {
                 char_code: b'0' + ((outline + 1) % 10) as u8,
                 attribute: TextAttribute::from_color(9, 0),
-            },
+            }),
         );
         x += 1;
         out_buf.set_char(0,
             Position::from(x, 0),
-            DosChar {
+            Some(DosChar {
                 char_code: b' ',
                 attribute: TextAttribute::from_color(9, 0),
-            },
+            }),
         );
         x += 1;
 
         for i in 0..10 {
             out_buf.set_char(0,
                 Position::from(x, 0),
-                DosChar {
+                Some(DosChar {
                     char_code: b' ',
                     attribute: TextAttribute::from_color(0, 4),
-                },
+                }),
             );
             x += 1;
 
             if i == 9 {
                 out_buf.set_char(0,
                     Position::from(x, 0),
-                    DosChar {
+                    Some(DosChar {
                         char_code: b'1',
                         attribute: TextAttribute::from_color(0, 4),
-                    },
+                    }),
                 );
                 x += 1;
                 out_buf.set_char(0,
                     Position::from(x, 0),
-                    DosChar {
+                    Some(DosChar {
                         char_code: b'0',
                         attribute: TextAttribute::from_color(0, 4),
-                    },
+                    }),
                 );
                 x += 1;
             } else {
                 out_buf.set_char(0,
                     Position::from(x, 0),
-                    DosChar {
+                    Some(DosChar {
                         char_code: i + b'1',
                         attribute: TextAttribute::from_color(0, 4),
-                    },
+                    }),
                 );
                 x += 1;
             }
             out_buf.set_char(0,
                 Position::from(x, 0),
-                DosChar {
+                Some(DosChar {
                     char_code: b'=',
                     attribute: TextAttribute::from_color(0, 4),
-                },
+                }),
             );
             x += 1;
             out_buf.set_char(0,
                 Position::from(x, 0),
-                DosChar {
+                Some(DosChar {
                     char_code: editor.get_outline_char_code(i as i32).unwrap(),
                     attribute: TextAttribute::from_color(15, 4),
-                },
+                }),
             );
             x += 1;
         }
