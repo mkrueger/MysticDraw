@@ -1,5 +1,5 @@
 use glib::{clone, Cast};
-use gtk4::{traits::{BoxExt, ListBoxRowExt}};
+use gtk4::{traits::{BoxExt, ListBoxRowExt, WidgetExt}};
 use libadwaita::ApplicationWindow;
 
 mod model;
@@ -32,8 +32,8 @@ pub fn add_font_tool_page(window: &ApplicationWindow, parent: &mut gtk4::Box)
 
     let scrolled_window = gtk4::ScrolledWindow::builder()
         .hscrollbar_policy(gtk4::PolicyType::Never) // Disable horizontal scrolling
-        .min_content_height(480)
-        .min_content_width(360)
+        .vexpand(true)
+        .hexpand(true)
         .build();
 
     scrolled_window.set_child(Some(&listbox));
@@ -53,6 +53,9 @@ pub fn add_font_tool_page(window: &ApplicationWindow, parent: &mut gtk4::Box)
             }
         }   
     });
-
+    parent.set_margin_top(20);
+    parent.set_margin_start(8);
+    parent.set_margin_end(8);
+    parent.set_margin_bottom(20);
     parent.append(&scrolled_window);
 }

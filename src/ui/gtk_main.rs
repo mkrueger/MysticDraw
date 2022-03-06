@@ -45,10 +45,13 @@ impl MainWindow {
             layer_listbox_model: layer_view::Model::new(),
             layer_listbox: gtk4::ListBox::new(),
             tool_container_box: gtk4::FlowBox::builder()
-            .valign(gtk4::Align::Start)
-            .selection_mode(gtk4::SelectionMode::None)
-            .build(),
-            tool_notebook: gtk4::Notebook::builder().show_tabs(false).build()
+                .valign(gtk4::Align::Start)
+                .selection_mode(gtk4::SelectionMode::None)
+                .build(),
+            tool_notebook: gtk4::Notebook::builder()
+                .show_tabs(false)
+                .vexpand(true)
+                .build()
         });
 
         content.append(&header_bar);
@@ -607,6 +610,8 @@ impl MainWindow {
 
     fn construct_left_toolbar(&self) -> Box {
         let result = Box::new(Orientation::Vertical, 0);
+        result.set_hexpand(false);
+        result.set_width_request(200);
         result.append(&self.color_picker);
         unsafe {
             let first = self.add_tool(TOOLS[0]);
@@ -722,7 +727,6 @@ impl MainWindow {
             .build();
         self.tool_container_box.insert(&button, -1);
         let mut page_content = Box::new(Orientation::Vertical, 0);
-        
 
         if tool.get_icon_name() == "md-tool-fill" {
             super::add_fill_tool_page(&mut page_content);
@@ -765,6 +769,7 @@ impl MainWindow {
 
         page_box.append(&scroller);
         let caret_pos_label = gtk4::Label::new(Some("( 1, 1)"));
+        caret_pos_label.set_valign(gtk4::Align::Center);
 
         let mut key_preview_buf = Buffer::new();
         key_preview_buf.width = 4 * 12;
@@ -774,8 +779,12 @@ impl MainWindow {
         let key_handle = Rc::new(RefCell::new(key_preview_editor));
 
         let key_set_view = AnsiView::new();
+        key_set_view.set_valign(gtk4::Align::Center);
         key_set_view.set_editor_handle(key_handle.clone());
         let status_bar = gtk4::Box::new(Orientation::Horizontal, 8);
+        status_bar.set_margin_start(12);
+        status_bar.set_margin_end(12);
+
         status_bar.append(&caret_pos_label);
         status_bar.append(&gtk4::Box::builder().hexpand(true).build());
         status_bar.append(&key_set_view);
