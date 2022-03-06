@@ -2,20 +2,17 @@ use std::{
     cell::RefCell,
     cmp::{max, min},
     rc::Rc,
-    str::FromStr,
 };
 
 use glib::subclass::types::ObjectSubclassIsExt;
 use gtk4::{
-    cairo::Operator,
     gdk::{self, Key, ModifierType},
     glib,
-    prelude::{DrawingAreaExtManual, GdkCairoContextExt},
     traits::{GestureDragExt, GestureExt, GestureSingleExt, WidgetExt},
 };
 
 use crate::{
-    model::{Editor, MKey, MKeyCode, MModifiers, Position, Size},
+    model::{Editor, MKey, MKeyCode, MModifiers, Position},
     sync_workbench_state,
 };
 
@@ -128,10 +125,7 @@ impl AnsiView {
             (buffer.width * font_dimensions.width) as i32,
             (buffer.height * font_dimensions.height) as i32,
         );
-        self.imp().editor.replace(handle.clone());
-
-        let mut char_img =
-            gtk4::cairo::ImageSurface::create(gtk4::cairo::Format::ARgb32, font_dimensions.width as i32, font_dimensions.height as i32).unwrap();
+        self.imp().set_editor_handle(handle.clone());
         // let dialog = Dialog { payload: editor };
         if !handle.borrow().is_inactive {
             let drag = gtk4::GestureDrag::new();
@@ -243,123 +237,6 @@ impl AnsiView {
                 glib::signal::Inhibit(true)
             }));
             self.add_controller(&key);
-        }
-
-        let handle1 = handle.clone();
-        let background_rgba = gdk::RGBA::from_str("white").unwrap();
-        self.set_draw_func(move |_, cr, _width, _height| {
-            GdkCairoContextExt::set_source_rgba(cr, &background_rgba);
-            cr.paint().expect("Invalid cairo surface state");
-
-            let editor = &handle1.borrow();
-            let buffer = &editor.buf;
-
-            let font_dimensions = buffer.get_font_dimensions();
-            for y in 0..buffer.height {
-                for x in 0..buffer.width {
-                    let ch = buffer.get_char(Position::from(x as i32, y as i32));
-                    cr.rectangle(
-                        x as f64 * font_dimensions.width as f64,
-                        y as f64 * font_dimensions.height as f64,
-                        font_dimensions.width as f64,
-                        font_dimensions.height as f64,
-                    );
-                    let bg = buffer.get_rgb_f64(ch.attribute.get_background());
-                    cr.set_source_rgba(bg.0, bg.1, bg.2, 1f64);
-                    cr.fill().expect("error while calling fill.");
-
-                    let fg = buffer.get_rgb(ch.attribute.get_foreground());
-                    unsafe {
-                        let mut data = char_img.data().expect("Can't lock image");
-                        let ptr = data.as_mut_ptr();
-                        render_char(buffer, ch.char_code, ptr, fg);
-                    }
-                    cr.set_source_surface(
-                        &char_img,
-                        (x as i32 * font_dimensions.width as i32) as f64,
-                        (y as i32 * font_dimensions.height as i32) as f64,
-                    )
-                    .expect("error while calling fill.");
-                    cr.paint().expect("error while calling fill.");
-                }
-            }
-            if !editor.is_inactive {
-                unsafe {
-                    if WORKSPACE.cur_tool().use_caret() {
-                        draw_caret(editor.cursor.get_position(), cr, font_dimensions);
-                    }
-
-                    if let Some(cur_selection) = &editor.cur_selection{
-                            if WORKSPACE.cur_tool().use_selection() {
-                            let rect = &cur_selection.rectangle;
-                            cr.rectangle(
-                                buffer.to_screenx(rect.start.x),
-                                buffer.to_screeny(rect.start.y),
-                                buffer.to_screenx(rect.size.width as i32),
-                                buffer.to_screeny(rect.size.height as i32),
-                            );
-                            cr.set_source_rgb(1.0, 1.0, 1.0);
-                            cr.set_line_width(3f64);
-                            if cur_selection.is_preview {
-                                cr.fill().expect("error while calling fill.");
-                            } else {
-                                cr.stroke_preserve().expect("error while calling stroke.");
-
-                                cr.set_source_rgb(0.0, 0.0, 0.0);
-                                cr.set_line_width(1f64);
-                                cr.stroke().expect("error while calling stroke.");
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-}
-
-fn draw_caret(cursor_pos: Position, cr: &gtk4::cairo::Context, font_dimensions: Size) {
-    let x = cursor_pos.x;
-    let y = cursor_pos.y;
-    cr.rectangle(
-        (x as i32 * font_dimensions.width as i32) as f64,
-        (y as i32 * font_dimensions.height as i32) as f64,
-        font_dimensions.width as f64,
-        font_dimensions.height as f64,
-    );
-    cr.set_source_rgb(
-        0x7F as f64 / 255.0,
-        0x7F as f64 / 255.0,
-        0x7F as f64 / 255.0,
-    );
-    cr.set_operator(Operator::Difference);
-    cr.fill().expect("error while calling fill.");
-}
-
-unsafe fn render_char(buffer: &crate::model::Buffer, ch: u8, ptr: *mut u8, fg: (u8, u8, u8)) {
-    let font_dimensions = buffer.get_font_dimensions();
-    let mut i = 0;
-    for y in 0..font_dimensions.height {
-        let line = buffer.get_font_scanline(ch, y as usize);
-        for x in 0..font_dimensions.width {
-            if (line & (128 >> x)) != 0 {
-                *ptr.add(i) = fg.2;
-                i += 1;
-                *ptr.add(i) = fg.1;
-                i += 1;
-                *ptr.add(i) = fg.0;
-                i += 1;
-                *ptr.add(i) = 255;
-                i += 1;
-            } else {
-                *ptr.add(i) = 0;
-                i += 1;
-                *ptr.add(i) = 0;
-                i += 1;
-                *ptr.add(i) = 0;
-                i += 1;
-                *ptr.add(i) = 0;
-                i += 1;
-            }
         }
     }
 }
