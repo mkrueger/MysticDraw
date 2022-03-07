@@ -235,6 +235,7 @@ impl Editor
             "ans" => convert_to_ans(&self.buf),
             "avt" => convert_to_avt(&self.buf),
             "pcb" => convert_to_pcb(&self.buf),
+            "adf" => super::convert_to_adf(&self.buf),
             _ => convert_to_asc(&self.buf)
         }
     }

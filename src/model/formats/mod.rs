@@ -16,6 +16,9 @@ pub use bin::*;
 mod xbinary;
 pub use xbinary::*;
 
+mod adf;
+pub use adf::*;
+
 use super::{Position, TextAttribute};
 
 #[allow(clippy::struct_excessive_bools)]
