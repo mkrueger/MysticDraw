@@ -8,7 +8,7 @@ use glib::subclass::types::ObjectSubclassIsExt;
 use gtk4::{
     gdk::{self, Key, ModifierType, Rectangle},
     glib,
-    traits::{GestureDragExt, GestureExt, GestureSingleExt, WidgetExt, ComboBoxExt, PopoverExt},
+    traits::{GestureDragExt, GestureExt, GestureSingleExt, WidgetExt, PopoverExt},
 };
 
 use crate::{
@@ -202,7 +202,6 @@ impl AnsiView {
             self.add_controller(&gesture);
 
             let gesture = gtk4::GestureClick::new();
-            let handle1 = handle.clone();
             gesture.set_button(3);
 
             let menu_model = gtk4::gio::Menu::new();
@@ -222,7 +221,7 @@ impl AnsiView {
             let menu = gtk4::PopoverMenu::from_model(Some(&menu_model));
             menu.set_parent(self);
 
-            gesture.connect_pressed(glib::clone!(@strong self as this => move |e, _clicks, x, y| {
+            gesture.connect_pressed(glib::clone!(@strong self as this => move |_, _clicks, x, y| {
                 menu.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
                 menu.popup();
             }));

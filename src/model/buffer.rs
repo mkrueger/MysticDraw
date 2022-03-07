@@ -309,9 +309,9 @@ impl Buffer {
             }
 
             return (
-                pal[o] << 2,
-                pal[o + 1] << 2,
-                pal[o + 2] << 2
+                pal[o],
+                pal[o + 1],
+                pal[o + 2]
             );
         }
         
@@ -321,26 +321,6 @@ impl Buffer {
             c.1,
             c.2
         )
-    }
-
-    pub fn get_rgba_u32(&self, color: u8) -> u32 {
-        debug_assert!(color <= 15);
-
-        if let Some(pal) = &self.custom_palette  {
-            let o = (color * 3) as usize;
-            if o + 2 >= pal.len() {
-                eprintln!("illegal palette color {}, palette is {} colors long.", color, pal.len() / 3);
-                return 0;
-            }
-            // need to << 2 all palette data - custom palette is 0..63 and not 0..255
-            return (pal[o] as u32) << 26 |
-            (pal[o + 1] as u32) << 18 |
-            (pal[o + 2] as u32) << 10 |
-            0xFF;
-        }
-        
-        let c = Buffer::DOS_DEFAULT_PALETTE[color as usize];
-        (c.0 as u32) << 24 | (c.1 as u32) << 16 | (c.2 as u32) << 8 | 0xFF
     }
 
     pub fn to_screenx(&self, x: i32) -> f64

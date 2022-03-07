@@ -510,6 +510,8 @@ impl MainWindow {
         }
         if let Some(view) = cur {
             let editor = view.get_editor();
+            self.color_picker.set_editor(&editor);
+            
             let fn_opt = &(editor.borrow().buf.file_name);
             if fn_opt.is_none() {
                 self.title.set_title("Untitled");
@@ -522,6 +524,8 @@ impl MainWindow {
                 self.title.set_subtitle(path);
             }
         }
+
+        
         self.update_layer_view();
     }
 

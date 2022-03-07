@@ -16,8 +16,8 @@ pub use bin::*;
 mod xbinary;
 pub use xbinary::*;
 
-mod adf;
-pub use adf::*;
+mod artworx;
+pub use artworx::*;
 
 use super::{Position, TextAttribute};
 

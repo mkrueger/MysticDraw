@@ -49,7 +49,7 @@ pub fn read_xb(result: &mut Buffer, bytes: &[u8], _file_size: usize, _screen_wid
     println!("custom palette {}, custom font {} , compressed {}, blink {}, extended char {}", has_custom_palette, has_custom_font, is_compressed, is_blink_mode, is_extended_char_mode);
 
     if has_custom_palette {
-        result.custom_palette = Some((&bytes[o..(o+48)]).to_vec());
+        result.custom_palette = Some((&bytes[o..(o+48)]).iter().map(|x| x << 2).collect());
         o += 48;
     }
     if has_custom_font {
@@ -201,7 +201,7 @@ pub fn convert_to_xb(buf: &Buffer) -> Vec<u8>
     result.push(flags);
 
     if let Some(palette) = &buf.custom_palette {
-        result.extend(palette);
+        result.extend(palette.iter().map(|x| x >> 2));
     }
 
     if let Some(font) = &buf.font {

@@ -8,6 +8,7 @@ pub fn read_binary(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_w
     loop {
         for _ in 0..screen_width {
             if o + 2 > file_size {
+                result.height = pos.y as usize;
                 return;
             }
             result.set_char(0, pos, Some(DosChar {

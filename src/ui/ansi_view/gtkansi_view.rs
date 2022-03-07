@@ -24,6 +24,7 @@ impl GtkAnsiView {
             let buffer = &handle.borrow().buf;
             for col in 0..=15_u8 {
                 let fg = buffer.get_rgb(col);
+                println!("{} = {:?}", col, fg);
                 for u in 0..=255_u8 {
                     unsafe {
                         textures.push(render_char(buffer, u, fg));
@@ -86,7 +87,7 @@ impl WidgetImpl for GtkAnsiView {
                 let ch = buffer.get_char(Position::from(x as i32, y as i32));
                 if ch.is_none() { continue; }
                 let ch = ch.unwrap();
-                let bg = buffer.get_rgb_f64(ch.attribute.get_background());
+                let bg = buffer.get_rgb_f64(ch.attribute.get_background_ice());
                 let fg = ch.attribute.get_foreground() as usize;
                 let bounds = graphene::Rect::new(
                     x as f32 * font_dimensions.width as f32,

@@ -1,17 +1,27 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use gtk4::cairo::Operator;
 use gtk4::glib;
 use gtk4::prelude::DrawingAreaExtManual;
 use gtk4::subclass::prelude::*;
 use gtk4::traits::{GestureSingleExt, WidgetExt};
 
-use crate::model::Buffer;
+use crate::model::{Editor};
 use crate::WORKSPACE;
 
 #[derive(Default)]
 
-pub struct GtkColorPicker {}
+pub struct GtkColorPicker {
+    pub editor: RefCell<Rc<RefCell<Editor>>>,
+}
 
-impl GtkColorPicker {}
+impl GtkColorPicker {
+
+    pub fn set_editor(&self, handle: &Rc<RefCell<Editor>>) {
+        self.editor.replace(handle.clone());
+    }
+}
 
 #[glib::object_subclass]
 impl ObjectSubclass for GtkColorPicker {
@@ -26,6 +36,7 @@ impl ObjectImpl for GtkColorPicker {
         obj.set_focusable(true);
         obj.set_focus_on_click(true);
         obj.set_size_request(200, 50);
+        
 
         obj.set_draw_func(
             glib::clone!(@strong obj as this => move | _, cr, width, height| {
@@ -37,7 +48,7 @@ impl ObjectImpl for GtkColorPicker {
                             (y * height / 2) as f64,
                             (width / 8) as f64,
                             (height / 2) as f64);
-                        let color = Buffer::DOS_DEFAULT_PALETTE[(x + y * 8) as usize];
+                        let color = this.get_editor().borrow().buf.get_rgb((x + y * 8) as u8);
                         cr.set_source_rgb((color.0 as f64) / 255.0,
                         (color.1 as f64) / 255.0,
                         (color.2 as f64) / 255.0);
@@ -65,8 +76,8 @@ impl ObjectImpl for GtkColorPicker {
                     cr.set_source_rgb(1.0, 1.0, 1.0);
                     cr.fill().expect("error while calling fill");
 
-                    let x = (WORKSPACE.selected_attribute.get_background() % 8) as i32;
-                    let y = (WORKSPACE.selected_attribute.get_background() / 8) as i32;
+                    let x = (WORKSPACE.selected_attribute.get_background_ice() % 8) as i32;
+                    let y = (WORKSPACE.selected_attribute.get_background_ice() / 8) as i32;
                     cr.rectangle(
                         ((1 + x) * width / 8) as f64 - marker_width,
                         ((1 + y) * height / 2) as f64 - marker_width,
@@ -126,7 +137,7 @@ impl WidgetImpl for GtkColorPicker {
                 let row = y / (height / 2);
                 let color = (col + row * 8) as u8;
                 unsafe {
-                    WORKSPACE.selected_attribute.set_background(color % 8);
+                    WORKSPACE.selected_attribute.set_background_ice(color);
                     this.queue_draw();
                 }
             }),
