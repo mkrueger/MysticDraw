@@ -181,12 +181,17 @@ impl Buffer {
                     return result;
                 }
                 "xb" => {
-                    read_xb(&mut result, bytes, file_size, screen_width);
+                    read_xb(&mut result, bytes, file_size);
                     return result;
                 }
                 "adf" => {
                     if screen_width == 0 { screen_width = 80; }
                     super::read_adf(&mut result, bytes, file_size, screen_width);
+                    return result;
+                }
+                "idf" => {
+                    if screen_width == 0 { screen_width = 80; }
+                    super::read_idf(&mut result, bytes, file_size);
                     return result;
                 }
                 "ans" => { parse_ansi = true; }

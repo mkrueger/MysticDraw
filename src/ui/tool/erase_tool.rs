@@ -58,7 +58,6 @@ pub fn add_erase_tool_page(content_box: &mut gtk4::Box)
         });
 
         size_button.connect_value_changed(|b| {
-            println!("change value !!!");
             ERASE_TOOL.size = b.value_as_int();
         });
     }

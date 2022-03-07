@@ -18,8 +18,7 @@ enum Compression {
     Full = 0b1100_0000,
 }
 
-
-pub fn read_xb(result: &mut Buffer, bytes: &[u8], _file_size: usize, _screen_width: i32)
+pub fn read_xb(result: &mut Buffer, bytes: &[u8], _file_size: usize)
 {
     if b"XBIN" != &bytes[0..4] {
         eprintln!("no valid xbin.");

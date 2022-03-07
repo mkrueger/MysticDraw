@@ -24,7 +24,6 @@ impl GtkAnsiView {
             let buffer = &handle.borrow().buf;
             for col in 0..=15_u8 {
                 let fg = buffer.get_rgb(col);
-                println!("{} = {:?}", col, fg);
                 for u in 0..=255_u8 {
                     unsafe {
                         textures.push(render_char(buffer, u, fg));

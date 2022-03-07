@@ -19,6 +19,9 @@ pub use xbinary::*;
 mod artworx;
 pub use artworx::*;
 
+mod ice_draw;
+pub use ice_draw::*;
+
 use super::{Position, TextAttribute};
 
 #[allow(clippy::struct_excessive_bools)]

@@ -1,6 +1,16 @@
 use crate::model::{Buffer, DosChar, BitFont, Size};
 use super::{ Position, TextAttribute};
 
+// http://fileformats.archiveteam.org/wiki/ArtWorx_Data_Format
+
+// u8                   Version
+// 3 * 64 = 192 u8      Palette
+// 256 * 16 = 4096 u8   Font Data (only 8x16 supported)
+// [ch u8, attr u8]*    Screen data
+//
+// A very simple format with a weird palette storage. Only 16 colors got used but a full 64 color palette is stored.
+// Maybe useful for DOS demos running in text mode.
+
 static COLOR_OFFSETS: [usize;16] = [ 0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63 ];
 
 fn convert_palette(pal: &[u8]) -> Vec<u8>

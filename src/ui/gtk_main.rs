@@ -178,11 +178,8 @@ impl MainWindow {
         {
             let open_action = SimpleAction::new("save", None);
             open_action.connect_activate(clone!(@weak main_window => move |_,_| {
-                println!("1");
                 if let Some(editor) = main_window.get_current_editor() {
-                    println!("2");
                     if let Some(file_name) = &editor.borrow().buf.file_name {
-                        println!("3");
                         editor.borrow().save_content(file_name);
                         return;
                     }

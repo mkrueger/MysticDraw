@@ -170,10 +170,10 @@ pub fn read_sauce(file: &Path) -> io::Result<Option<Sauce>>
     let mut sauce_info = Vec::new();
     f.read_to_end(&mut sauce_info)?;
 
-    if SAUCE_ID != sauce_info[0..4] {
+    if SAUCE_ID != sauce_info[0..5] {
         return Ok(None);
     }
-    let mut o = 4;
+    let mut o = 5;
 
     if b"00" != &sauce_info[o..(o + 2)] {
         eprintln!("Unsupported sauce version {}{}", char::from_u32(sauce_info[5] as u32).unwrap(), char::from_u32(sauce_info[6] as u32).unwrap());
@@ -193,7 +193,7 @@ pub fn read_sauce(file: &Path) -> io::Result<Option<Sauce>>
     let mut dst = [0u8; 4];
     dst.clone_from_slice(&sauce_info[o..(o + 4)]);
     o += 4;
-    let file_size = u32::from_le_bytes(dst);
+    let mut file_size = u32::from_le_bytes(dst);
     let data_type = SauceDataType::from(sauce_info[o]);
     o += 1;
     let file_type = sauce_info[o];
@@ -215,12 +215,15 @@ pub fn read_sauce(file: &Path) -> io::Result<Option<Sauce>>
     let t_info_str: String = String::from_utf8(sauce_info[o..].to_vec()).unwrap();
 
     let comments = if num_comments == 0 {
+        file_size = (len - (SAUCE_LEN as u64)) as u32;
         None
     } else if -SAUCE_LEN - num_comments as i64 * 64 - 5 < 0 {
         eprintln!("invalid sauce comment block");
         None
     } else {
         f.seek(SeekFrom::End(-SAUCE_LEN - num_comments as i64 * 64 - 5))?;
+        file_size = (len - (SAUCE_LEN as u64) - num_comments as u64 * 64 - 5) as u32;
+
         let mut cmd_id = [0; 5];
         f.read_exact(&mut cmd_id)?;
         if cmd_id == SAUCE_COMMENT_ID {

@@ -9,3 +9,7 @@ Now I've translated it to rust. Loading/Saving/Modelling is way better than befo
 The state of the UI basicall non usuable. Mostly I blame the GTK4 bindings for rust. I know GTK 2.x quite well but for rust the bindings are nearly unusuable in my opnion. So development is a bit slower than I expected.
 
 Note: You can use it as an ansi viewer.
+
+# Features
+
+ * File formats: Ansi, Ascii, Artworx ADF, Avatar, BIN, XBIN, PCBoard, iCE
