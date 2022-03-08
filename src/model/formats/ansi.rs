@@ -168,7 +168,7 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> io::Result<Option<u8>> {
     }
 }
 
-pub fn convert_to_ans(buf: &Buffer) -> Vec<u8>
+pub fn convert_to_ans(buf: &Buffer) -> io::Result<Vec<u8>>
 {
     let mut result = Vec::new();
     let mut last_attr = TextAttribute::DEFAULT;
@@ -282,7 +282,10 @@ pub fn convert_to_ans(buf: &Buffer) -> Vec<u8>
         }
         pos.x = 0;
     }
-    result
+    if buf.sauce.is_some() {
+        crate::model::Sauce::generate(buf, &crate::model::SauceFileType::Ansi)?;
+    }
+    Ok(result)
 }
 
 fn push_int(result: &mut Vec<u8>, number: usize) 
@@ -416,7 +419,7 @@ mod tests {
     fn test_ansi(data: &[u8])
     {
         let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, data).unwrap();
-        let converted = super::convert_to_ans(&buf);
+        let converted = super::convert_to_ans(&buf).unwrap();
 
         // more gentle output.
         let b : Vec<u8> = converted.iter().map(|&x| if x == 27 { b'x' } else { x }).collect();

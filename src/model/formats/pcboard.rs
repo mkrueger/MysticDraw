@@ -1,3 +1,5 @@
+use std::io;
+
 use crate::model::{Buffer, Position, TextAttribute};
 
 use super::ParseStates;
@@ -17,7 +19,7 @@ fn conv_ch(ch: u8) -> u8 {
 
 const HEX_TABLE: &[u8;16] = b"0123456789ABCDEF";
 
-pub fn convert_to_pcb(buf: &Buffer) -> Vec<u8>
+pub fn convert_to_pcb(buf: &Buffer) -> io::Result<Vec<u8>>
 {
     let mut result = Vec::new();
     let mut last_attr = TextAttribute::DEFAULT;
@@ -58,7 +60,10 @@ pub fn convert_to_pcb(buf: &Buffer) -> Vec<u8>
         }
         pos.x = 0;
     }
-    result
+    if buf.sauce.is_some() {
+        crate::model::Sauce::generate(buf, &crate::model::SauceFileType::PCBoard)?;
+    }
+    Ok(result)
 }
 
 #[allow(non_snake_case)]

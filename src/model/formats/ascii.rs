@@ -1,6 +1,8 @@
+use std::io;
+
 use crate::model::{Buffer, Position};
 
-pub fn convert_to_asc(buf: &Buffer) -> Vec<u8>
+pub fn convert_to_asc(buf: &Buffer) -> io::Result<Vec<u8>>
 {
     let mut result = Vec::new();
     let mut pos = Position::new();
@@ -29,7 +31,11 @@ pub fn convert_to_asc(buf: &Buffer) -> Vec<u8>
         }
         pos.x = 0;
     }
-    result
+    if buf.sauce.is_some() {
+        crate::model::Sauce::generate(buf, &crate::model::SauceFileType::Ascii)?;
+    }
+
+    Ok(result)
 }
 
 /* 
@@ -52,7 +58,7 @@ mod tests {
     fn test_ascii(data: &[u8])
     {
         let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, data).unwrap();
-        let converted = super::convert_to_asc(&buf);
+        let converted = super::convert_to_asc(&buf).unwrap();
 
         // more gentle output.
         let b : Vec<u8> = converted.iter().map(|&x| if x == 27 { b'x' } else { x }).collect();

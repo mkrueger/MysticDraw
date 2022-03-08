@@ -23,6 +23,9 @@ pub use artworx::*;
 mod ice_draw;
 pub use ice_draw::*;
 
+mod tundra;
+pub use tundra::*;
+
 use super::{Position, TextAttribute};
 
 #[allow(clippy::struct_excessive_bools)]
@@ -85,7 +88,7 @@ mod tests {
     fn test_ansi(data: &[u8])
     {
         let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, data).unwrap();
-        let converted = super::convert_to_ans(&buf);
+        let converted = super::convert_to_ans(&buf).unwrap();
 
         // more gentle output.
         let b : Vec<u8> = converted.iter().map(|&x| if x == 27 { b'x' } else { x }).collect();

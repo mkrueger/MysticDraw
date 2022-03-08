@@ -55,6 +55,16 @@ impl Palette {
     pub fn new() -> Self {
         Palette { colors: DOS_DEFAULT_PALETTE.to_vec() }
     }
+    
+    pub fn clear(&mut self) {
+        self.colors.clear();
+    }
+    
+    pub fn fill_to_16(&mut self) {
+        if self.colors.len() < DOS_DEFAULT_PALETTE.len()  {
+            self.colors.extend(&DOS_DEFAULT_PALETTE[(self.colors.len() - 1)..]);
+        }
+    }
 
     pub fn is_default(&self) -> bool {
         if self.colors.len() != DOS_DEFAULT_PALETTE.len() { return false; }
@@ -62,6 +72,16 @@ impl Palette {
             if self.colors[i] != DOS_DEFAULT_PALETTE[i] { return false; }
         }
         true
+    }
+
+    pub fn get_color(&mut self, r: u8, g: u8, b: u8) -> u8 {
+
+        for i in 0..self.colors.len() {
+            let col = self.colors[i];
+            if col.r == r && col.g == g && col.b == b { return i as u8; }
+        }
+        self.colors.push(Color { r, g, b});
+        (self.colors.len() - 1) as u8
     }
 
     pub fn from(pal: &[u8]) -> Self {
@@ -96,7 +116,7 @@ impl Palette {
 
         #[allow(clippy::needless_range_loop)]
         for i in 0..16 {
-            let col = self.colors[i];
+            let col = if i < self.colors.len()  { self.colors[i] }  else { DOS_DEFAULT_PALETTE[i] };
 
             res.push(col.r >> 2 | col.r << 4);
             res.push(col.g >> 2 | col.g << 4);

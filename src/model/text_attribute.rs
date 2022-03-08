@@ -95,7 +95,6 @@ impl TextAttribute
 
     pub fn set_background(&mut self, color: u8) 
     {
-        assert!(color < 0b1000, "color was: {}", color);
         self.background_color = color;
     }
 }

@@ -22,7 +22,7 @@ impl GtkAnsiView {
         let mut textures = Vec::new();
         {   
             let buffer = &handle.borrow().buf;
-            for col in 0..=15_u8 {
+            for col in 0..buffer.palette.colors.len() {
                 let fg = buffer.palette.colors[col as usize].get_rgb();
                 for u in 0..=255_u8 {
                     unsafe {

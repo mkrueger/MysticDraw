@@ -138,8 +138,7 @@ pub fn display_avt(data: &mut ParseStates, ch: u8) -> io::Result<(Option<u8>, bo
     }
 }
 
-
-pub fn convert_to_avt(buf: &Buffer) -> Vec<u8>
+pub fn convert_to_avt(buf: &Buffer) -> io::Result<Vec<u8>>
 {
     let mut result = Vec::new();
     let mut last_attr = TextAttribute::DEFAULT;
@@ -207,7 +206,10 @@ pub fn convert_to_avt(buf: &Buffer) -> Vec<u8>
         }
         pos.x = 0;
     }
-    result
+    if buf.sauce.is_some() {
+        crate::model::Sauce::generate(buf, &crate::model::SauceFileType::Avatar)?;
+    }
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -290,7 +292,7 @@ mod tests {
     fn test_avt(data: &[u8])
     {
         let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), &None, data).unwrap();
-        let converted = super::convert_to_avt(&buf);
+        let converted = super::convert_to_avt(&buf).unwrap();
 
         // more gentle output.
         let b : Vec<u8> = output_avt(&converted);

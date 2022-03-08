@@ -42,7 +42,7 @@ pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_widt
     loop {
         for _ in 0..screen_width {
             if o + 2 > file_size {
-                result.height = pos.y as usize;
+                result.set_height_for_pos(pos);
                 return Ok(true);
             }
             result.set_char(0, pos, Some(DosChar {
@@ -85,6 +85,9 @@ pub fn convert_to_adf(buf: &Buffer) -> io::Result<Vec<u8>>
             result.push(ch.attribute.as_u8());
         }
     }
-    
+
+    if buf.sauce.is_some() {
+        crate::model::Sauce::generate(buf, &crate::model::SauceFileType::Ansi)?;
+    }
     Ok(result)
 }

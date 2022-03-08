@@ -66,7 +66,6 @@ impl ObjectImpl for GtkColorPicker {
                     let marker_width = 6f64;
                     let x = (WORKSPACE.selected_attribute.get_foreground() % 8) as i32;
                     let y = (WORKSPACE.selected_attribute.get_foreground() / 8) as i32;
-                    println!("fg {}x{} ", (x * (width / 8)),  (y * (height / 2)));
 
                     cr.rectangle(
                         (x * (width / 8)) as f64,

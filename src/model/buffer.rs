@@ -64,6 +64,7 @@ impl Buffer {
 
         res
     }
+    
     pub fn get_overlay_layer(&mut self) -> &mut Option<Layer>
     {
         if self.overlay_layer.is_none() {
@@ -136,14 +137,14 @@ impl Buffer {
     }
 
     pub fn load_buffer(file_name: &Path) -> io::Result<Buffer> {
-
-        
         let sauce_info = read_sauce(file_name)?;
         let mut f = File::open(file_name)?;
         let mut bytes = Vec::new();
         f.read_to_end(&mut bytes)?;
 
-        Buffer::from_bytes(file_name, &sauce_info, &bytes)
+        let mut res = Buffer::from_bytes(file_name, &sauce_info, &bytes)?;
+        res.sauce = sauce_info;
+        Ok(res)
     }
 
     pub fn from_bytes(file_name: &Path, sauce_info: &Option<Sauce>, bytes: &[u8]) -> io::Result<Buffer> {
@@ -154,7 +155,7 @@ impl Buffer {
         let mut screen_width = 0;
         let mut file_size = bytes.len();
         if let Some(sauce) = &sauce_info {
-            file_size = min(file_size, sauce.file_size as usize);
+            file_size = min(file_size, sauce.file_size as usize - 1);
             match sauce.data_type {
                 SauceDataType::Character => {
                     if sauce.t_info1 > 0 {
@@ -169,6 +170,9 @@ impl Buffer {
                 _ => {}
             }
         }
+
+        println!("READ SCREEN SIZE {}", screen_width);
+
         let ext = file_name.extension();
         let mut parse_avt  = false;
         let mut parse_pcb  = false;
@@ -192,6 +196,11 @@ impl Buffer {
                 }
                 "idf" => {
                     super::read_idf(&mut result, bytes, file_size)?;
+                    return Ok(result);
+                }
+                "tnd" => {
+                    if screen_width == 0 { screen_width = 80; }
+                    super::read_tnd(&mut result, bytes, file_size, screen_width)?;
                     return Ok(result);
                 }
                 "ans" => { parse_ansi = true; }
@@ -274,7 +283,7 @@ impl Buffer {
                 }
             }
             if data.cur_pos.y >= result.height as i32 {
-                result.height = data.cur_pos.y as usize + 1;
+                result.set_height_for_pos(data.cur_pos);
             }
         }
     }
@@ -305,6 +314,15 @@ impl Buffer {
             }
         }
         length
+    }
+
+    pub fn set_height_for_pos(&mut self, pos: Position)
+    {
+        if pos.x == 0 {
+            self.height = pos.y as usize; 
+        } else {
+            self.height = pos.y as usize + 1;
+        }
     }
 }
 

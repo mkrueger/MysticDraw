@@ -76,12 +76,12 @@ pub fn read_idf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
 
     result.palette = Palette::from(&bytes[o..(o + PALETTE_SIZE)]);
 
-    result.height = pos.y as usize;
+    result.set_height_for_pos(pos);
 
     Ok(true)
 }
 
-pub fn convert_to_idf(buffer: &Buffer) -> io::Result<Vec<u8>>
+pub fn convert_to_idf(buf: &Buffer) -> io::Result<Vec<u8>>
 {
     let mut result = IDF_V1_4_HEADER.to_vec();
     
@@ -93,21 +93,21 @@ pub fn convert_to_idf(buffer: &Buffer) -> io::Result<Vec<u8>>
     result.push(0);
     result.push(0);
     
-    let w = buffer.width - 1;
+    let w = buf.width - 1;
     result.push(w as u8);
     result.push((w >> 8) as u8);
 
-    let h = buffer.height - 1;
+    let h = buf.height - 1;
     result.push(h as u8);
     result.push((h >> 8) as u8);
 
-    let len = (buffer.height * buffer.width) as i32;
+    let len = (buf.height * buf.width) as i32;
     let mut x = 0;
     while x < len {
-        let ch = buffer.get_char(Position::from_index(buffer, x)).unwrap_or_default();
+        let ch = buf.get_char(Position::from_index(buf, x)).unwrap_or_default();
         let mut rle_count = 1;
         while x + rle_count < len && rle_count < (u16::MAX) as i32 {
-            if ch != buffer.get_char(Position::from_index(buffer, x + rle_count)).unwrap_or_default() {
+            if ch != buf.get_char(Position::from_index(buf, x + rle_count)).unwrap_or_default() {
                 break;
             }
             rle_count += 1;
@@ -128,7 +128,7 @@ pub fn convert_to_idf(buffer: &Buffer) -> io::Result<Vec<u8>>
     }
 
     // font
-    if let Some(font) = &buffer.font {
+    if let Some(font) = &buf.font {
         if font.size.width != 8 || font.size.height != 16 {
             return Err(io::Error::new(io::ErrorKind::InvalidData, "Only 8x16 fonts are supported by idf."));
         }
@@ -143,8 +143,10 @@ pub fn convert_to_idf(buffer: &Buffer) -> io::Result<Vec<u8>>
     }
 
     // palette
-    result.extend(buffer.palette.to_16color_vec());
-
+    result.extend(buf.palette.to_16color_vec());
+    if buf.sauce.is_some() {
+        crate::model::Sauce::generate(buf, &crate::model::SauceFileType::Ansi)?;
+    }
     Ok(result)
 }
 
