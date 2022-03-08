@@ -1,4 +1,4 @@
-use crate::model::{Buffer, DosChar, BitFont, Size, Rectangle};
+use crate::model::{Buffer, DosChar, BitFont, Size, Rectangle, buffer};
 use super::{ Position, TextAttribute};
 
 // http://fileformats.archiveteam.org/wiki/ICEDraw
@@ -68,7 +68,7 @@ pub fn read_idf(result: &mut Buffer, bytes: &[u8], file_size: usize)
     result.height = pos.y as usize;
 }
 
-pub fn convert_to_idf(buf: &Buffer) -> Vec<u8>
+pub fn convert_to_idf(buffer: &Buffer) -> Vec<u8>
 {
     let mut result = IDF_V1_4_HEADER.to_vec();
     
@@ -80,36 +80,42 @@ pub fn convert_to_idf(buf: &Buffer) -> Vec<u8>
     result.push(0);
     result.push(0);
     
-    let w = buf.width - 1;
+    let w = buffer.width - 1;
     result.push(w as u8);
     result.push((w >> 8) as u8);
 
-    let h = buf.height - 1;
+    let h = buffer.height - 1;
     result.push(h as u8);
     result.push((h >> 8) as u8);
-    println!("save x2: {}", w);
-    
-    // Todo: implement RLE compression.
-    for y  in 0..(buf.height as i32) {
-        for x in 0..(buf.width as i32) {
-            let ch = buf.get_char(Position::from(x, y)).unwrap_or_default();
 
-            if ch.char_code == 1 { // represent 1 as 1 repeat of 1
-                result.push(1);
-                result.push(0);
-                result.push(1);
-                result.push(0);
-                result.push(ch.char_code);
-                result.push(ch.attribute.as_u8());
-            } else {
-                result.push(ch.char_code);
-                result.push(ch.attribute.as_u8());
+    let len = (buffer.height * buffer.width) as i32;
+    let mut x = 0;
+    while x < len {
+        let ch = buffer.get_char(Position::from_index(buffer, x)).unwrap_or_default();
+        let mut rle_count = 1;
+        while x + rle_count < len && rle_count < (u16::MAX) as i32 {
+            if ch != buffer.get_char(Position::from_index(buffer, x + rle_count)).unwrap_or_default() {
+                break;
             }
+            rle_count += 1;
         }
+        if rle_count > 3 || ch.char_code == 1 {
+            result.push(1);
+            result.push(0);
+
+            result.push(rle_count as u8);
+            result.push((rle_count >> 8) as u8);
+        } else {
+            rle_count = 1;
+        }
+        result.push(ch.char_code);
+        result.push(ch.attribute.as_u8());
+
+        x += rle_count;
     }
 
     // font
-    if let Some(font) = &buf.font {
+    if let Some(font) = &buffer.font {
         if font.data.len() == 4096 {
             let vec: Vec<u8> = font.data.iter().map(|x| *x as u8).collect();
             result.extend(vec);
@@ -122,7 +128,7 @@ pub fn convert_to_idf(buf: &Buffer) -> Vec<u8>
 
     // palette
     for i in 0..16 {
-        let col = buf.get_rgb(i as u8);
+        let col = buffer.get_rgb(i as u8);
         result.push(col.0 >> 2 | col.0 << 4);
         result.push(col.1 >> 2 | col.1 << 4);
         result.push(col.2 >> 2 | col.2 << 4);
