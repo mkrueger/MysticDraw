@@ -7,22 +7,11 @@ pub struct Cursor {
     pos: Position,
     attr: TextAttribute,
     pub insert_mode: bool,
-    pub pos_changed: std::boxed::Box<dyn Fn(Position)>,
+    pub pos_changed: std::boxed::Box<dyn Fn(&Editor, Position)>,
     pub attr_changed: std::boxed::Box<dyn Fn(TextAttribute)>
 }
 
 impl Cursor {
-    pub fn get_position(&self) -> Position
-    {
-        self.pos
-    }
-
-    pub fn set_position(&mut self, pos: Position)
-    {
-        self.pos = pos;
-        (self.pos_changed)(pos);
-    }
-
     pub fn get_attribute(&self) -> TextAttribute
     {
         self.attr
@@ -53,7 +42,7 @@ impl std::fmt::Debug for Cursor {
 
 impl Default for Cursor {
     fn default() -> Self {
-        Self { pos: Position::default(), attr: TextAttribute::default(), insert_mode: Default::default(), pos_changed: Box::new(|_| {}), attr_changed: Box::new(|_| {}) }
+        Self { pos: Position::default(), attr: TextAttribute::default(), insert_mode: Default::default(), pos_changed: Box::new(|_, _| {}), attr_changed: Box::new(|_| {}) }
     }
 }
 
@@ -147,6 +136,21 @@ impl Editor
         }
     }
 
+    pub fn get_cursor_position(&self) -> Position
+    {
+        self.cursor.pos
+    }
+
+    pub fn set_cursor_position(&mut self, pos: Position)
+    {
+        let pos = Position::from(
+            min(self.buf.width as i32 - 1, max(0, pos.x)),
+            min(self.buf.height as i32 - 1, max(0, pos.y))
+        );
+        self.cursor.pos = pos;
+        (self.cursor.pos_changed)(self, pos);
+    }
+
     pub fn get_cur_layer(&mut self) -> Option<&super::Layer>
     {
         self.buf.layers.get(self.cur_layer as usize)
@@ -205,7 +209,7 @@ impl Editor
     pub fn set_cursor(&mut self, x: i32, y: i32) -> Event
     {
         let old = self.cursor.pos;
-        self.cursor.set_position(Position::from(
+        self.set_cursor_position(Position::from(
             min(max(0, x), self.buf.width as i32 - 1),
             min(max(0, y), self.buf.height as i32 - 1)));
         Event::CursorPositionChange(old, self.cursor.pos)
@@ -372,6 +376,7 @@ impl Editor
 
     pub fn delete_selection(&mut self) {
         if let Some(selection) = &self.cur_selection.clone() {
+            self.begin_atomic_undo();
             let mut pos = selection.rectangle.start;
             for _ in 0..selection.rectangle.size.height {
                 for _ in 0..selection.rectangle.size.width {
@@ -381,10 +386,14 @@ impl Editor
                 pos.y += 1;
                 pos.x = selection.rectangle.start.x;
             }
-
+            self.end_atomic_undo();
             self.cur_selection = None;
         }
+    }
 
+    pub fn clear_cur_layer(&mut self) {
+        let b = Box::new(self.buf.clear_layer(self.cur_layer));
+        self.buf.undo_stack.push(b);
     }
 }
 

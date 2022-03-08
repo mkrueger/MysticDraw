@@ -44,3 +44,23 @@ impl UndoOperation for AtomicUndo {
         }
     }
 }
+
+
+pub struct ClearLayerOperation {
+    pub layer_num: i32,
+    pub lines: Vec<super::Line>,
+}
+
+impl UndoOperation for ClearLayerOperation {
+
+    fn undo(&self, buffer: &mut Buffer)
+    {
+        buffer.layers[self.layer_num as usize].lines.clear();
+        buffer.layers[self.layer_num as usize].lines.extend(self.lines.clone());
+    }
+
+    fn redo(&self, buffer: &mut Buffer)
+    {
+        buffer.layers[self.layer_num as usize].lines.clear();
+    }
+}

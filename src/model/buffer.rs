@@ -147,6 +147,15 @@ impl Buffer {
         Ok(res)
     }
 
+    pub fn clear_layer(&mut self, layer_num: i32) -> super::ClearLayerOperation {
+        
+        let layers = std::mem::take(&mut self.layers[layer_num as usize].lines);
+        super::ClearLayerOperation {
+            layer_num,
+            lines: layers,
+        }
+    }
+
     pub fn from_bytes(file_name: &Path, sauce_info: &Option<Sauce>, bytes: &[u8]) -> io::Result<Buffer> {
         let mut result = Buffer::new();
         result.file_name = Some(file_name.to_path_buf());
@@ -170,8 +179,6 @@ impl Buffer {
                 _ => {}
             }
         }
-
-        println!("READ SCREEN SIZE {}", screen_width);
 
         let ext = file_name.extension();
         let mut parse_avt  = false;

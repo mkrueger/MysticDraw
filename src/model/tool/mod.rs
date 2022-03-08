@@ -99,7 +99,7 @@ pub trait Tool
 
         // ctrl+pgup  - upper left corner
         // ctrl+pgdn  - lower left corner
-        let pos = editor.borrow().cursor.get_position();
+        let pos = editor.borrow().get_cursor_position();
         let mut editor = editor.borrow_mut();
         match key {
             MKey::Down => {
@@ -187,7 +187,7 @@ pub trait Tool
                 if editor.cur_selection.is_some() {
                     editor.delete_selection(); 
                 } else {
-                    let pos = editor.cursor.get_position();
+                    let pos = editor.get_cursor_position();
                     for i in pos.x..(editor.buf.width as i32 - 1) {
                         let next = editor.get_char_from_cur_layer( Position::from(i + 1, pos.y));
                         editor.set_char(Position::from(i, pos.y), next);
@@ -201,7 +201,7 @@ pub trait Tool
             }
             MKey::Backspace => {
                 editor.cur_selection = None;
-                let pos = editor.cursor.get_position();
+                let pos = editor.get_cursor_position();
                 if pos.x> 0 {
                    /* if (caret.fontMode() && FontTyped && cpos > 0)  {
                         caret.getX() -= CursorPos[cpos] - 1;
@@ -212,7 +212,7 @@ pub trait Tool
                         }
                         cpos--;
                     } else {*/	
-                        editor.cursor.set_position(pos + Position::from(-1, 0));
+                        editor.set_cursor_position(pos + Position::from(-1, 0));
                     if editor.cursor.insert_mode {
                         for i in pos.x..(editor.buf.width as i32 - 1) {
                             let next = editor.get_char_from_cur_layer( Position::from(i + 1, pos.y));
@@ -221,7 +221,7 @@ pub trait Tool
                         let last_pos = Position::from(editor.buf.width as i32 - 1, pos.y);
                         editor.set_char(last_pos, None);
                     } else  {
-                        let pos = editor.cursor.get_position();
+                        let pos = editor.get_cursor_position();
                         editor.set_char(pos, None);
                     } 
                 }

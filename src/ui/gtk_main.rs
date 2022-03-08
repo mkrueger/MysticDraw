@@ -9,6 +9,7 @@ use adw::{prelude::*, TabBar, TabPage, TabView};
 use adw::{ApplicationWindow, HeaderBar};
 use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, MessageType, ButtonsType, DialogFlags};
 
+use crate::WORKSPACE;
 use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, Layer};
 
 use super::{AnsiView, ColorPicker, layer_view};
@@ -23,7 +24,9 @@ pub struct MainWindow {
     layer_listbox_model: layer_view::Model,
     layer_listbox: gtk4::ListBox,
     tool_container_box: gtk4::FlowBox,
-    tool_notebook: gtk4::Notebook
+    tool_notebook: gtk4::Notebook,
+    fg_button: gtk4::CheckButton,
+    bg_button: gtk4::CheckButton
 }
 
 impl MainWindow {
@@ -51,6 +54,14 @@ impl MainWindow {
             tool_notebook: gtk4::Notebook::builder()
                 .show_tabs(false)
                 .vexpand(true)
+                .build(),
+            fg_button: gtk4::CheckButton::builder()
+                .label("Foreground")
+                .active(true)
+                .build(),
+            bg_button: gtk4::CheckButton::builder()
+                .label("Background")
+                .active(true)
                 .build()
         });
 
@@ -96,6 +107,20 @@ impl MainWindow {
                 }
             }   
         }));
+        main_window.fg_button.connect_toggled(clone!(@weak main_window => move |b| {
+            unsafe {
+                WORKSPACE.show_fg_color = b.is_active();
+                main_window.update_editor();
+            }
+        }));
+
+        main_window.bg_button.connect_toggled(clone!(@weak main_window => move |b| {
+            unsafe {
+                WORKSPACE.show_bg_color = b.is_active();
+                main_window.update_editor();
+            }
+        }));
+
 
         main_window.layer_listbox.set_activate_on_single_click(false);
         main_window.layer_listbox.connect_row_activated(clone!(@strong main_window => move |_, row| {
@@ -408,8 +433,12 @@ impl MainWindow {
             let action = SimpleAction::new("erase", None);
             action.connect_activate(clone!(@strong main_window => move |_,_| {
                 if let Some(editor) = main_window.get_current_editor() {
-                    editor.borrow_mut().delete_selection();
-                 }
+                    if editor.borrow().cur_selection.is_some() {
+                        editor.borrow_mut().delete_selection();
+                    } else {
+                        editor.borrow_mut().clear_cur_layer();
+                    }
+                }
                  main_window.update_editor();
             }));
             app.add_action(&action);
@@ -461,7 +490,7 @@ impl MainWindow {
                 if let Some(data) = clipboard.data::<Layer>("MysticDraw.Layer") {
                     let layer = data.as_ref();
                     let mut opos = Position::new();
-                    let mut pos = editor.borrow_mut().cursor.get_position();
+                    let mut pos = editor.borrow_mut().get_cursor_position();
                     let x1 = pos.x;
                     editor.borrow_mut().begin_atomic_undo();
                     for _ in 0..layer.size.height {
@@ -492,10 +521,12 @@ impl MainWindow {
         if let Some(editor) = cur.map(|view| view.get_editor()) {
             let pos = editor.borrow().cur_selection.as_ref().unwrap().rectangle.start;
             editor.borrow_mut().begin_atomic_undo();
-            editor.borrow_mut().delete_selection();
-            editor.borrow_mut().cursor.set_position(pos);
+            if editor.borrow().cur_selection.is_some() {
+                editor.borrow_mut().delete_selection();
+            }
+            editor.borrow_mut().set_cursor_position(pos);
             editor.borrow_mut().end_atomic_undo();
-        }
+        } 
     }
 
     fn copy_to_clipboard(&self) -> bool {
@@ -677,6 +708,7 @@ impl MainWindow {
     fn construct_right_toolbar(&self) -> Box {
         let result = Box::new(Orientation::Vertical, 0);
 
+        let switcher = gtk4::StackSwitcher::new();
         let stack = gtk4::Stack::new();
         
         let page = stack.add_child(&self.construct_layer_view());
@@ -686,7 +718,10 @@ impl MainWindow {
         let page = stack.add_child(&self.construct_channels());
         page.set_name("page2");
         page.set_title("Channels");
+        
+        switcher.set_stack(Some(&stack));
 
+        result.append(&switcher);
         result.append(&stack);
 
         result
@@ -758,11 +793,9 @@ impl MainWindow {
 
     fn construct_channels(&self) -> Box {
         let result = Box::new(Orientation::Vertical, 0);
-        let fg_button = gtk4::CheckButton::builder().label("Foreground").build();
-        result.append(&fg_button);
-
-        let bg_button = gtk4::CheckButton::builder().label("Background").build();
-        result.append(&bg_button);
+        result.append(&self.fg_button);
+        result.append(&self.bg_button);
+        
         result
     }
 
@@ -816,7 +849,7 @@ impl MainWindow {
             .build();
 
         page_box.append(&scroller);
-        let caret_pos_label = gtk4::Label::new(Some("( 1, 1)"));
+        let caret_pos_label = gtk4::Label::new(Some(""));
         caret_pos_label.set_valign(gtk4::Align::Center);
 
         let mut key_preview_buf = Buffer::new();
@@ -834,6 +867,13 @@ impl MainWindow {
         status_bar.set_margin_end(12);
 
         status_bar.append(&caret_pos_label);
+
+        status_bar.append(&gtk4::Box::builder().hexpand(true).build());
+
+        let size_label = gtk4::Label::new(Some(""));
+        size_label.set_valign(gtk4::Align::Center);
+        status_bar.append(&size_label);
+
         status_bar.append(&gtk4::Box::builder().hexpand(true).build());
         status_bar.append(&key_set_view);
 
@@ -841,9 +881,14 @@ impl MainWindow {
 
         let page = Rc::new(self.tab_view.add_page(&page_box, None));
         let handle = Rc::new(RefCell::new(Editor::new(0, buf)));
-
-        handle.borrow_mut().cursor.pos_changed = std::boxed::Box::new(move |p| {
-            caret_pos_label.set_text(format!("({:>2},{:>3})", p.x + 1, p.y + 1).as_str());
+ 
+        handle.borrow_mut().cursor.pos_changed = std::boxed::Box::new(move |e, p| {
+            caret_pos_label.set_text(format!("Ln {}, Col {}", p.x + 1, p.y + 1).as_str());
+            if let Some(sel) = &e.cur_selection {
+                size_label.set_text(format!("{} Colums x {} Rows", sel.rectangle.size.width, sel.rectangle.size.height).as_str());
+            } else {
+                size_label.set_text(format!("{} Colums x {} Rows", e.buf.width, e.buf.height).as_str());
+            }
         });
 
         let key_handle2 = key_handle;
@@ -869,7 +914,7 @@ impl MainWindow {
         handle2.borrow_mut().buf.file_name_changed = std::boxed::Box::new(move || {
             MainWindow::set_file_name_for_page(&page, &handle3);
         });
-
+        handle2.borrow_mut().set_cursor_position(Position::from(0, 0));
         handle2
     }
 

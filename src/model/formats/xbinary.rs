@@ -47,11 +47,8 @@ pub fn read_xb(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resul
     let has_custom_palette    = (flags &  1) == 1;
     let has_custom_font       = (flags &  2) == 2;
     let is_compressed         = (flags &  4) == 4;
-    let is_blink_mode        = (flags &  8) != 8;
+    //let is_blink_mode        = (flags &  8) != 8;
     let is_extended_char_mode = (flags & 16) == 16;
-
-    println!("xbin {}x{} font_size: {} ", result.width, result.height, font_size);
-    println!("custom palette {}, custom font {} , compressed {}, blink {}, extended char {}", has_custom_palette, has_custom_font, is_compressed, is_blink_mode, is_extended_char_mode);
 
     if has_custom_palette {
         result.palette = Palette::from(&bytes[o..(o + 48)]);

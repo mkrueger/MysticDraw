@@ -57,7 +57,7 @@ impl LineTool {
 
     pub fn get_old_horiz_char(&self, editor: &std::cell::RefMut<Editor>, old_char: u8, to_left: bool) -> Option<u8>
     {
-        let pos = editor.cursor.get_position();
+        let pos = editor.get_cursor_position();
         if old_char == editor.get_outline_char_code(VERTICAL_CHAR).unwrap() {
             match self.old_pos.y.cmp(&pos.y) {
                 std::cmp::Ordering::Greater => Some(editor.get_outline_char_code(if to_left {CORNER_UPPER_RIGHT} else { CORNER_UPPER_LEFT}).unwrap()),
@@ -94,7 +94,7 @@ impl LineTool {
 
     pub fn get_old_vert_char(&self, editor: &std::cell::RefMut<Editor>, old_char: u8, to_left: bool) -> Option<u8>
     {
-        let pos = editor.cursor.get_position();
+        let pos = editor.get_cursor_position();
         if old_char == editor.get_outline_char_code(HORIZONTAL_CHAR).unwrap() {
             match self.old_pos.x.cmp(&pos.x) {
                 std::cmp::Ordering::Greater => Some(editor.get_outline_char_code(if to_left {CORNER_LOWER_RIGHT} else { CORNER_UPPER_RIGHT}).unwrap()),
@@ -128,7 +128,7 @@ impl Tool for LineTool {
         modifier: MModifiers,
     ) -> Event {
         let mut e = editor.borrow_mut();
-        let old_pos = e.cursor.get_position();
+        let old_pos = e.get_cursor_position();
         match key {
             MKey::Down => {
                 e.set_cursor(old_pos.x, old_pos.y + 1);
@@ -182,7 +182,7 @@ impl Tool for LineTool {
             }
         }
 
-        let new_pos = e.cursor.get_position();
+        let new_pos = e.get_cursor_position();
         let new_char = e.get_char_from_cur_layer(new_pos).unwrap_or_default();
         let old_char = e.get_char_from_cur_layer(old_pos).unwrap_or_default();
 
@@ -261,8 +261,7 @@ impl Tool for LineTool {
         let mut editor = editor.borrow_mut();
         if button == 1 {
             std::borrow::BorrowMut::borrow_mut(&mut editor)
-                .cursor
-                .set_position(pos);
+                .set_cursor_position(pos);
         }
         Event::None
     }

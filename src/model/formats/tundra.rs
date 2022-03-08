@@ -34,7 +34,6 @@ pub fn read_tnd(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_widt
     let mut attr = TextAttribute::from_u8(0);
 
     while o < file_size {
-        println!("{}", pos);
         let mut cmd = bytes[o];
         o += 1;
         if cmd == TUNDRA_POSITION {

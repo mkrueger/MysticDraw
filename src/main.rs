@@ -21,6 +21,9 @@ pub struct Workspace {
     selected_tool: usize,
     selected_attribute: TextAttribute,
 
+    pub show_fg_color: bool,
+    pub show_bg_color: bool,
+
     font_dimensions: model::Size
 }
 
@@ -42,6 +45,8 @@ pub static mut WORKSPACE: Workspace = Workspace {
     settings: Settings { tab_size: 8, font_path: None},
     selected_tool: 0,
     selected_attribute: TextAttribute::DEFAULT,
+    show_fg_color: true,
+    show_bg_color: true,
     font_dimensions: model::Size { width: 8, height: 16 }
 };
 

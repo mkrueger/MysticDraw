@@ -16,8 +16,8 @@ pub fn display_settings_dialog(main_window: &MainWindow) -> SettingsDialog
     .orientation(Orientation::Vertical)
     .build();
     let dialog = libadwaita::PreferencesWindow::builder()
-        .default_width(280)
-        .default_height(240)
+        .default_width(480)
+        .default_height(440)
         .modal(true)
         .resizable(false)
         .content(&main_area)
@@ -44,7 +44,7 @@ pub fn display_settings_dialog(main_window: &MainWindow) -> SettingsDialog
         .build();
 
     let group = PreferencesGroup::new();
-    group.set_title("Set size");
+    group.set_title("Settings");
 
     let tab_size_spin_button = SpinButton::with_range(0.0, 10000.0, 10.0);
     unsafe {
@@ -65,7 +65,7 @@ pub fn display_settings_dialog(main_window: &MainWindow) -> SettingsDialog
         }
     }
     let row = ActionRow::builder()
-        .title("Name")
+        .title("TDF font path")
         .build();
     row.add_suffix(&name_entry);
     group.add(&row);

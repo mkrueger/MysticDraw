@@ -86,8 +86,21 @@ impl WidgetImpl for GtkAnsiView {
                 let ch = buffer.get_char(Position::from(x as i32, y as i32));
                 if ch.is_none() { continue; }
                 let ch = ch.unwrap();
-                let bg = buffer.palette.colors[ch.attribute.get_background() as usize].get_rgb_f64();
-                let fg = ch.attribute.get_foreground() as usize;
+                let mut bg = ch.attribute.get_background() as usize;
+                unsafe {
+                    if !WORKSPACE.show_bg_color {
+                        bg = 0;
+                    }      
+                }
+
+                let bg = buffer.palette.colors[bg].get_rgb_f64();
+                let mut fg = ch.attribute.get_foreground() as usize;
+                
+                unsafe {
+                    if !WORKSPACE.show_fg_color {
+                        fg = 7;
+                    }      
+                }
                 let bounds = graphene::Rect::new(
                     x as f32 * font_dimensions.width as f32,
                     y as f32 * font_dimensions.height as f32,
@@ -101,7 +114,7 @@ impl WidgetImpl for GtkAnsiView {
         if !editor.is_inactive {
             unsafe {
                 if WORKSPACE.cur_tool().use_caret() {
-                    draw_caret(editor.cursor.get_position(), snapshot, font_dimensions);
+                    draw_caret(editor.get_cursor_position(), snapshot, font_dimensions);
                 }
                 if WORKSPACE.cur_tool().use_selection() {
                     if let Some(cur_selection) = &editor.cur_selection{

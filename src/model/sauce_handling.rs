@@ -366,8 +366,7 @@ pub fn read_sauce(file: &Path) -> io::Result<Option<Sauce>>
     let mut o = 5;
 
     if b"00" != &sauce_info[o..(o + 2)] {
-        eprintln!("Unsupported sauce version {}{}", char::from_u32(sauce_info[5] as u32).unwrap(), char::from_u32(sauce_info[6] as u32).unwrap());
-        return Ok(None);
+        return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Unsupported sauce version {}{}", char::from_u32(sauce_info[5] as u32).unwrap(), char::from_u32(sauce_info[6] as u32).unwrap()).as_str()));
     }
     o += 2;
 
@@ -380,10 +379,10 @@ pub fn read_sauce(file: &Path) -> io::Result<Option<Sauce>>
     let date = String::from_utf8_lossy(&sauce_info[o..(o+8)]).to_string();
     o += 8;
 
-    let mut dst = [0u8; 4];
-    dst.clone_from_slice(&sauce_info[o..(o + 4)]);
+    // let mut dst = [0u8; 4];
+    //dst.clone_from_slice(&sauce_info[o..(o + 4)]);
     o += 4;
-    let mut file_size = u32::from_le_bytes(dst);
+    let file_size;// = u32::from_le_bytes(dst);
     let data_type = SauceDataType::from(sauce_info[o]);
     o += 1;
     let file_type = sauce_info[o];
@@ -408,8 +407,7 @@ pub fn read_sauce(file: &Path) -> io::Result<Option<Sauce>>
         file_size = (len - (SAUCE_LEN as u64)) as u32;
         None
     } else if -SAUCE_LEN - num_comments as i64 * 64 - 5 < 0 {
-        eprintln!("invalid sauce comment block");
-        None
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "invalid sauce comment block"));
     } else {
         f.seek(SeekFrom::End(-SAUCE_LEN - num_comments as i64 * 64 - 5))?;
         file_size = (len - (SAUCE_LEN as u64) - num_comments as u64 * 64 - 5) as u32;
