@@ -146,6 +146,16 @@ impl Editor
             atomic_undo_stack: Vec::new()
         }
     }
+
+    pub fn get_cur_layer(&mut self) -> Option<&super::Layer>
+    {
+        self.buf.layers.get(self.cur_layer as usize)
+    }
+
+    pub fn get_cur_layer_mut(&mut self) -> Option<&mut super::Layer>
+    {
+        self.buf.layers.get_mut(self.cur_layer as usize)
+    }
     
     pub fn get_overlay_layer(&mut self) -> &mut Option<super::Layer>
     {

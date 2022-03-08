@@ -158,6 +158,8 @@ impl MainWindow {
                     if response == ResponseType::Ok {
                         let file = d.file().expect("Couldn't get file");
                         let file_name = file.path().expect("Couldn't get file path");
+                        d.close();
+
                         let res  = Buffer::load_buffer(file_name.as_path());
                         if let Err(err) = res  {
                             main_window.show_error(format!("Error opening file '{}'", file_name.as_os_str().to_string_lossy()), Some(err.to_string().as_str()));
@@ -206,6 +208,7 @@ impl MainWindow {
                         if let Some(page) = main_window.get_current_ansi_view() {
                             let file = d.file().expect("Couldn't get file");
                             let filename = file.path().expect("Couldn't get file path");
+                            d.close();
                             page.get_editor().borrow_mut().buf.file_name = Some(filename.clone());
                             main_window.handle_error(page.get_editor().borrow().save_content(&filename), move || format!("Error saving {}", filename.as_os_str().to_string_lossy()));
                             (page.get_editor().borrow().buf.file_name_changed)()

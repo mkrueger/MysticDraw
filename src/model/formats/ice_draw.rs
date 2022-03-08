@@ -34,7 +34,7 @@ pub fn read_idf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
     // skip y2
     o += 2;
 
-    if x2 > x1 {
+    if x2 < x1 {
         return Err(io::Error::new(io::ErrorKind::InvalidData, "invalid bounds for idf width needs to be >=0."));
     }
 

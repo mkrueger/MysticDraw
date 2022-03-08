@@ -13,6 +13,7 @@ mod font_imp;
 mod pipette_imp;
 mod line_imp;
 mod flip_imp;
+mod move_layer_imp;
 
 #[derive(Copy, Clone, Debug)]
  pub enum MKey {
@@ -283,7 +284,7 @@ pub trait Tool
         Event::None
     }
 
-    fn handle_drag_begin(&self, _editor: Rc<RefCell<Editor>>, _start: Position, _cur: Position) -> Event {
+    fn handle_drag_begin(&mut self, _editor: Rc<RefCell<Editor>>, _start: Position, _cur: Position) -> Event {
         Event::None
     }
 
@@ -454,6 +455,7 @@ pub static mut FILL_TOOL: fill_imp::FillTool = fill_imp::FillTool {
     attr: TextAttribute::DEFAULT
 };
 pub static mut FLIP_TOOL: flip_imp::FlipTool = flip_imp::FlipTool { };
+pub static mut MOVE_LAYER_TOOL: move_layer_imp::MoveLayer = move_layer_imp::MoveLayer { pos: Position { x: 0, y: 0 } };
 
 pub fn init_tools()
 {
@@ -472,5 +474,6 @@ pub fn init_tools()
         TOOLS.push(&mut FILL_TOOL);
         TOOLS.push(&mut FLIP_TOOL);
         TOOLS.push(&mut FONT_TOOL);
+        TOOLS.push(&mut MOVE_LAYER_TOOL);
     }
 }

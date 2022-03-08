@@ -11,6 +11,7 @@
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-rectangle.svg</file>
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-pipette.svg</file>
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-flip.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-move-layer.svg</file>
 
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-layer-add.svg</file>
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-layer-delete.svg</file>

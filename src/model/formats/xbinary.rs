@@ -67,21 +67,21 @@ pub fn read_xb(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resul
     }
 
     if is_compressed {
-        read_data_compressed(result, &bytes[o..], file_size)
+        read_data_compressed(result, &bytes[o..], file_size - o)
     } else {
-        read_data_uncompressed(result, &bytes[o..], file_size)
+        read_data_uncompressed(result, &bytes[o..], file_size - o)
     }
 }
 
 fn advance_pos(result: &Buffer, pos: &mut Position) -> bool
 {
+    if pos.y > result.height as i32 {
+        return false;
+    }
     pos.x += 1;
     if pos.x >= result.width as i32 {
         pos.x = 0;
         pos.y += 1;
-        if pos.y >= result.height as i32 {
-            return false;
-        }
     }
     true
 }
