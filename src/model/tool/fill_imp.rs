@@ -61,8 +61,8 @@ fn fill(editor: &mut RefMut<Editor>, attribute: TextAttribute, pos: Position, op
                         return;
                     }
                 } else if FILL_TOOL.use_char && FILL_TOOL.use_back  {
-                    if cur_char.char_code != old_ch.char_code && cur_char.attribute.get_background_ice() != old_ch.attribute.get_background_ice() || 
-                    cur_char.char_code == new_ch.char_code && cur_char.attribute.get_background_ice() == new_ch.attribute.get_background_ice() {
+                    if cur_char.char_code != old_ch.char_code && cur_char.attribute.get_background() != old_ch.attribute.get_background() || 
+                    cur_char.char_code == new_ch.char_code && cur_char.attribute.get_background() == new_ch.attribute.get_background() {
                         return;
                     }
                 } else if FILL_TOOL.use_char {
@@ -74,7 +74,7 @@ fn fill(editor: &mut RefMut<Editor>, attribute: TextAttribute, pos: Position, op
                         return;
                     }
                 } else if FILL_TOOL.use_back {
-                    if cur_char.attribute.get_background_ice() != old_ch.attribute.get_background_ice()  || cur_char.attribute.get_background_ice() == new_ch.attribute.get_background_ice() {
+                    if cur_char.attribute.get_background() != old_ch.attribute.get_background()  || cur_char.attribute.get_background() == new_ch.attribute.get_background() {
                         return;
                     }
                 } else {
@@ -83,7 +83,7 @@ fn fill(editor: &mut RefMut<Editor>, attribute: TextAttribute, pos: Position, op
                 let mut repl_ch = cur_char;
                 if FILL_TOOL.use_char { repl_ch.char_code = new_ch.char_code; }
                 if FILL_TOOL.use_fore { repl_ch.attribute.set_foreground(new_ch.attribute.get_foreground()) }
-                if FILL_TOOL.use_back { repl_ch.attribute.set_background_ice(new_ch.attribute.get_background_ice()) }
+                if FILL_TOOL.use_back { repl_ch.attribute.set_background(new_ch.attribute.get_background()) }
 
                 editor.set_char(pos, Some(repl_ch));
             }

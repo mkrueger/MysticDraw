@@ -1,6 +1,6 @@
 use std::io;
 
-use crate::model::{Buffer, DosChar, BitFont, Size};
+use crate::model::{Buffer, DosChar, BitFont, Size, Palette};
 use super::{ Position, TextAttribute};
 
 // http://fileformats.archiveteam.org/wiki/ICEDraw
@@ -74,7 +74,7 @@ pub fn read_idf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
     });
     o += FONT_SIZE;
 
-    result.custom_palette = Some((&bytes[o..(o + PALETTE_SIZE)]).iter().map(|x| x << 2 | x >> 4).collect());
+    result.palette = Palette::from(&bytes[o..(o + PALETTE_SIZE)]);
 
     result.height = pos.y as usize;
 
@@ -143,12 +143,7 @@ pub fn convert_to_idf(buffer: &Buffer) -> io::Result<Vec<u8>>
     }
 
     // palette
-    for i in 0..16 {
-        let col = buffer.get_rgb(i as u8);
-        result.push(col.0 >> 2 | col.0 << 4);
-        result.push(col.1 >> 2 | col.1 << 4);
-        result.push(col.2 >> 2 | col.2 << 4);
-    }
+    result.extend(buffer.palette.to_16color_vec());
 
     Ok(result)
 }

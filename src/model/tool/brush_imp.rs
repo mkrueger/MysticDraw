@@ -64,7 +64,7 @@ impl BrushTool {
                             attribute.set_foreground(editor.cursor.get_attribute().get_foreground());
                         }
                         if self.use_back {
-                            attribute.set_background_ice(editor.cursor.get_attribute().get_background_ice());
+                            attribute.set_background(editor.cursor.get_attribute().get_background());
                         }
 
                         editor.set_char(center + Position::from(x, y), Some(crate::model::DosChar { 

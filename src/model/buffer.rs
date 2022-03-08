@@ -6,7 +6,7 @@ use std::{
 };
 use std::ffi::OsStr;
 
-use super::{Layer, read_xb, Sauce, read_sauce, SauceDataType, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size, UndoOperation};
+use super::{Layer, read_xb, Sauce, read_sauce, SauceDataType, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size, UndoOperation, Palette};
 
 #[derive(Debug, Default)]
 #[allow(dead_code)]
@@ -21,7 +21,7 @@ pub struct Buffer {
 
     pub width: usize,
     pub height: usize,
-    pub custom_palette: Option<Vec<u8>>,
+    pub palette: Palette,
     pub overlay_layer: Option<Layer>,
 
     pub font: Option<BitFont>,
@@ -34,7 +34,7 @@ pub struct Buffer {
 
 impl std::fmt::Debug for Buffer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Buffer").field("file_name", &self.file_name).field("width", &self.width).field("height", &self.height).field("custom_palette", &self.custom_palette).field("font", &self.font).field("layers", &self.layers).field("sauce", &self.sauce).finish()
+        f.debug_struct("Buffer").field("file_name", &self.file_name).field("width", &self.width).field("height", &self.height).field("custom_palette", &self.palette).field("font", &self.font).field("layers", &self.layers).field("sauce", &self.sauce).finish()
     }
 }
 
@@ -46,7 +46,7 @@ impl Buffer {
             file_name: None,
             width: 80,
             height: 25,
-            custom_palette: None,
+            palette: Palette::new(),
             font: None,
             overlay_layer: None,
             layers: vec!(Layer::new()),
@@ -279,58 +279,6 @@ impl Buffer {
         }
     }
 
-    pub fn get_rgb_f64(&self, color: u8) -> (f64, f64, f64) {
-        let rgb = self.get_rgb(color);
-        (
-            rgb.0 as f64 / 255_f64,
-            rgb.1 as f64 / 255_f64,
-            rgb.2 as f64 / 255_f64
-        )
-    }
-
-    pub const DOS_DEFAULT_PALETTE: [(u8, u8, u8); 16] = [
-        (0x00, 0x00, 0x00), // black
-        (0x00, 0x00, 0xAA), // blue
-        (0x00, 0xAA, 0x00), // green
-        (0x00, 0xAA, 0xAA), // cyan
-        (0xAA, 0x00, 0x00), // red
-        (0xAA, 0x00, 0xAA), // magenta
-        (0xAA, 0x55, 0x00), // brown
-        (0xAA, 0xAA, 0xAA), // lightgray
-        (0x55, 0x55, 0x55), // darkgray
-        (0x55, 0x55, 0xFF), // lightblue
-        (0x55, 0xFF, 0x55), // lightgreen
-        (0x55, 0xFF, 0xFF), // lightcyan
-        (0xFF, 0x55, 0x55), // lightred
-        (0xFF, 0x55, 0xFF), // lightmagenta
-        (0xFF, 0xFF, 0x55), // yellow
-        (0xFF, 0xFF, 0xFF), // white
-    ];
-    
-    pub fn get_rgb(&self, color: u8) -> (u8, u8, u8) {
-        debug_assert!(color <= 15);
-
-        if let Some(pal) = &self.custom_palette  {
-            let o = (color * 3) as usize;
-            if o + 2 >= pal.len() {
-                eprintln!("illegal palette color {}, palette is {} colors long.", color, pal.len() / 3);
-                return (255, 0, 0);
-            }
-
-            return (
-                pal[o],
-                pal[o + 1],
-                pal[o + 2]
-            );
-        }
-        
-        let c = Buffer::DOS_DEFAULT_PALETTE[color as usize];
-        (
-            c.0,
-            c.1,
-            c.2
-        )
-    }
 
     pub fn to_screenx(&self, x: i32) -> f64
     {

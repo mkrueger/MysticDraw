@@ -48,7 +48,7 @@ impl ObjectImpl for GtkColorPicker {
                             (y * height / 2) as f64,
                             (width / 8) as f64,
                             (height / 2) as f64);
-                        let color = this.get_editor().borrow().buf.get_rgb((x + y * 8) as u8);
+                        let color = this.get_editor().borrow().buf.palette.colors[(x + y * 8) as usize].get_rgb();
                         cr.set_source_rgb((color.0 as f64) / 255.0,
                         (color.1 as f64) / 255.0,
                         (color.2 as f64) / 255.0);
@@ -76,8 +76,8 @@ impl ObjectImpl for GtkColorPicker {
                     cr.set_source_rgb(1.0, 1.0, 1.0);
                     cr.fill().expect("error while calling fill");
 
-                    let x = (WORKSPACE.selected_attribute.get_background_ice() % 8) as i32;
-                    let y = (WORKSPACE.selected_attribute.get_background_ice() / 8) as i32;
+                    let x = (WORKSPACE.selected_attribute.get_background() % 8) as i32;
+                    let y = (WORKSPACE.selected_attribute.get_background() / 8) as i32;
                     cr.rectangle(
                         ((1 + x) * width / 8) as f64 - marker_width,
                         ((1 + y) * height / 2) as f64 - marker_width,
@@ -137,7 +137,7 @@ impl WidgetImpl for GtkColorPicker {
                 let row = y / (height / 2);
                 let color = (col + row * 8) as u8;
                 unsafe {
-                    WORKSPACE.selected_attribute.set_background_ice(color);
+                    WORKSPACE.selected_attribute.set_background(color);
                     this.queue_draw();
                 }
             }),

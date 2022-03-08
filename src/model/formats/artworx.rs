@@ -1,6 +1,6 @@
 use std::io;
 
-use crate::model::{Buffer, DosChar, BitFont, Size};
+use crate::model::{Buffer, DosChar, BitFont, Size, Palette};
 use super::{ Position, TextAttribute};
 
 // http://fileformats.archiveteam.org/wiki/ArtWorx_Data_Format
@@ -13,37 +13,6 @@ use super::{ Position, TextAttribute};
 // A very simple format with a weird palette storage. Only 16 colors got used but a full 64 color palette is stored.
 // Maybe useful for DOS demos running in text mode.
 
-static COLOR_OFFSETS: [usize;16] = [ 0, 1, 2, 3, 4, 5, 20, 7, 56, 57, 58, 59, 60, 61, 62, 63 ];
-
-fn convert_palette(pal: &[u8]) -> Vec<u8>
-{   
-    let mut res = Vec::new();
-    for i in COLOR_OFFSETS {
-        let o = i * 3;
-        res.push(pal[o] << 2 | pal[o] >> 4);
-        res.push(pal[o + 1] << 2 | pal[o + 1] >> 4);
-        res.push(pal[o + 2] << 2 | pal[o + 2] >> 4);
-    }
-    res
-}
-
-fn generate_palette(buf: &Buffer) -> Vec<u8>
-{
-    let mut res = Vec::new();
-    res.resize(3 * 64, 0);
-
-    #[allow(clippy::needless_range_loop)]
-    for i in 0..16 {
-        let col = buf.get_rgb(i as u8);
-
-        let o = COLOR_OFFSETS[i] * 3;
-        res[o] = col.0 >> 2 | col.0 << 4;
-        res[o + 1] = col.1 >> 2 | col.1 << 4;
-        res[o + 2] = col.2 >> 2 | col.2 << 4;
-    }
-
-    res
-}
 
 pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_width: i32) -> io::Result<bool>
 {
@@ -59,8 +28,8 @@ pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_widt
 
     // convert EGA -> VGA colors.
     let palette_size = 3 * 64;
-    result.custom_palette = Some(convert_palette(&bytes[o..(o + palette_size)]));
-
+    result.palette = Palette::from(&bytes[o..(o + palette_size)]).cycle_ega_colors();
+    
 
     o += palette_size;
 
@@ -92,7 +61,7 @@ pub fn convert_to_adf(buf: &Buffer) -> io::Result<Vec<u8>>
 {
     let mut result = vec![1]; // version
 
-    result.extend(generate_palette(buf));
+    result.extend(buf.palette.cycle_ega_colors().to_vec());
 
     if let Some(font) = &buf.font {
         if font.size.width != 8 || font.size.height != 16 {

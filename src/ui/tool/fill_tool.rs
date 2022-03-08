@@ -25,7 +25,7 @@ pub fn get_preview_char() -> DosChar
         let mut color = TextAttribute::DEFAULT;
         
         if FILL_TOOL.use_back {
-            color.set_background_ice(FILL_TOOL.attr.get_background_ice());
+            color.set_background(FILL_TOOL.attr.get_background());
         }
 
         if FILL_TOOL.use_fore {

@@ -1,6 +1,6 @@
 use std::io;
 
-use crate::model::{Buffer, DosChar, BitFont, Size};
+use crate::model::{Buffer, DosChar, BitFont, Size, Palette};
 
 use super::{ Position, TextAttribute };
 
@@ -54,7 +54,7 @@ pub fn read_xb(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resul
     println!("custom palette {}, custom font {} , compressed {}, blink {}, extended char {}", has_custom_palette, has_custom_font, is_compressed, is_blink_mode, is_extended_char_mode);
 
     if has_custom_palette {
-        result.custom_palette = Some((&bytes[o..(o+48)]).iter().map(|x| x << 2).collect());
+        result.palette = Palette::from(&bytes[o..(o + 48)]);
         o += 48;
     }
     if has_custom_font {
@@ -217,14 +217,14 @@ pub fn convert_to_xb(buf: &Buffer) -> io::Result<Vec<u8>>
         // default font
         result.push(16);
     }
-    if buf.custom_palette.is_some() {
+    if !buf.palette.is_default() {
         flags |= FLAG_PALETTE;
     }
     flags |= FLAG_COMPRESS;
     result.push(flags);
 
-    if let Some(palette) = &buf.custom_palette {
-        result.extend(palette.iter().map(|x| x >> 2));
+    if (flags & FLAG_PALETTE) == FLAG_PALETTE {
+        result.extend(buf.palette.to_16color_vec());
     }
 
     if let Some(font) = &buf.font {

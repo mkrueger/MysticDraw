@@ -36,6 +36,8 @@ pub use tool::*;
 mod undo_stack;
 pub use undo_stack::*;
 
+mod palette_handling;
+pub use palette_handling::*;
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Size {

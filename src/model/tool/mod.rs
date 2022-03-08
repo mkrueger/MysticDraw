@@ -338,7 +338,7 @@ fn plot_point(editor: &Rc<RefCell<Editor>>, tool: &dyn Plottable, pos: Position)
     let editor_attr = editor.borrow().cursor.get_attribute();
     let mut attribute= ch.attribute;
     if tool.get_use_back() {
-        attribute.set_background_ice(editor_attr.get_background_ice());
+        attribute.set_background(editor_attr.get_background());
     }
     if tool.get_use_fore() {
         attribute.set_foreground(editor_attr.get_foreground());
