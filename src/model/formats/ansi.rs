@@ -1,4 +1,5 @@
 use std::cmp::{max, min};
+use std::io;
 
 use crate::model::{Buffer, Position};
 use crate::model::TextAttribute;
@@ -12,17 +13,17 @@ const COLOR_OFFSETS : [u8; 8] = [ 0, 4, 2, 6, 1, 5, 3, 7 ];
 const FG_TABLE: [&[u8;2];8] = [ b"30", b"34", b"32", b"36", b"31", b"35", b"33", b"37" ];
 const BG_TABLE: [&[u8;2];8] = [ b"40", b"44", b"42", b"46", b"41", b"45", b"43", b"47" ];
 
-pub fn display_ans(data: &mut ParseStates, ch: u8) -> Option<u8> {
+pub fn display_ans(data: &mut ParseStates, ch: u8) -> io::Result<Option<u8>> {
     if data.ans_esc {
         if ch == ANSI_CSI {
             data.ans_esc = false;
             data.ans_code = true;
             data.ans_numbers.clear();
-            return None;
+            return Ok(None);
         }
         // ignore all other ANSI escape codes
         data.ans_esc = false;
-        return None;
+        return Ok(None);
     }
 
     if data.ans_code {
@@ -37,11 +38,13 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> Option<u8> {
                         30..=37 => data.text_attr.set_foreground_without_bold(COLOR_OFFSETS[*n as usize - 30]),
                         // set background color
                         40..=47 => data.text_attr.set_background(COLOR_OFFSETS[*n as usize - 40]),
-                        _ => { eprintln!("Unsupported ANSI graphic code {}", n); }
+                        _ => { 
+                            return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Unsupported ANSI graphic code {}", n)));
+                        }
                     }
                 }
                 data.ans_code = false;
-                return None;
+                return Ok(None);
             }
             b'H' | b'f' => { // Cursor Position + Horizontal Vertical Position ('f')
                 if !data.ans_numbers.is_empty() {
@@ -57,7 +60,7 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> Option<u8> {
                     }
                 }
                 data.ans_code = false;
-                return None;
+                return Ok(None);
             }
             b'C' => { // Cursor Forward 
                 if data.ans_numbers.is_empty() {
@@ -67,7 +70,7 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> Option<u8> {
                 }
                 data.cur_pos.x = min(data.screen_width - 1, data.cur_pos.x);
                 data.ans_code = false;
-                return None;
+                return Ok(None);
             }
             b'D' => { // Cursor Back 
                 if data.ans_numbers.is_empty() {
@@ -77,7 +80,7 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> Option<u8> {
                 }
                 data.cur_pos.x = max(0, data.cur_pos.x);
                 data.ans_code = false;
-                return None;
+                return Ok(None);
             }
             b'A' => { // Cursor Up 
                 if data.ans_numbers.is_empty() {
@@ -87,7 +90,7 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> Option<u8> {
                 }
                 data.cur_pos.y = max(0, data.cur_pos.y);
                 data.ans_code = false;
-                return None;
+                return Ok(None);
             }
             b'B' => { // Cursor Down 
                 if data.ans_numbers.is_empty() {
@@ -96,17 +99,17 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> Option<u8> {
                     data.cur_pos.y += data.ans_numbers[0];
                 }
                 data.ans_code = false;
-                return None;
+                return Ok(None);
             }
             b's' => { // Save Current Cursor Position
                 data.saved_pos = data.cur_pos;
                 data.ans_code = false;
-                return None;
+                return Ok(None);
             }
             b'u' => { // Restore Saved Cursor Position 
                 data.cur_pos = data.saved_pos;
                 data.ans_code = false;
-                return None;
+                return Ok(None);
             }
             b'J' => { // Erase in Display 
                 data.ans_code = false;
@@ -121,18 +124,19 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> Option<u8> {
                             data.cur_pos = Position::new();
                             // TODO: Clear
                         } 
-                        _ => {eprintln!("unknown ANSI J sequence {}", data.ans_numbers[0])}
+                        _ => {
+                            return Err(io::Error::new(io::ErrorKind::InvalidData, format!("unknown ANSI J sequence {}", data.ans_numbers[0])));
+                        }
                     }
                 }
-                return None;
+                return Ok(None);
             }
             _ => {
                 if (0x40..=0x7E).contains(&ch) {
                     // unknown control sequence, terminate reading
                     data.ans_code = false;
                     data.ans_esc = false;
-                    eprintln!("unknown control sequence, terminating.");
-                    return None;
+                    return Err(io::Error::new(io::ErrorKind::InvalidData, format!("unknown control sequence {}", ch)));
                 }
 
                 if (b'0'..=b'9').contains(&ch) {
@@ -143,17 +147,14 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> Option<u8> {
                     data.ans_numbers.push(d * 10 + (ch - b'0') as i32);
                 } else if ch == b';' {
                     data.ans_numbers.push(0);
-                    return None;
+                    return Ok(None);
                 } else {
-                    // error in control sequence, terminate reading
-                    eprintln!(
-                        "error in ANSI control sequence: {:?}!",
-                        char::from_u32(ch as u32)
-                    );
                     data.ans_code = false;
                     data.ans_esc = false;
+                    // error in control sequence, terminate reading
+                    return Err(io::Error::new(io::ErrorKind::InvalidData, format!("error in ANSI control sequence: {:?}!", char::from_u32(ch as u32))));
                 }
-                return None;
+                return Ok(None);
             }
         }
     }
@@ -161,9 +162,9 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> Option<u8> {
     if ch == ANSI_ESC {
         data.ans_code = false;
         data.ans_esc = true;
-        None
+        Ok(None)
     } else {
-        Some(ch)
+        Ok(Some(ch))
     }
 }
 
@@ -296,7 +297,7 @@ mod tests {
 
     #[test]
     fn test_ansi_sequence() {
-      let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[0;40;37mFoo-\x1B[1mB\x1B[0ma\x1B[35mr");
+      let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[0;40;37mFoo-\x1B[1mB\x1B[0ma\x1B[35mr").unwrap();
        
       let ch = buf.get_char(Position::from(0, 0)).unwrap_or_default();
       assert_eq!(b'F', ch.char_code);
@@ -329,7 +330,7 @@ mod tests {
 
     #[test]
     fn test_ansi_30() {
-       let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[1;35mA\x1B[30mB\x1B[0mC");
+       let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[1;35mA\x1B[30mB\x1B[0mC").unwrap();
        let ch = buf.get_char(Position::from(0, 0)).unwrap_or_default();
        assert_eq!(b'A', ch.char_code);
        assert_eq!(13, ch.attribute.as_u8());
@@ -343,7 +344,7 @@ mod tests {
 
     #[test]
     fn test_bg_colorrsequence() {
-        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.ans"), &None, b"\x1B[1;30m1\x1B[0;34m2\x1B[33m3\x1B[1;41m4\x1B[40m5\x1B[43m6\x1B[40m7");
+        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.ans"), &None, b"\x1B[1;30m1\x1B[0;34m2\x1B[33m3\x1B[1;41m4\x1B[40m5\x1B[43m6\x1B[40m7").unwrap();
        
         let ch = buf.get_char(Position::from(0, 0)).unwrap_or_default();
        assert_eq!(b'1', ch.char_code);
@@ -370,14 +371,14 @@ mod tests {
 
     #[test]
     fn test_linebreak_bug() {
-        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.ans"), &None, b"XX");
+        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.ans"), &None, b"XX").unwrap();
        
         assert_eq!(0x16, buf.get_char(Position {x: 1, y: 0}).unwrap_or_default().char_code);
     }
 
     #[test]
     fn test_char_missing_bug() {
-        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[1;35mA\x1B[30mB\x1B[0mC");
+        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[1;35mA\x1B[30mB\x1B[0mC").unwrap();
        
         let ch = buf.get_char(Position::from(0, 0)).unwrap_or_default();
         assert_eq!(b'A', ch.char_code);
@@ -392,7 +393,7 @@ mod tests {
 
     #[test]
     fn test_cursor_forward() {
-        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[70Ctest_me\x1B[20CF");
+        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[70Ctest_me\x1B[20CF").unwrap();
         let ch = buf.get_char(Position::from(79, 0)).unwrap_or_default();
         assert_eq!(b'F', ch.char_code);
  
@@ -400,21 +401,21 @@ mod tests {
     
     #[test]
     fn test_cursor_forward_at_eol() {
-        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[75CTEST_\x1B[2CF");
+        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[75CTEST_\x1B[2CF").unwrap();
         let ch = buf.get_char(Position::from(2, 1)).unwrap_or_default();
         assert_eq!(b'F', ch.char_code);
     }
 
     #[test]
     fn test_char0_bug() {
-        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x00A");
+        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x00A").unwrap();
         let ch = buf.get_char(Position::from(1, 0)).unwrap_or_default();
         assert_eq!(b'A', ch.char_code);
     }
 
     fn test_ansi(data: &[u8])
     {
-        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, data);
+        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, data).unwrap();
         let converted = super::convert_to_ans(&buf);
 
         // more gentle output.

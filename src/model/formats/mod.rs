@@ -1,4 +1,5 @@
 mod ansi;
+
 pub use ansi::*;
 
 mod pcboard;
@@ -27,6 +28,7 @@ use super::{Position, TextAttribute};
 #[allow(clippy::struct_excessive_bools)]
 pub struct ParseStates {
     pub screen_width: i32,
+    pub cur_input_pos: Position,
     
     // ANSI
     pub ans_esc: bool,
@@ -54,12 +56,14 @@ impl ParseStates {
     pub fn new() -> Self {
         ParseStates {
             screen_width: 80,
+            cur_input_pos: Position::from(1,1),
             ans_code: false,
             ans_esc: false,
             cur_pos: Position::new(),
             saved_pos: Position::new(),
             text_attr: super::TextAttribute::DEFAULT,
             ans_numbers: Vec::new(),
+            
             pcb_code: false,
             pcb_color: false,
             pcb_value: 0,
@@ -80,7 +84,7 @@ mod tests {
 
     fn test_ansi(data: &[u8])
     {
-        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, data);
+        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, data).unwrap();
         let converted = super::convert_to_ans(&buf);
 
         // more gentle output.

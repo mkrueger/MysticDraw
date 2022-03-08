@@ -1,7 +1,10 @@
+use std::io;
+
 use crate::model::{Buffer, DosChar, BitFont, Size};
 
 use super::{ Position, TextAttribute };
 
+const XBIN_HEADER_SIZE:usize = 11;
 
 const FLAG_PALETTE:u8      = 0b_0000_0001;
 const FLAG_FONT:u8         = 0b_0000_0010;
@@ -18,12 +21,15 @@ enum Compression {
     Full = 0b1100_0000,
 }
 
-pub fn read_xb(result: &mut Buffer, bytes: &[u8], _file_size: usize)
+pub fn read_xb(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Result<bool>
 {
-    if b"XBIN" != &bytes[0..4] {
-        eprintln!("no valid xbin.");
-        return;
+    if file_size < XBIN_HEADER_SIZE {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid XBin - file too short"));
     }
+    if b"XBIN" != &bytes[0..4] {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid XBin file"));
+    }
+
     let mut o = 4;
 
     // let eof_char = bytes[o];
@@ -61,9 +67,9 @@ pub fn read_xb(result: &mut Buffer, bytes: &[u8], _file_size: usize)
     }
 
     if is_compressed {
-        read_data_compressed(result, &bytes[o..]);
+        read_data_compressed(result, &bytes[o..], file_size)
     } else {
-        read_data_uncompressed(result, &bytes[o..]);
+        read_data_uncompressed(result, &bytes[o..], file_size)
     }
 }
 
@@ -80,12 +86,16 @@ fn advance_pos(result: &Buffer, pos: &mut Position) -> bool
     true
 }
 
-fn read_data_compressed(result: &mut Buffer, bytes: &[u8])
+fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Result<bool>
 {
     let mut pos = Position::new();
     let mut o = 0;
-    while o < bytes.len() {
+    while o < file_size {
         let xbin_compression = bytes[o];
+        if o + 1 > file_size {
+            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "invalid file."));
+        }
+
         o += 1;
         let compression = unsafe { std::mem::transmute(xbin_compression & 0b_1100_0000) };
         let repeat_counter = (xbin_compression & 0b_0011_1111) + 1;
@@ -93,14 +103,14 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8])
         match compression {
             Compression::Off => {
                 for _ in 0..repeat_counter {
-                    if o + 2 > bytes.len() { return; }
+                    if o + 2 > bytes.len() { return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "invalid file.")); }
                     result.set_char(0, pos, Some(DosChar { 
                         char_code: bytes[o], 
                         attribute: TextAttribute::from_u8(bytes[o + 1])
                     }));
                     o += 2;
                     if !advance_pos(result, &mut pos) {
-                        return;
+                        return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "data out of bounds"));
                     }
                 }
             }
@@ -108,14 +118,14 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8])
                 let ch = bytes[o];
                 o += 1;
                 for _ in 0..repeat_counter {
-                    if o + 1 > bytes.len() { return; }
+                    if o + 1 > bytes.len() { return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "invalid file.")); }
                     result.set_char(0, pos, Some(DosChar { 
                         char_code: ch, 
                         attribute: TextAttribute::from_u8(bytes[o])
                     }));
                     o += 1;
                     if !advance_pos(result, &mut pos) {
-                        return;
+                        return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "data out of bounds"));
                     }
                 }
             }
@@ -123,21 +133,21 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8])
                 let attr = TextAttribute::from_u8(bytes[o]);
                 o += 1;
                 for _ in 0..repeat_counter {
-                    if o + 1 > bytes.len() { return; }
+                    if o + 1 > bytes.len() {return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "invalid file.")); }
                     result.set_char(0, pos, Some(DosChar { 
                         char_code: bytes[o], 
                         attribute: attr
                     }));
                     o += 1;
                     if !advance_pos(result, &mut pos) {
-                        return;
+                        return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "data out of bounds"));
                     }
                 }
             }
             Compression::Full => {
                 let ch = bytes[o];
                 o += 1;
-                if o + 1 > bytes.len() { return; }
+                if o + 1 > bytes.len() { return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "invalid file.")); }
                 let attr = TextAttribute::from_u8(bytes[o]);
                 o += 1;
                 let rep_ch = Some(DosChar { 
@@ -148,37 +158,48 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8])
                 for _ in 0..repeat_counter {
                     result.set_char(0, pos, rep_ch);
                     if !advance_pos(result, &mut pos) {
-                        return;
+                        return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "data out of bounds"));
                     }
                 }
             }
         }
     }
+
+    Ok(true)
 }
 
-fn read_data_uncompressed(result: &mut Buffer, bytes: &[u8])
+fn read_data_uncompressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Result<bool>
 {
     let mut pos = Position::new();
     let mut o = 0;
-    while o + 2 <= bytes.len() {
+    while o < file_size {
+        if o + 1 > file_size {
+            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "invalid file - needs to be % 2 == 0"));
+        }
         result.set_char(0, pos, Some(DosChar { 
             char_code: bytes[o], 
             attribute: TextAttribute::from_u8(bytes[o + 1])
         }));
         o += 2;
         if !advance_pos(result, &mut pos) {
-            break;
+            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "data out of bounds"));
         }
     }
+
+    Ok(true)
 }
 
-pub fn convert_to_xb(buf: &Buffer) -> Vec<u8>
+pub fn convert_to_xb(buf: &Buffer) -> io::Result<Vec<u8>>
 {
     let mut result = Vec::new();
 
     result.extend_from_slice(b"XBIN");
     result.push(0x1A); // CP/M EOF char (^Z) - used by DOS as well
-    assert!(u16::try_from(buf.height).is_ok() && u16::try_from(buf.width).is_ok(), "buffer dimensions too large to save as xbin.");
+
+    if u16::try_from(buf.height).is_err() || u16::try_from(buf.width).is_err() {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "buffer dimensions too large to save as xbin."));
+    }
+
     result.push(buf.width as u8);
     result.push((buf.width >> 8) as u8);
     result.push(buf.height as u8);
@@ -186,7 +207,10 @@ pub fn convert_to_xb(buf: &Buffer) -> Vec<u8>
 
     let mut flags = 0;
     if let Some(font) = &buf.font {
-        assert!(!(font.size.width != 8 || font.size.height < 1 || font.size.height > 32), "font not supported by the .xb format only fonts with 8px width and a height from 1 to 32 are supported.");
+        if font.size.width != 8 || font.size.height < 1 || font.size.height > 32 {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "font not supported by the .xb format only fonts with 8px width and a height from 1 to 32 are supported."));
+        }
+
         result.push(font.size.height as u8);
         flags |= FLAG_FONT;
     } else {
@@ -220,7 +244,7 @@ pub fn convert_to_xb(buf: &Buffer) -> Vec<u8>
         }
     }
     
-    result
+    Ok(result)
 }
 
 fn compress_greedy(outputdata: &mut Vec<u8>, buffer: &Buffer)

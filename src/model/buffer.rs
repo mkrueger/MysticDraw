@@ -137,15 +137,16 @@ impl Buffer {
 
     pub fn load_buffer(file_name: &Path) -> io::Result<Buffer> {
 
+        
         let sauce_info = read_sauce(file_name)?;
         let mut f = File::open(file_name)?;
         let mut bytes = Vec::new();
         f.read_to_end(&mut bytes)?;
 
-        Ok(Buffer::from_bytes(file_name, &sauce_info, &bytes))
+        Buffer::from_bytes(file_name, &sauce_info, &bytes)
     }
 
-    pub fn from_bytes(file_name: &Path, sauce_info: &Option<Sauce>, bytes: &[u8]) -> Buffer {
+    pub fn from_bytes(file_name: &Path, sauce_info: &Option<Sauce>, bytes: &[u8]) -> io::Result<Buffer> {
         let mut result = Buffer::new();
         result.file_name = Some(file_name.to_path_buf());
         let mut data = ParseStates::new();
@@ -177,22 +178,21 @@ impl Buffer {
             match ext.as_str() {
                 "bin" => {
                     if screen_width == 0 { screen_width = 160; }
-                    read_binary(&mut result, bytes, file_size, screen_width);
-                    return result;
+                    read_binary(&mut result, bytes, file_size, screen_width)?;
+                    return Ok(result);
                 }
                 "xb" => {
-                    read_xb(&mut result, bytes, file_size);
-                    return result;
+                    read_xb(&mut result, bytes, file_size)?;
+                    return Ok(result);
                 }
                 "adf" => {
                     if screen_width == 0 { screen_width = 80; }
-                    super::read_adf(&mut result, bytes, file_size, screen_width);
-                    return result;
+                    super::read_adf(&mut result, bytes, file_size, screen_width)?;
+                    return Ok(result);
                 }
                 "idf" => {
-                    if screen_width == 0 { screen_width = 80; }
-                    super::read_idf(&mut result, bytes, file_size);
-                    return result;
+                    super::read_idf(&mut result, bytes, file_size)?;
+                    return Ok(result);
                 }
                 "ans" => { parse_ansi = true; }
                 "avt" => { parse_avt = true;  }
@@ -207,9 +207,11 @@ impl Buffer {
 
         for b in bytes.iter().take(file_size) {
             let mut ch = Some(*b);
+            data.cur_input_pos.x += 1;
+
             if parse_ansi {
                 if let Some(c) = ch {
-                    ch = display_ans(&mut data, c);
+                    ch = display_ans(&mut data, c)?;
                 }
             }
             if parse_pcb {
@@ -220,12 +222,12 @@ impl Buffer {
 
             if parse_avt {
                 if let Some(c) = ch { 
-                    let mut avt_result = display_avt(&mut data, c);
+                    let mut avt_result = display_avt(&mut data, c)?;
                     let ch = avt_result.0;
                     if let Some(26) = ch { break; }
                     Buffer::output_char(&mut result, screen_width, &mut data, ch);
                     while avt_result.1 {
-                        avt_result = display_avt(&mut data, 0);
+                        avt_result = display_avt(&mut data, 0)?;
                         Buffer::output_char(&mut result, screen_width, &mut data, avt_result.0);
                     }
                 }
@@ -234,8 +236,8 @@ impl Buffer {
                 Buffer::output_char(&mut result, screen_width, &mut data, ch);
             }
         }
-
-        result
+        
+        Ok(result)
     }
 
     fn output_char(result: &mut Buffer, screen_width : i32, data: &mut ParseStates, ch: Option<u8>) {
@@ -244,6 +246,8 @@ impl Buffer {
                 10 => {
                     data.cur_pos.x = 0;
                     data.cur_pos.y += 1;
+                    data.cur_input_pos.y += 1;
+                    data.cur_input_pos.x = 1;
                 }
                 12 => {
                     data.cur_pos.x = 0;

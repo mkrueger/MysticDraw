@@ -1,3 +1,5 @@
+use std::io;
+
 use crate::model::{Buffer, DosChar, BitFont, Size};
 use super::{ Position, TextAttribute};
 
@@ -43,12 +45,15 @@ fn generate_palette(buf: &Buffer) -> Vec<u8>
     res
 }
 
-pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_width: i32)
+pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_width: i32) -> io::Result<bool>
 {
     result.width = 80;
     let mut o = 0;
     let mut pos = Position::new();
-    assert!(bytes.len() >= 1 + 3 * 64 + 4096, "no valid adf file, too small");
+    if file_size <  1 + 3 * 64 + 4096 {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid ADF - file too short"));
+    }
+
     // let version = bytes[o];
     o += 1;
 
@@ -69,7 +74,7 @@ pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_widt
         for _ in 0..screen_width {
             if o + 2 > file_size {
                 result.height = pos.y as usize;
-                return;
+                return Ok(true);
             }
             result.set_char(0, pos, Some(DosChar {
                 char_code: bytes[o],
@@ -83,18 +88,22 @@ pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_widt
     }
 }
 
-pub fn convert_to_adf(buf: &Buffer) -> Vec<u8>
+pub fn convert_to_adf(buf: &Buffer) -> io::Result<Vec<u8>>
 {
     let mut result = vec![1]; // version
 
     result.extend(generate_palette(buf));
 
     if let Some(font) = &buf.font {
+        if font.size.width != 8 || font.size.height != 16 {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "Only 8x16 fonts are supported by adf."));
+        }
+
         if font.data.len() == 4096 {
             let vec: Vec<u8> = font.data.iter().map(|x| *x as u8).collect();
             result.extend(vec);
         } else {
-            result.extend(crate::DEFAULT_FONT);
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "Unexpected - invalid font data."));
         }
     } else {
         result.extend(crate::DEFAULT_FONT);
@@ -108,5 +117,5 @@ pub fn convert_to_adf(buf: &Buffer) -> Vec<u8>
         }
     }
     
-    result
+    Ok(result)
 }

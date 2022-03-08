@@ -51,7 +51,7 @@ mod tests {
 
     fn test_ascii(data: &[u8])
     {
-        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, data);
+        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, data).unwrap();
         let converted = super::convert_to_asc(&buf);
 
         // more gentle output.

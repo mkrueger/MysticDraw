@@ -1,4 +1,4 @@
-use std::cmp::{max, min};
+use std::{cmp::{max, min}, io};
 
 use crate::model::{Buffer, Position, TextAttribute};
 
@@ -23,7 +23,7 @@ pub enum AvtReadState {
 }
 
 // Advanced Video Attribute Terminal Assembler and Recreator
-pub fn display_avt(data: &mut ParseStates, ch: u8) -> (Option<u8>, bool) {
+pub fn display_avt(data: &mut ParseStates, ch: u8) -> io::Result<(Option<u8>, bool)>  {
 
     match data.avt_state {
         AvtReadState::Chars => {
@@ -40,16 +40,16 @@ pub fn display_avt(data: &mut ParseStates, ch: u8) -> (Option<u8>, bool) {
                     data.avt_state = AvtReadState::ReadCommand;
                 }
                 _ => {
-                    return (Some(ch), false);
+                    return Ok((Some(ch), false));
                 }
             }
-            (None, false)
+            Ok((None, false))
         }
         AvtReadState::ReadCommand => {
             match ch {
                 1 => {
                     data.avt_state = AvtReadState::ReadColor;
-                    return (None, false);
+                    return Ok((None, false));
                 }
                 2 => {
                     data.text_attr.set_blink(true);
@@ -68,31 +68,32 @@ pub fn display_avt(data: &mut ParseStates, ch: u8) -> (Option<u8>, bool) {
                     data.cur_pos.x = min(79, data.cur_pos.x + 1);
                 }           
                 7 => {
-                    // TODO: clreol
-                    eprintln!("todo: avt cleareol.");
+                    return Err(io::Error::new(io::ErrorKind::InvalidData, "todo: avt cleareol."));
                 } 
                 8 =>  {
                     data.avt_state = AvtReadState::MoveCursor;
                     data.avatar_state = 1;
-                    return (None, false);
+                    return Ok((None, false));
                 }
                 // TODO implement commands from FSC0025.txt & FSC0037.txt
-                _ => { eprintln!("unsupported avatar command {}", ch); }
+                _ => { 
+                    return Err(io::Error::new(io::ErrorKind::InvalidData, format!("unsupported avatar command {}", ch)));
+                }
             }
             data.avt_state = AvtReadState::Chars;
-            (None, false)
+            Ok((None, false))
         }
         AvtReadState::RepeatChars => {
             match data.avatar_state {
                 1=> {
                     data.avt_repeat_char = ch;
                     data.avatar_state = 2;
-                    (None, false)
+                    Ok((None, false))
                 }
                 2 => {
                     data.avt_repeat_count = ch as i32;
                     data.avatar_state = 3;
-                    (None, true)
+                    Ok((None, true))
                 }
                 3 => {
                     if data.avt_repeat_count > 0 {
@@ -100,40 +101,39 @@ pub fn display_avt(data: &mut ParseStates, ch: u8) -> (Option<u8>, bool) {
                         if data.avt_repeat_count == 0 {
                             data.avt_state = AvtReadState::Chars;
                         }
-                        return (Some(data.avt_repeat_char), data.avt_repeat_count > 0);
+                        return Ok((Some(data.avt_repeat_char), data.avt_repeat_count > 0));
                     }
-                    (None, false)
+                    Ok((None, false))
                 }
                 _ => { 
-                    eprintln!("error in reading avt state"); 
                     data.avt_state = AvtReadState::Chars;
-                    (None, false)
+                    Err(io::Error::new(io::ErrorKind::InvalidData, "error in reading avt state"))
                 }
             }
         }
         AvtReadState::ReadColor => {
             data.text_attr = TextAttribute::from_u8(ch);
             data.avt_state = AvtReadState::Chars;
-            (None, false)
+            Ok((None, false))
         }
         AvtReadState::MoveCursor => {
             match data.avatar_state {
                 1=> {
                     data.avt_repeat_char = ch;
                     data.avatar_state = 2;
-                    return (None, false);
+                    Ok((None, false))
                 }
                 2 => {
                     data.cur_pos.x = data.avt_repeat_char as i32;
                     data.cur_pos.y = ch as i32;
                     
                     data.avt_state = AvtReadState::Chars;
-                    return (None, false);
+                    Ok((None, false))
                 }
-                _ => { eprintln!("error in reading avt avt_gotoxy"); }
+                _ => { 
+                    Err(io::Error::new(io::ErrorKind::InvalidData, "error in reading avt avt_gotoxy"))
+                }
             }
-            data.avt_state = AvtReadState::Chars;
-            (None, false)
         }
     }
 }
@@ -217,7 +217,7 @@ mod tests {
     #[test]
     fn test_clear() {
         let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), &None, 
-        &[b'X', 12, b'X']);
+        &[b'X', 12, b'X']).unwrap();
         assert_eq!(1, buf.height);
         assert_eq!(1, buf.width);
     }
@@ -226,7 +226,7 @@ mod tests {
     #[test]
     fn test_repeat() {
         let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), &None, 
-        &[b'X', 25, b'b', 3, b'X']);
+        &[b'X', 25, b'b', 3, b'X']).unwrap();
         assert_eq!(1, buf.height);
         assert_eq!(5, buf.width);
         assert_eq!(b'X', buf.get_char(Position::from(0, 0)).unwrap_or_default().char_code);
@@ -239,14 +239,14 @@ mod tests {
     #[test]
     fn test_zero_repeat() {
         let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), &None, 
-        &[25, b'b', 0]);
+        &[25, b'b', 0]).unwrap();
         assert_eq!(0, buf.height);
         assert_eq!(0, buf.width);
     }
 
     #[test]
     fn test_linebreak_bug() {
-        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), &None, &[12,22,1,8,32,88,22,1,15,88,25,32,4,88,22,1,8,88,32,32,32,22,1,3,88,88,22,1,57,88,88,88,25,88,7,22,1,9,25,88,4,22,1,25,88,88,88,88,88,88,22,1,1,25,88,13]);
+        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), &None, &[12,22,1,8,32,88,22,1,15,88,25,32,4,88,22,1,8,88,32,32,32,22,1,3,88,88,22,1,57,88,88,88,25,88,7,22,1,9,25,88,4,22,1,25,88,88,88,88,88,88,22,1,1,25,88,13]).unwrap();
         assert_eq!(1, buf.height);
         assert_eq!(47, buf.width);
     }
@@ -289,7 +289,7 @@ mod tests {
 
     fn test_avt(data: &[u8])
     {
-        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), &None, data);
+        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), &None, data).unwrap();
         let converted = super::convert_to_avt(&buf);
 
         // more gentle output.

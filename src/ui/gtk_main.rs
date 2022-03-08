@@ -7,7 +7,7 @@ use libadwaita as adw;
 
 use adw::{prelude::*, TabBar, TabPage, TabView};
 use adw::{ApplicationWindow, HeaderBar};
-use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType};
+use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, MessageType, ButtonsType, DialogFlags};
 
 use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, Layer};
 
@@ -157,15 +157,18 @@ impl MainWindow {
                 file_chooser.connect_response(clone!(@strong main_window => move |d, response| {
                     if response == ResponseType::Ok {
                         let file = d.file().expect("Couldn't get file");
-                        let filename = file.path().expect("Couldn't get file path");
-                        let buffer = Buffer::load_buffer(filename.as_path());
-                        if let Ok(buf) = buffer {
-                            let editor = main_window.load_page(buf);
-                            editor.borrow_mut().request_refresh = std::boxed::Box::new(clone!(@strong main_window => move || {
-                                main_window.update_editor();
-                            }));
-                            std::env::set_current_dir(filename.parent().unwrap()).expect("can't set current path.");
+                        let file_name = file.path().expect("Couldn't get file path");
+                        let res  = Buffer::load_buffer(file_name.as_path());
+                        if let Err(err) = res  {
+                            main_window.show_error(format!("Error opening file '{}'", file_name.as_os_str().to_string_lossy()), Some(err.to_string().as_str()));
+                            return;
                         }
+
+                        let editor = main_window.load_page(res.unwrap());
+                        editor.borrow_mut().request_refresh = std::boxed::Box::new(clone!(@strong main_window => move || {
+                            main_window.update_editor();
+                        }));
+                        std::env::set_current_dir(file_name.parent().unwrap()).expect("can't set current path.");
                     }
                     d.close();
                 }));
@@ -180,7 +183,7 @@ impl MainWindow {
             open_action.connect_activate(clone!(@weak main_window => move |_,_| {
                 if let Some(editor) = main_window.get_current_editor() {
                     if let Some(file_name) = &editor.borrow().buf.file_name {
-                        editor.borrow().save_content(file_name);
+                        main_window.handle_error(editor.borrow().save_content(file_name), move || format!("Error saving {}", file_name.as_os_str().to_string_lossy()));
                         return;
                     }
                 } else {
@@ -203,8 +206,8 @@ impl MainWindow {
                         if let Some(page) = main_window.get_current_ansi_view() {
                             let file = d.file().expect("Couldn't get file");
                             let filename = file.path().expect("Couldn't get file path");
-                            page.get_editor().borrow().save_content(&filename);
-                            page.get_editor().borrow_mut().buf.file_name = Some(filename);
+                            page.get_editor().borrow_mut().buf.file_name = Some(filename.clone());
+                            main_window.handle_error(page.get_editor().borrow().save_content(&filename), move || format!("Error saving {}", filename.as_os_str().to_string_lossy()));
                             (page.get_editor().borrow().buf.file_name_changed)()
                         } else {
                             eprintln!("can't find ansi view to save.");
@@ -237,8 +240,8 @@ impl MainWindow {
                         if let Some(page) = main_window.get_current_ansi_view() {
                             let file = d.file().expect("Couldn't get file");
                             let filename = file.path().expect("Couldn't get file path");
-                            page.get_editor().borrow().save_content(&filename);
-                            page.get_editor().borrow_mut().buf.file_name = Some(filename);
+                            page.get_editor().borrow_mut().buf.file_name = Some(filename.clone());
+                            main_window.handle_error(page.get_editor().borrow().save_content(&filename), move || format!("Error saving {}", filename.as_os_str().to_string_lossy()));
                             (page.get_editor().borrow().buf.file_name_changed)()
                         } else {
                             eprintln!("can't find ansi view to save.");
@@ -340,8 +343,7 @@ impl MainWindow {
                 }
             }));
             app.add_action(&action);
-
-
+            
             let action = SimpleAction::new("cut", None);
             action.connect_activate(clone!(@strong main_window => move |_,_| {
                 main_window.cut_to_clipboard();
@@ -370,6 +372,15 @@ impl MainWindow {
                     main_window.update_editor();
                 }));
 
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("bugreport", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                let url = "https://github.com/mkrueger/MysticDraw/issues";
+                if let Err(err) = open::that(url) {
+                    main_window.show_error(format!("Error opening url '{}'", url), Some(err.to_string().as_str()));
+                }
             }));
             app.add_action(&action);
       
@@ -410,6 +421,30 @@ impl MainWindow {
         }
     }
 
+    fn show_error(&self, error: String, secondary_text: Option<&str>)
+    {
+        let dialog = gtk4::MessageDialog::new(Some(&self.window), DialogFlags::DESTROY_WITH_PARENT, MessageType::Error, ButtonsType::Close, error.as_str());
+        dialog.add_button("Send bug report", ResponseType::Help);
+
+        dialog.set_secondary_text(secondary_text);
+        dialog.show();
+        dialog.connect_response(move |d, r| {
+            d.destroy();
+            if r == ResponseType::Help {
+                let url = "https://github.com/mkrueger/MysticDraw/issues";
+                if open::that(url).is_err() {
+                    eprintln!("You're kidding me");
+                }
+            }
+        });
+    }
+    fn handle_error<T, E: std::fmt::Display, F>(&self, error: std::result::Result<T, E>, get_title: F) 
+        where F: Fn()->String {
+        if let Err(e) = error {
+            self.show_error(get_title(), Some(e.to_string().as_str()));
+        }
+
+    }
     fn paste_from_clipboard(&self) -> bool {
         unsafe {
             if !crate::WORKSPACE.cur_tool().use_selection() || !crate::WORKSPACE.cur_tool().use_caret()  { return false; }
@@ -601,6 +636,7 @@ impl MainWindow {
         menu.append(Some("Save as…"), Some("app.saveas"));
         menu.append(Some("Preferences"), Some("app.preferences"));
         menu.append(Some("Keyboard Map"), Some("app.keymap"));
+        menu.append(Some("Send bug report"), Some("app.bugreport"));
         menu.append(Some("About"), Some("app.about"));
         hb.pack_end(
             &gtk4::MenuButton::builder()

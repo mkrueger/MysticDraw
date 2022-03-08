@@ -1,8 +1,9 @@
-use crate::model::{Buffer, DosChar, BitFont, Size, Rectangle, buffer};
+use std::io;
+
+use crate::model::{Buffer, DosChar, BitFont, Size};
 use super::{ Position, TextAttribute};
 
 // http://fileformats.archiveteam.org/wiki/ICEDraw
-
 
 const HEADER_SIZE: usize = 4 + 4 * 2;
 
@@ -12,11 +13,17 @@ const IDF_V1_4_HEADER: &[u8] = b"\x041.4";
 const FONT_SIZE: usize = 4096;
 const PALETTE_SIZE: usize = 3 * 16;
 
-pub fn read_idf(result: &mut Buffer, bytes: &[u8], file_size: usize)
+pub fn read_idf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Result<bool>
 {
-    assert!(file_size >= HEADER_SIZE + FONT_SIZE + PALETTE_SIZE, "too small for IDF.");
+    if file_size < HEADER_SIZE + FONT_SIZE + PALETTE_SIZE {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid IDF - file too short"));
+    }
     let version = &bytes[0..4];
-    assert!(version == IDF_V1_3_HEADER || version == IDF_V1_4_HEADER, "no supported idf version.");
+
+    if version != IDF_V1_3_HEADER && version != IDF_V1_4_HEADER {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid IDF or no supported idf version"));
+    }
+
     let mut o = 4;
     let x1 = (bytes[o] as u16 + ((bytes[o + 1] as u16) << 8)) as i32;
     o += 2;
@@ -26,7 +33,11 @@ pub fn read_idf(result: &mut Buffer, bytes: &[u8], file_size: usize)
     o += 2;
     // skip y2
     o += 2;
-    assert!(x1 <= x2, "invalid idf bounds.");
+
+    if x2 > x1 {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "invalid bounds for idf width needs to be >=0."));
+    }
+
     result.width  = (x2 + 1) as usize;
     let data_size = file_size - FONT_SIZE - PALETTE_SIZE;
     let mut pos = Position::from(x1, y1);
@@ -66,9 +77,11 @@ pub fn read_idf(result: &mut Buffer, bytes: &[u8], file_size: usize)
     result.custom_palette = Some((&bytes[o..(o + PALETTE_SIZE)]).iter().map(|x| x << 2 | x >> 4).collect());
 
     result.height = pos.y as usize;
+
+    Ok(true)
 }
 
-pub fn convert_to_idf(buffer: &Buffer) -> Vec<u8>
+pub fn convert_to_idf(buffer: &Buffer) -> io::Result<Vec<u8>>
 {
     let mut result = IDF_V1_4_HEADER.to_vec();
     
@@ -116,11 +129,14 @@ pub fn convert_to_idf(buffer: &Buffer) -> Vec<u8>
 
     // font
     if let Some(font) = &buffer.font {
+        if font.size.width != 8 || font.size.height != 16 {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "Only 8x16 fonts are supported by idf."));
+        }
         if font.data.len() == 4096 {
             let vec: Vec<u8> = font.data.iter().map(|x| *x as u8).collect();
             result.extend(vec);
         } else {
-            result.extend(crate::DEFAULT_FONT);
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "Unexpected - invalid font data."));
         }
     } else {
         result.extend(crate::DEFAULT_FONT);
@@ -134,7 +150,7 @@ pub fn convert_to_idf(buffer: &Buffer) -> Vec<u8>
         result.push(col.2 >> 2 | col.2 << 4);
     }
 
-    result
+    Ok(result)
 }
 
 fn advance_pos(x1: i32, x2: i32, pos: &mut Position) -> bool

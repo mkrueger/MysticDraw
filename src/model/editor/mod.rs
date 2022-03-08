@@ -1,4 +1,4 @@
-use std::{cmp::{max, min}, path::Path, io::Write, fs::File, ffi::OsStr};
+use std::{cmp::{max, min}, path::Path, io::{Write, self}, fs::File, ffi::OsStr};
 use crate::model::{Buffer, Position, TextAttribute, Rectangle, convert_to_ans, convert_to_asc, convert_to_avt, convert_to_binary, convert_to_pcb, convert_to_xb};
 
 use super::{DosChar, UndoSetChar};
@@ -212,32 +212,33 @@ impl Editor
         (self.outline_changed)(self);
     }
 
-    pub fn save_content(&self, file_name: &Path)
+    pub fn save_content(&self, file_name: &Path) -> io::Result<bool>
     {
-        let mut f = File::create(file_name).expect("Can't create file.");
+        let mut f = File::create(file_name)?;
 
         let content = 
             if let Some(ext) = file_name.extension() {
                 let ext = OsStr::to_str(ext).unwrap().to_lowercase();
-                self.get_file_content(ext.as_str())
+                self.get_file_content(ext.as_str())?
             } else {
-                self.get_file_content("")
+                self.get_file_content("")?
             };
         
-        f.write_all(&content).expect("Can't write file.");
+        f.write_all(&content)?;
+        Ok(true)
     }
 
-    pub fn get_file_content(&self, extension: &str) -> Vec<u8>
+    pub fn get_file_content(&self, extension: &str) -> io::Result<Vec<u8>>
     {
         match extension {
-            "bin" => convert_to_binary(&self.buf),
+            "bin" => Ok(convert_to_binary(&self.buf)),
             "xb" => convert_to_xb(&self.buf),
-            "ans" => convert_to_ans(&self.buf),
-            "avt" => convert_to_avt(&self.buf),
-            "pcb" => convert_to_pcb(&self.buf),
+            "ans" => Ok(convert_to_ans(&self.buf)),
+            "avt" => Ok(convert_to_avt(&self.buf)),
+            "pcb" => Ok(convert_to_pcb(&self.buf)),
             "adf" => super::convert_to_adf(&self.buf),
             "idf" => super::convert_to_idf(&self.buf),
-            _ => convert_to_asc(&self.buf)
+            _ => Ok(convert_to_asc(&self.buf))
         }
     }
 

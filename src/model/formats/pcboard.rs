@@ -99,6 +99,7 @@ pub fn display_PCBoard(data: &mut ParseStates, ch: u8) -> Option<u8> {
     match ch {
         b'@' => {
             data.pcb_code = true;
+
             None
         }
         _ => Some(ch),

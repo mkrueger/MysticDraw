@@ -1,16 +1,23 @@
+use std::io;
+
 use crate::model::{Buffer, DosChar};
 use super::{ Position, TextAttribute};
 
-pub fn read_binary(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_width: i32)
+pub fn read_binary(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_width: i32) -> io::Result<bool>
 {
     let mut o = 0;
     let mut pos = Position::new();
     loop {
         for _ in 0..screen_width {
-            if o + 2 > file_size {
+            if o >= file_size {
                 result.height = pos.y as usize;
-                return;
+                return Ok(true);
             }
+
+            if o + 1 > file_size {
+                return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "invalid file - needs to be % 2 == 0"));
+            }
+
             result.set_char(0, pos, Some(DosChar {
                 char_code: bytes[o],
                 attribute: TextAttribute::from_u8(bytes[o + 1])
