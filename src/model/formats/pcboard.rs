@@ -60,8 +60,8 @@ pub fn convert_to_pcb(buf: &Buffer) -> io::Result<Vec<u8>>
         }
         pos.x = 0;
     }
-    if buf.sauce.is_some() {
-        crate::model::Sauce::generate(buf, &crate::model::SauceFileType::PCBoard)?;
+    if buf.write_sauce || buf.width != 80 {
+        buf.write_sauce_info(&crate::model::SauceFileType::PCBoard, &mut result)?;
     }
     Ok(result)
 }

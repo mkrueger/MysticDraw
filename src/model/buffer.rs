@@ -1,16 +1,16 @@
 use std::{
-    cmp::{ min},
     fs::File,
     io::{self, Read},
     path::{PathBuf, Path},
 };
 use std::ffi::OsStr;
 
-use super::{Layer, read_xb, Sauce, read_sauce, SauceDataType, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size, UndoOperation, Palette};
+use super::{Layer, read_xb, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size, UndoOperation, Palette, SauceString };
 
 #[derive(Debug, Default)]
 #[allow(dead_code)]
 pub struct BitFont {
+    pub name: SauceString<22, 0>,
     pub size: Size,
     pub data: Vec<u32>,
 }
@@ -19,14 +19,25 @@ pub struct Buffer {
     pub file_name: Option<PathBuf>,
     pub file_name_changed: Box<dyn Fn ()>,
 
-    pub width: usize,
-    pub height: usize,
+    pub title: SauceString<35, b' '>,
+    pub author: SauceString<20, b' '>,
+    pub group: SauceString<20, b' '>,
+    pub comments: Vec<SauceString<64, 0>>,
+
+    pub width: u16,
+    pub height: u16,
+
+    pub use_ice: bool,
+    pub use_512_chars: bool,
+    pub write_sauce: bool,
+
     pub palette: Palette,
     pub overlay_layer: Option<Layer>,
 
+    /// Read if provided and no font can be matched - if font != None font_name is None.
+    pub font_name: Option<SauceString<22, 0>>,
     pub font: Option<BitFont>,
     pub layers: Vec<Layer>,
-    pub sauce: Option<Sauce>,
 
     pub undo_stack: Vec<Box<dyn UndoOperation>>,
     pub redo_stack: Vec<Box<dyn UndoOperation>>,
@@ -34,7 +45,7 @@ pub struct Buffer {
 
 impl std::fmt::Debug for Buffer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Buffer").field("file_name", &self.file_name).field("width", &self.width).field("height", &self.height).field("custom_palette", &self.palette).field("font", &self.font).field("layers", &self.layers).field("sauce", &self.sauce).finish()
+        f.debug_struct("Buffer").field("file_name", &self.file_name).field("width", &self.width).field("height", &self.height).field("custom_palette", &self.palette).field("font", &self.font).field("layers", &self.layers).finish()
     }
 }
 
@@ -46,18 +57,29 @@ impl Buffer {
             file_name: None,
             width: 80,
             height: 25,
+
+            title: SauceString::new(),
+            author: SauceString::new(),
+            group: SauceString::new(),
+            comments: Vec::new(),
+
+            use_ice: true,
+            use_512_chars: false,
+            write_sauce: false,
+
             palette: Palette::new(),
+
             font: None,
+            font_name: None,
             overlay_layer: None,
             layers: vec!(Layer::new()),
-            sauce: None,
             file_name_changed: Box::new(|| {}),
             undo_stack: Vec::new(),
             redo_stack: Vec::new()
         }
     }
 
-    pub fn create(width: usize, height: usize) -> Self {
+    pub fn create(width: u16, height: u16) -> Self {
         let mut res = Buffer::new();
         res.width = width;
         res.height = height;
@@ -137,14 +159,11 @@ impl Buffer {
     }
 
     pub fn load_buffer(file_name: &Path) -> io::Result<Buffer> {
-        let sauce_info = read_sauce(file_name)?;
         let mut f = File::open(file_name)?;
         let mut bytes = Vec::new();
         f.read_to_end(&mut bytes)?;
 
-        let mut res = Buffer::from_bytes(file_name, &sauce_info, &bytes)?;
-        res.sauce = sauce_info;
-        Ok(res)
+        Buffer::from_bytes(file_name, &bytes)
     }
 
     pub fn clear_layer(&mut self, layer_num: i32) -> super::ClearLayerOperation {
@@ -156,70 +175,78 @@ impl Buffer {
         }
     }
 
-    pub fn from_bytes(file_name: &Path, sauce_info: &Option<Sauce>, bytes: &[u8]) -> io::Result<Buffer> {
+    pub fn from_bytes(file_name: &Path, bytes: &[u8]) -> io::Result<Buffer> {
         let mut result = Buffer::new();
         result.file_name = Some(file_name.to_path_buf());
-        let mut data = ParseStates::new();
 
-        let mut screen_width = 0;
-        let mut file_size = bytes.len();
-        if let Some(sauce) = &sauce_info {
-            file_size = min(file_size, sauce.file_size as usize - 1);
-            match sauce.data_type {
-                SauceDataType::Character => {
-                    if sauce.t_info1 > 0 {
-                        screen_width = sauce.t_info1 as i32;
-                    }
-                }
-                SauceDataType::BinaryText => {
-                    if sauce.file_type > 0 {
-                        screen_width = (sauce.file_type as i32) * 2;
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        let ext = file_name.extension();
+        let (sauce_type, file_size) = result.read_sauce_info(bytes)?;
         let mut parse_avt  = false;
         let mut parse_pcb  = false;
         let mut parse_ansi = false;
-        if let Some(ext) = ext {
-            let ext = OsStr::to_str(ext).unwrap().to_lowercase();
-            match ext.as_str() {
-                "bin" => {
-                    if screen_width == 0 { screen_width = 160; }
-                    read_binary(&mut result, bytes, file_size, screen_width)?;
-                    return Ok(result);
+        let mut check_extension = false;
+
+        match sauce_type {
+            super::SauceFileType::Ascii => {  },
+            super::SauceFileType::Ansi => { parse_ansi = true; check_extension = true; },
+            super::SauceFileType::ANSiMation => { parse_ansi = true; },
+            super::SauceFileType::PCBoard => { parse_pcb = true; parse_ansi = true; },
+            super::SauceFileType::Avatar => { parse_avt = true; },
+            super::SauceFileType::TundraDraw => {
+                if result.width == 0 { result.width = 80; }
+                super::read_tnd(&mut result, bytes, file_size)?;
+                return Ok(result);
+            },
+            super::SauceFileType::Bin => {
+                if result.width == 0 { result.width = 160; }
+                read_binary(&mut result, bytes, file_size)?;
+                return Ok(result);
+            },
+            super::SauceFileType::XBin => {
+                read_xb(&mut result, bytes, file_size)?;
+                return Ok(result);
+            },
+            super::SauceFileType::Undefined => { check_extension = true; },
+        }
+        
+        if check_extension {
+            let ext = file_name.extension();
+            if let Some(ext) = ext {
+                let ext = OsStr::to_str(ext).unwrap().to_lowercase();
+                match ext.as_str() {
+                    "bin" => {
+                        if result.width == 0 { result.width = 160; }
+                        read_binary(&mut result, bytes, file_size)?;
+                        return Ok(result);
+                    }
+                    "xb" => {
+                        read_xb(&mut result, bytes, file_size)?;
+                        return Ok(result);
+                    }
+                    "adf" => {
+                        if result.width == 0 { result.width = 80; }
+                        super::read_adf(&mut result, bytes, file_size)?;
+                        return Ok(result);
+                    }
+                    "idf" => {
+                        super::read_idf(&mut result, bytes, file_size)?;
+                        return Ok(result);
+                    }
+                    "tnd" => {
+                        if result.width == 0 { result.width = 80; }
+                        super::read_tnd(&mut result, bytes, file_size)?;
+                        return Ok(result);
+                    }
+                    "ans" => { parse_ansi = true; }
+                    "avt" => { parse_avt = true;  }
+                    "pcb" => { parse_pcb = true; parse_ansi = true; }
+                    _ => {}
                 }
-                "xb" => {
-                    read_xb(&mut result, bytes, file_size)?;
-                    return Ok(result);
-                }
-                "adf" => {
-                    if screen_width == 0 { screen_width = 80; }
-                    super::read_adf(&mut result, bytes, file_size, screen_width)?;
-                    return Ok(result);
-                }
-                "idf" => {
-                    super::read_idf(&mut result, bytes, file_size)?;
-                    return Ok(result);
-                }
-                "tnd" => {
-                    if screen_width == 0 { screen_width = 80; }
-                    super::read_tnd(&mut result, bytes, file_size, screen_width)?;
-                    return Ok(result);
-                }
-                "ans" => { parse_ansi = true; }
-                "avt" => { parse_avt = true;  }
-                "pcb" => { parse_pcb = true; parse_ansi = true; }
-                _ => {}
             }
         }
-        if screen_width == 0 { screen_width = 80; }
 
-        result.width = screen_width as usize;
-        data.screen_width = screen_width;
+        let mut data = ParseStates::new();
+        if result.width == 0 { result.width = 80; }
+        data.screen_width = result.width;
 
         for b in bytes.iter().take(file_size) {
             let mut ch = Some(*b);
@@ -241,22 +268,22 @@ impl Buffer {
                     let mut avt_result = display_avt(&mut data, c)?;
                     let ch = avt_result.0;
                     if let Some(26) = ch { break; }
-                    Buffer::output_char(&mut result, screen_width, &mut data, ch);
+                    Buffer::output_char(&mut result, &mut data, ch);
                     while avt_result.1 {
                         avt_result = display_avt(&mut data, 0)?;
-                        Buffer::output_char(&mut result, screen_width, &mut data, avt_result.0);
+                        Buffer::output_char(&mut result, &mut data, avt_result.0);
                     }
                 }
             } else {
                 if let Some(26) = ch { break; }
-                Buffer::output_char(&mut result, screen_width, &mut data, ch);
+                Buffer::output_char(&mut result,  &mut data, ch);
             }
         }
         
         Ok(result)
     }
 
-    fn output_char(result: &mut Buffer, screen_width : i32, data: &mut ParseStates, ch: Option<u8>) {
+    fn output_char(result: &mut Buffer, data: &mut ParseStates, ch: Option<u8>) {
         if let Some(ch) = ch {
             match ch {
                 10 => {
@@ -283,7 +310,7 @@ impl Buffer {
                         }),
                     );
                     data.cur_pos.x += 1;
-                    if data.cur_pos.x >= screen_width {
+                    if data.cur_pos.x >= result.width as i32 {
                         data.cur_pos.x = 0;
                         data.cur_pos.y += 1;
                     }
@@ -326,9 +353,9 @@ impl Buffer {
     pub fn set_height_for_pos(&mut self, pos: Position)
     {
         if pos.x == 0 {
-            self.height = pos.y as usize; 
+            self.height = pos.y as u16; 
         } else {
-            self.height = pos.y as usize + 1;
+            self.height = pos.y as u16 + 1;
         }
     }
 }

@@ -1,6 +1,6 @@
 use std::io;
 
-use crate::model::{Buffer, DosChar, BitFont, Size, Palette};
+use crate::model::{Buffer, DosChar, BitFont, Size, Palette, SauceString};
 use super::{ Position, TextAttribute};
 
 // http://fileformats.archiveteam.org/wiki/ArtWorx_Data_Format
@@ -14,7 +14,7 @@ use super::{ Position, TextAttribute};
 // Maybe useful for DOS demos running in text mode.
 
 
-pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_width: i32) -> io::Result<bool>
+pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Result<bool>
 {
     result.width = 80;
     let mut o = 0;
@@ -35,12 +35,13 @@ pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_widt
 
     let font_size = 4096;
     result.font = Some(BitFont {
+        name: SauceString::new(),
         size: Size::from(8, 16),
         data: bytes[o..(o + font_size)].iter().map(|x| *x as u32).collect()
     });
     o += font_size;
     loop {
-        for _ in 0..screen_width {
+        for _ in 0..result.width {
             if o + 2 > file_size {
                 result.set_height_for_pos(pos);
                 return Ok(true);
@@ -85,9 +86,8 @@ pub fn convert_to_adf(buf: &Buffer) -> io::Result<Vec<u8>>
             result.push(ch.attribute.as_u8());
         }
     }
-
-    if buf.sauce.is_some() {
-        crate::model::Sauce::generate(buf, &crate::model::SauceFileType::Ansi)?;
+    if buf.write_sauce || buf.width != 80 {
+        buf.write_sauce_info(&crate::model::SauceFileType::Ansi, &mut result)?;
     }
     Ok(result)
 }

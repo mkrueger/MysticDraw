@@ -12,21 +12,20 @@ const TUNDRA_POSITION:u8 = 1;
 const TUNDRA_COLOR_FOREGROUND:u8 = 2;
 const TUNDRA_COLOR_BACKGROUND:u8 = 4;
 
-pub fn read_tnd(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_width: i32) -> io::Result<bool>
+pub fn read_tnd(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Result<bool>
 {
     if file_size <  1 + TUNDRA_HEADER.len() {
-        return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid TND - file too short"));
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid Tundra Draw file.\nFile too short"));
     }
     let mut o = 1;
 
     let header = &bytes[1..=TUNDRA_HEADER.len()];
 
     if header != TUNDRA_HEADER  {
-        return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid TND wrong ID"));
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid Tundra Draw file.\nWrong ID"));
     }
     o += TUNDRA_HEADER.len();
 
-    result.width = screen_width as usize;
     result.palette.clear();
     result.palette.get_color(0, 0, 0);
 
@@ -39,12 +38,12 @@ pub fn read_tnd(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_widt
         if cmd == TUNDRA_POSITION {
             pos.y = to_u32(&bytes[o..]);
             if pos.y >= (u16::MAX) as i32 {
-                return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Invalid TND - jump position out of bounds ({} height is {} maximum is 65k LOC)", pos.x, result.height)));
+                return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Invalid Tundra Draw file.\nJump y position {} out of bounds (height is {})", pos.y, result.height)));
             }
             o += 4;
             pos.x = to_u32(&bytes[o..]);
             if pos.x >= result.width as i32 {
-                return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Invalid TND - jump position out of bounds ({} width is {})", pos.x, result.width)));
+                return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Invalid Tundra Draw file.\nJump x position {} out of bounds (width is {})", pos.x, result.width)));
             }
 
             o += 4;
@@ -184,8 +183,9 @@ pub fn convert_to_tnd(buf: &Buffer) -> io::Result<Vec<u8>>
         let skip_len = (pos.x + pos.y * buf.width as i32) - (pos2.x + pos2.y * buf.width as i32) + 1;
         result.resize(result.len() + skip_len as usize, 0);
     }
-    if buf.sauce.is_some() || buf.width != 80 {
-        crate::model::Sauce::generate(buf, &crate::model::SauceFileType::TundraDraw)?;
+
+    if buf.write_sauce || buf.width != 80 {
+        buf.write_sauce_info(&crate::model::SauceFileType::TundraDraw, &mut result)?;
     }
     Ok(result)
 }

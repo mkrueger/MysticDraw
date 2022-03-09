@@ -29,7 +29,7 @@ pub struct EditLayerDialog {
 impl EditLayerDialog {
     pub fn set_layer_values(&self, layer: &mut Layer)
     {
-        layer.name = self.name_entry.text().to_string();
+        layer.title = self.name_entry.text().to_string();
         layer.is_visible = self.is_visible_switch.is_active();
         layer.is_locked = self.is_locked_switch.is_active();
         layer.is_position_locked = self.is_position_locked_switch.is_active();
@@ -75,7 +75,7 @@ pub fn display_edit_layer_dialog(window: &libadwaita::ApplicationWindow, layer: 
 
     let name_entry = gtk4::Entry::new();
     name_entry.set_valign(Align::Center);
-    name_entry.set_text(layer.name.as_str());
+    name_entry.set_text(layer.title.as_str());
     let row = ActionRow::builder()
         .title("Name")
         .build();

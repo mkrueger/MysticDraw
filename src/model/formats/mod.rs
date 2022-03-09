@@ -30,7 +30,7 @@ use super::{Position, TextAttribute};
 
 #[allow(clippy::struct_excessive_bools)]
 pub struct ParseStates {
-    pub screen_width: i32,
+    pub screen_width: u16,
     pub cur_input_pos: Position,
     
     // ANSI
@@ -87,7 +87,7 @@ mod tests {
 
     fn test_ansi(data: &[u8])
     {
-        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, data).unwrap();
+        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"),data).unwrap();
         let converted = super::convert_to_ans(&buf).unwrap();
 
         // more gentle output.

@@ -206,8 +206,8 @@ pub fn convert_to_avt(buf: &Buffer) -> io::Result<Vec<u8>>
         }
         pos.x = 0;
     }
-    if buf.sauce.is_some() {
-        crate::model::Sauce::generate(buf, &crate::model::SauceFileType::Avatar)?;
+    if buf.write_sauce || buf.width != 80 {
+        buf.write_sauce_info(&crate::model::SauceFileType::Avatar, &mut result)?;
     }
     Ok(result)
 }
@@ -218,7 +218,7 @@ mod tests {
 
     #[test]
     fn test_clear() {
-        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), &None, 
+        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"),  
         &[b'X', 12, b'X']).unwrap();
         assert_eq!(1, buf.height);
         assert_eq!(1, buf.width);
@@ -227,7 +227,7 @@ mod tests {
 
     #[test]
     fn test_repeat() {
-        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), &None, 
+        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), 
         &[b'X', 25, b'b', 3, b'X']).unwrap();
         assert_eq!(1, buf.height);
         assert_eq!(5, buf.width);
@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn test_zero_repeat() {
-        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), &None, 
+        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), 
         &[25, b'b', 0]).unwrap();
         assert_eq!(0, buf.height);
         assert_eq!(0, buf.width);
@@ -248,7 +248,7 @@ mod tests {
 
     #[test]
     fn test_linebreak_bug() {
-        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), &None, &[12,22,1,8,32,88,22,1,15,88,25,32,4,88,22,1,8,88,32,32,32,22,1,3,88,88,22,1,57,88,88,88,25,88,7,22,1,9,25,88,4,22,1,25,88,88,88,88,88,88,22,1,1,25,88,13]).unwrap();
+        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), &[12,22,1,8,32,88,22,1,15,88,25,32,4,88,22,1,8,88,32,32,32,22,1,3,88,88,22,1,57,88,88,88,25,88,7,22,1,9,25,88,4,22,1,25,88,88,88,88,88,88,22,1,1,25,88,13]).unwrap();
         assert_eq!(1, buf.height);
         assert_eq!(47, buf.width);
     }
@@ -291,7 +291,7 @@ mod tests {
 
     fn test_avt(data: &[u8])
     {
-        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), &None, data).unwrap();
+        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), data).unwrap();
         let converted = super::convert_to_avt(&buf).unwrap();
 
         // more gentle output.

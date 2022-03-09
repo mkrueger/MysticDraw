@@ -68,6 +68,7 @@ impl Palette {
 
     pub fn is_default(&self) -> bool {
         if self.colors.len() != DOS_DEFAULT_PALETTE.len() { return false; }
+        #[allow(clippy::needless_range_loop)]
         for i in 0..DOS_DEFAULT_PALETTE.len() {
             if self.colors[i] != DOS_DEFAULT_PALETTE[i] { return false; }
         }
@@ -101,6 +102,7 @@ impl Palette {
     
     pub fn cycle_ega_colors(&self) -> Palette {
         let mut colors = self.colors.clone();
+        #[allow(clippy::needless_range_loop)]
         for i in 0..EGA_COLOR_OFFSETS.len() {
             let offset = EGA_COLOR_OFFSETS[i];
             if i == offset { continue; }

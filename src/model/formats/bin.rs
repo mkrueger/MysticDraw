@@ -3,12 +3,12 @@ use std::io;
 use crate::model::{Buffer, DosChar};
 use super::{ Position, TextAttribute};
 
-pub fn read_binary(result: &mut Buffer, bytes: &[u8], file_size: usize, screen_width: i32) -> io::Result<bool>
+pub fn read_binary(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Result<bool>
 {
     let mut o = 0;
     let mut pos = Position::new();
     loop {
-        for _ in 0..screen_width {
+        for _ in 0..result.width {
             if o >= file_size {
                 result.set_height_for_pos(pos);
                 return Ok(true);
@@ -41,8 +41,8 @@ pub fn convert_to_binary(buf: &Buffer) -> io::Result<Vec<u8>>
             result.push(ch.attribute.as_u8());
         }
     }
-    if buf.sauce.is_some() || buf.width != 160 {
-        crate::model::Sauce::generate(buf, &crate::model::SauceFileType::Bin)?;
+    if buf.write_sauce || buf.width != 160 {
+        buf.write_sauce_info(&crate::model::SauceFileType::Bin, &mut result)?;
     }
     Ok(result)
 }

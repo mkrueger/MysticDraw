@@ -12,6 +12,7 @@ pub struct NewFileDialog {
     pub height_spin_button: SpinButton
 }
 
+
 pub fn display_newfile_dialog(main_window: &MainWindow) -> NewFileDialog
 {
     let main_area = gtk4::Box::builder()
@@ -53,7 +54,7 @@ pub fn display_newfile_dialog(main_window: &MainWindow) -> NewFileDialog
     let display = gtk4::gdk::Display::default().unwrap();
     let clipboard = display.clipboard();
     unsafe {
-        if let Some(data) = clipboard.data::<crate::model::Layer>("MysticDraw.Layer") {
+        if let Some(data) = clipboard.data::<super::ClipboardLayer>("MysticDraw.Layer") {
             let layer = data.as_ref();
             width = layer.size.width as f64;
             height = layer.size.height as f64;

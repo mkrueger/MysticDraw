@@ -1,17 +1,17 @@
 use std::io;
 
-use crate::model::{Buffer, DosChar, BitFont, Size, Palette};
+use crate::model::{Buffer, DosChar, BitFont, Size, Palette, SauceString};
 
 use super::{ Position, TextAttribute };
 
 const XBIN_HEADER_SIZE:usize = 11;
 
-const FLAG_PALETTE:u8      = 0b_0000_0001;
-const FLAG_FONT:u8         = 0b_0000_0010;
-const FLAG_COMPRESS:u8     = 0b_0000_0100;
+const FLAG_PALETTE:u8        = 0b_0000_0001;
+const FLAG_FONT:u8           = 0b_0000_0010;
+const FLAG_COMPRESS:u8       = 0b_0000_0100;
+const FLAG_NON_BLINK_MODE:u8 = 0b_0000_1000;
+const FLAG_512CHAR_MODE:u8   = 0b_0001_0000;
 
-#[allow(dead_code)]
-const FLAG_512CHAR_MODE:u8 = 0b_0000_1000;
 #[repr(u8)]
 #[derive(Copy, Clone, Debug)]
 enum Compression {
@@ -24,19 +24,19 @@ enum Compression {
 pub fn read_xb(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Result<bool>
 {
     if file_size < XBIN_HEADER_SIZE {
-        return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid XBin - file too short"));
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid XBin.\nFile too short."));
     }
     if b"XBIN" != &bytes[0..4] {
-        return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid XBin file"));
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid XBin.\nID doesn't match."));
     }
 
     let mut o = 4;
 
     // let eof_char = bytes[o];
     o += 1;
-    result.width = (bytes[o] as u16 + ((bytes[o + 1] as u16) << 8)) as usize;
+    result.width = bytes[o] as u16 + ((bytes[o + 1] as u16) << 8);
     o += 2;
-    result.height = (bytes[o] as u16 + ((bytes[o + 1] as u16) << 8)) as usize;
+    result.height = bytes[o] as u16 + ((bytes[o + 1] as u16) << 8);
     o += 2;
 
     let font_size = bytes[o];
@@ -44,19 +44,20 @@ pub fn read_xb(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resul
     let flags = bytes[o];
     o += 1;
 
-    let has_custom_palette    = (flags &  1) == 1;
-    let has_custom_font       = (flags &  2) == 2;
-    let is_compressed         = (flags &  4) == 4;
-    //let is_blink_mode        = (flags &  8) != 8;
-    let is_extended_char_mode = (flags & 16) == 16;
-
+    let has_custom_palette    = (flags & FLAG_PALETTE) == FLAG_PALETTE;
+    let has_custom_font       = (flags & FLAG_FONT) == FLAG_FONT;
+    let is_compressed         = (flags & FLAG_COMPRESS) == FLAG_COMPRESS;
+    result.use_ice                 = (flags & FLAG_NON_BLINK_MODE) == FLAG_NON_BLINK_MODE;
+    result.use_512_chars           = (flags & FLAG_512CHAR_MODE) == FLAG_512CHAR_MODE;
+    
     if has_custom_palette {
         result.palette = Palette::from(&bytes[o..(o + 48)]);
         o += 48;
     }
     if has_custom_font {
-        let font_length = font_size as usize * if is_extended_char_mode { 512 } else { 256 };
+        let font_length = font_size as usize * if result.use_512_chars { 512 } else { 256 };
         result.font = Some(BitFont {
+            name: SauceString::new(),
             size: Size::from(8, font_size as usize),
             data: bytes[o..(o+font_length)].iter().map(|x| *x as u32).collect()
         });
@@ -89,8 +90,8 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
     let mut o = 0;
     while o < file_size {
         let xbin_compression = bytes[o];
-        if o + 1 > file_size {
-            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "invalid file."));
+        if o > file_size {
+            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Invalid XBin.\nRead block start at EOF."));
         }
 
         o += 1;
@@ -100,7 +101,7 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
         match compression {
             Compression::Off => {
                 for _ in 0..repeat_counter {
-                    if o + 2 > bytes.len() { return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "invalid file.")); }
+                    if o + 2 > bytes.len() { return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Invalid XBin.\nRead char block beyond EOF.")); }
                     result.set_char(0, pos, Some(DosChar { 
                         char_code: bytes[o], 
                         attribute: TextAttribute::from_u8(bytes[o + 1])
@@ -115,7 +116,7 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
                 let ch = bytes[o];
                 o += 1;
                 for _ in 0..repeat_counter {
-                    if o + 1 > bytes.len() { return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "invalid file.")); }
+                    if o + 1 > bytes.len() { return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Invalid XBin.\nRead char compression block beyond EOF.")); }
                     result.set_char(0, pos, Some(DosChar { 
                         char_code: ch, 
                         attribute: TextAttribute::from_u8(bytes[o])
@@ -130,7 +131,7 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
                 let attr = TextAttribute::from_u8(bytes[o]);
                 o += 1;
                 for _ in 0..repeat_counter {
-                    if o + 1 > bytes.len() {return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "invalid file.")); }
+                    if o + 1 > bytes.len() {return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Invalid XBin.\nRead attribute compression block beyond EOF.")); }
                     result.set_char(0, pos, Some(DosChar { 
                         char_code: bytes[o], 
                         attribute: attr
@@ -144,7 +145,7 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
             Compression::Full => {
                 let ch = bytes[o];
                 o += 1;
-                if o + 1 > bytes.len() { return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "invalid file.")); }
+                if o + 1 > bytes.len() { return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Invalid XBin.\nRead compression block beyond EOF.")); }
                 let attr = TextAttribute::from_u8(bytes[o]);
                 o += 1;
                 let rep_ch = Some(DosChar { 
@@ -171,7 +172,7 @@ fn read_data_uncompressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -
     let mut o = 0;
     while o < file_size {
         if o + 1 > file_size {
-            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "invalid file - needs to be % 2 == 0"));
+            return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Invalid XBin.\n Uncompressed data length needs to be % 2 == 0"));
         }
         result.set_char(0, pos, Some(DosChar { 
             char_code: bytes[o], 
@@ -192,10 +193,6 @@ pub fn convert_to_xb(buf: &Buffer) -> io::Result<Vec<u8>>
 
     result.extend_from_slice(b"XBIN");
     result.push(0x1A); // CP/M EOF char (^Z) - used by DOS as well
-
-    if u16::try_from(buf.height).is_err() || u16::try_from(buf.width).is_err() {
-        return Err(io::Error::new(io::ErrorKind::InvalidData, "buffer dimensions too large to save as xbin."));
-    }
 
     result.push(buf.width as u8);
     result.push((buf.width >> 8) as u8);
@@ -218,6 +215,14 @@ pub fn convert_to_xb(buf: &Buffer) -> io::Result<Vec<u8>>
         flags |= FLAG_PALETTE;
     }
     flags |= FLAG_COMPRESS;
+
+    if buf.use_ice {
+        flags |= FLAG_NON_BLINK_MODE;
+    }
+
+    if buf.use_512_chars {
+        flags |= FLAG_512CHAR_MODE;
+    }
     result.push(flags);
 
     if (flags & FLAG_PALETTE) == FLAG_PALETTE {
@@ -240,7 +245,10 @@ pub fn convert_to_xb(buf: &Buffer) -> io::Result<Vec<u8>>
             }
         }
     }
-    
+    if buf.write_sauce  {
+        buf.write_sauce_info(&crate::model::SauceFileType::XBin, &mut result)?;
+    }
+
     Ok(result)
 }
 

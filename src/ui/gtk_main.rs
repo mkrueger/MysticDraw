@@ -29,6 +29,12 @@ pub struct MainWindow {
     bg_button: gtk4::CheckButton
 }
 
+#[derive(Clone, Debug)]
+pub struct ClipboardLayer {
+    pub layer: crate::model::Layer,
+    pub size: crate::model::Size
+}
+
 impl MainWindow {
     pub fn build_ui(app: &Application) {
         let content = Box::new(Orientation::Vertical, 0);
@@ -147,7 +153,7 @@ impl MainWindow {
                 let hs = Rc::new(nfd.height_spin_button);
                 
                 nfd.open_button.connect_clicked(clone!(@strong main_window => move |_| {
-                    let mut buffer = Buffer::create(ws.value() as usize, hs.value() as usize);
+                    let mut buffer = Buffer::create(ws.value() as u16, hs.value() as u16);
                     buffer.file_name = None;
                     let editor = main_window.load_page(buffer);
                     editor.borrow_mut().request_refresh = std::boxed::Box::new(clone!(@strong main_window => move || {
@@ -288,7 +294,7 @@ impl MainWindow {
             action.connect_activate(clone!(@strong main_window => move |_,_| {
                 if let Some(editor) = main_window.get_current_editor() {
                     let mut new_layer = crate::model::Layer::new();
-                    new_layer.name = "New layer".to_string();
+                    new_layer.title = "New layer".to_string();
                     editor.borrow_mut().buf.layers.insert(0, new_layer);
                     main_window.update_layer_view();
 
@@ -347,7 +353,7 @@ impl MainWindow {
                     if let Some(row)= row {
                         let idx = row.index();
                         let mut new_layer= editor.borrow_mut().buf.layers[idx as usize].clone();
-                        new_layer.name = format!("{} copy", new_layer.name);
+                        new_layer.title = format!("{} copy", new_layer.title);
                         editor.borrow_mut().buf.layers.insert(0, new_layer);
                         main_window.update_layer_view();
 
@@ -487,7 +493,7 @@ impl MainWindow {
             let display = gtk4::gdk::Display::default().unwrap();
             let clipboard = display.clipboard();
             unsafe {
-                if let Some(data) = clipboard.data::<Layer>("MysticDraw.Layer") {
+                if let Some(data) = clipboard.data::<ClipboardLayer>("MysticDraw.Layer") {
                     let layer = data.as_ref();
                     let mut opos = Position::new();
                     let mut pos = editor.borrow_mut().get_cursor_position();
@@ -495,7 +501,7 @@ impl MainWindow {
                     editor.borrow_mut().begin_atomic_undo();
                     for _ in 0..layer.size.height {
                         for _ in 0..layer.size.width {
-                            editor.borrow_mut().set_char(pos, layer.get_char(opos));
+                            editor.borrow_mut().set_char(pos, layer.layer.get_char(opos));
                             pos.x += 1;
                             opos.x += 1;
                         }
@@ -539,11 +545,11 @@ impl MainWindow {
                 let mut pos = selection.rectangle.start;
                 let mut opos = Position::new();
 
-                let mut copy_layer = Layer::new();
-                copy_layer.size = selection.rectangle.size;
+                let mut copy_layer = ClipboardLayer { layer: Layer::new(), size: selection.rectangle.size };
+
                 for _ in 0..copy_layer.size.height {
                     for _ in 0..copy_layer.size.width {
-                        copy_layer.set_char(opos, editor.borrow().get_char(pos));
+                        copy_layer.layer.set_char(opos, editor.borrow().get_char(pos));
                         pos.x += 1;
                         opos.x += 1;
                     }
@@ -600,7 +606,7 @@ impl MainWindow {
         self.layer_listbox_model.clear();
         if let Some(editor) = self.get_current_editor() {
             for b in &editor.borrow().buf.layers {
-                self.layer_listbox_model.append(&layer_view::RowData::new(&b.name, b.is_visible));
+                self.layer_listbox_model.append(&layer_view::RowData::new(&b.title, b.is_visible));
             }
             for i in 0..editor.borrow().buf.layers.len() {
                 let row = self.layer_listbox.row_at_index(i as i32);

@@ -68,7 +68,7 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> io::Result<Option<u8>> {
                 } else {
                     data.cur_pos.x += data.ans_numbers[0];
                 }
-                data.cur_pos.x = min(data.screen_width - 1, data.cur_pos.x);
+                data.cur_pos.x = min(data.screen_width as i32 - 1, data.cur_pos.x);
                 data.ans_code = false;
                 return Ok(None);
             }
@@ -282,8 +282,8 @@ pub fn convert_to_ans(buf: &Buffer) -> io::Result<Vec<u8>>
         }
         pos.x = 0;
     }
-    if buf.sauce.is_some() {
-        crate::model::Sauce::generate(buf, &crate::model::SauceFileType::Ansi)?;
+    if buf.write_sauce || buf.width != 80 {
+        buf.write_sauce_info(&crate::model::SauceFileType::Ansi, &mut result)?;
     }
     Ok(result)
 }
@@ -300,7 +300,7 @@ mod tests {
 
     #[test]
     fn test_ansi_sequence() {
-      let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[0;40;37mFoo-\x1B[1mB\x1B[0ma\x1B[35mr").unwrap();
+      let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), b"\x1B[0;40;37mFoo-\x1B[1mB\x1B[0ma\x1B[35mr").unwrap();
        
       let ch = buf.get_char(Position::from(0, 0)).unwrap_or_default();
       assert_eq!(b'F', ch.char_code);
@@ -333,7 +333,7 @@ mod tests {
 
     #[test]
     fn test_ansi_30() {
-       let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[1;35mA\x1B[30mB\x1B[0mC").unwrap();
+       let buf = Buffer::from_bytes(&PathBuf::from("test.ans"),  b"\x1B[1;35mA\x1B[30mB\x1B[0mC").unwrap();
        let ch = buf.get_char(Position::from(0, 0)).unwrap_or_default();
        assert_eq!(b'A', ch.char_code);
        assert_eq!(13, ch.attribute.as_u8());
@@ -347,7 +347,7 @@ mod tests {
 
     #[test]
     fn test_bg_colorrsequence() {
-        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.ans"), &None, b"\x1B[1;30m1\x1B[0;34m2\x1B[33m3\x1B[1;41m4\x1B[40m5\x1B[43m6\x1B[40m7").unwrap();
+        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.ans"),  b"\x1B[1;30m1\x1B[0;34m2\x1B[33m3\x1B[1;41m4\x1B[40m5\x1B[43m6\x1B[40m7").unwrap();
        
         let ch = buf.get_char(Position::from(0, 0)).unwrap_or_default();
        assert_eq!(b'1', ch.char_code);
@@ -374,14 +374,14 @@ mod tests {
 
     #[test]
     fn test_linebreak_bug() {
-        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.ans"), &None, b"XX").unwrap();
+        let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.ans"), b"XX").unwrap();
        
         assert_eq!(0x16, buf.get_char(Position {x: 1, y: 0}).unwrap_or_default().char_code);
     }
 
     #[test]
     fn test_char_missing_bug() {
-        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[1;35mA\x1B[30mB\x1B[0mC").unwrap();
+        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), b"\x1B[1;35mA\x1B[30mB\x1B[0mC").unwrap();
        
         let ch = buf.get_char(Position::from(0, 0)).unwrap_or_default();
         assert_eq!(b'A', ch.char_code);
@@ -396,7 +396,7 @@ mod tests {
 
     #[test]
     fn test_cursor_forward() {
-        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[70Ctest_me\x1B[20CF").unwrap();
+        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), b"\x1B[70Ctest_me\x1B[20CF").unwrap();
         let ch = buf.get_char(Position::from(79, 0)).unwrap_or_default();
         assert_eq!(b'F', ch.char_code);
  
@@ -404,21 +404,21 @@ mod tests {
     
     #[test]
     fn test_cursor_forward_at_eol() {
-        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x1B[75CTEST_\x1B[2CF").unwrap();
+        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"),  b"\x1B[75CTEST_\x1B[2CF").unwrap();
         let ch = buf.get_char(Position::from(2, 1)).unwrap_or_default();
         assert_eq!(b'F', ch.char_code);
     }
 
     #[test]
     fn test_char0_bug() {
-        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, b"\x00A").unwrap();
+        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"),  b"\x00A").unwrap();
         let ch = buf.get_char(Position::from(1, 0)).unwrap_or_default();
         assert_eq!(b'A', ch.char_code);
     }
 
     fn test_ansi(data: &[u8])
     {
-        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, data).unwrap();
+        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), data).unwrap();
         let converted = super::convert_to_ans(&buf).unwrap();
 
         // more gentle output.

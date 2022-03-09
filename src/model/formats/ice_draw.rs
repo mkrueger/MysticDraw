@@ -38,7 +38,7 @@ pub fn read_idf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
         return Err(io::Error::new(io::ErrorKind::InvalidData, "invalid bounds for idf width needs to be >=0."));
     }
 
-    result.width  = (x2 + 1) as usize;
+    result.width  = (x2 + 1) as u16;
     let data_size = file_size - FONT_SIZE - PALETTE_SIZE;
     let mut pos = Position::from(x1, y1);
 
@@ -69,6 +69,7 @@ pub fn read_idf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
         }
     }
     result.font = Some(BitFont {
+        name: crate::model::SauceString::new(),
         size: Size::from(8, 16),
         data: bytes[o..(o + FONT_SIZE)].iter().map(|x| *x as u32).collect()
     });
@@ -144,8 +145,8 @@ pub fn convert_to_idf(buf: &Buffer) -> io::Result<Vec<u8>>
 
     // palette
     result.extend(buf.palette.to_16color_vec());
-    if buf.sauce.is_some() {
-        crate::model::Sauce::generate(buf, &crate::model::SauceFileType::Ansi)?;
+    if buf.write_sauce || buf.width != 80 {
+        buf.write_sauce_info(&crate::model::SauceFileType::Bin, &mut result)?;
     }
     Ok(result)
 }

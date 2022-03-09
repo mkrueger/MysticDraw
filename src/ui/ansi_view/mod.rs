@@ -116,8 +116,8 @@ impl AnsiView {
         let buffer = &handle.borrow().buf;
         let font_dimensions = buffer.get_font_dimensions();
         self.set_size_request(
-            (buffer.width * font_dimensions.width) as i32,
-            (buffer.height * font_dimensions.height) as i32,
+            (buffer.width as usize * font_dimensions.width) as i32,
+            (buffer.height as usize * font_dimensions.height) as i32,
         );
         self.imp().set_editor_handle(handle.clone());
         // let dialog = Dialog { payload: editor };

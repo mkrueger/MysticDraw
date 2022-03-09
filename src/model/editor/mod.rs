@@ -230,16 +230,13 @@ impl Editor
     {
         let mut f = File::create(file_name)?;
 
-        let mut content = 
+        let content = 
             if let Some(ext) = file_name.extension() {
                 let ext = OsStr::to_str(ext).unwrap().to_lowercase();
                 self.get_file_content(ext.as_str())?
             } else {
                 self.get_file_content("")?
             };
-        if let Some(sauce) = &self.buf.sauce {
-            sauce.append_to(&mut content)?;
-        }
         f.write_all(&content)?;
         Ok(true)
     }

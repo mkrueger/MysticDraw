@@ -1,4 +1,4 @@
-use super::{DosChar, Position, Size};
+use super::{DosChar, Position};
 
 #[derive(Clone, Debug, Default)]
 pub struct Line {
@@ -13,26 +13,24 @@ impl Line {
 
 #[derive(Clone, Debug, Default)]
 pub struct Layer {
-    pub name: String,
+    pub title: String,
     pub is_visible: bool,
     pub is_locked: bool,
     pub is_position_locked: bool,
 
     offset: Position,
-    pub size: Size,
     pub lines: Vec<Line>,
 }
 
 impl Layer {
     pub fn new() -> Self {
         Layer {
-            name: "Background".to_string(),
+            title: "Background".to_string(),
             is_visible: true,
             is_locked: false,
             is_position_locked: false,
             lines: Vec::new(),
             offset: Position::new(),
-            size: Size::new(),
         }
     }
 

@@ -31,10 +31,10 @@ pub fn convert_to_asc(buf: &Buffer) -> io::Result<Vec<u8>>
         }
         pos.x = 0;
     }
-    if buf.sauce.is_some() {
-        crate::model::Sauce::generate(buf, &crate::model::SauceFileType::Ascii)?;
-    }
 
+    if buf.write_sauce || buf.width != 80 {
+        buf.write_sauce_info(&crate::model::SauceFileType::Ascii, &mut result)?;
+    }
     Ok(result)
 }
 
@@ -57,7 +57,7 @@ mod tests {
 
     fn test_ascii(data: &[u8])
     {
-        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &None, data).unwrap();
+        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), data).unwrap();
         let converted = super::convert_to_asc(&buf).unwrap();
 
         // more gentle output.
