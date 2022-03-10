@@ -68,7 +68,7 @@ pub fn add_rectangle_tool_page(content_box: &mut gtk4::Box)
             .group(&line_checkbox)
             .active(matches!(RECT_TOOL.draw_mode, DrawMode::Colorize))
             .build();
-            mode_box.append(&colorize_checkbox);
+        mode_box.append(&colorize_checkbox);
         content_box.append(&mode_box);
 
         let fill_container = gtk4::Box::builder()

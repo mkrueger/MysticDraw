@@ -25,3 +25,5 @@ pub use new_file_dialog::*;
 mod settings_dialog;
 pub use settings_dialog::*;
 
+mod buffer_settings_page;
+pub use buffer_settings_page::*;

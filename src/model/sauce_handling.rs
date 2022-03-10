@@ -107,6 +107,10 @@ impl<const LEN: usize, const EMPTY: u8> SauceString<LEN, EMPTY> {
         SauceString(Vec::new())
     }
 
+    pub fn max_len(&self) -> usize {
+        LEN
+    }
+
     pub fn read(&mut self, data: &[u8]) -> usize
     {
         let mut last_non_empty = LEN;
@@ -264,6 +268,7 @@ impl Buffer {
             if SAUCE_COMMENT_ID != data[o..(o + 5)] {
                 return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Invalid SAUCE comment id {}", String::from_utf8_lossy(&data[o..(o + 5)]))));
             }
+            o += 5;
             for _ in 0..num_comments {
                 let mut comment: SauceString<64, 0> = SauceString::new();
                 o += comment.read(&data[o..]);

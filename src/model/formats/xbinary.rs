@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, cmp::min};
 
 use crate::model::{Buffer, DosChar, BitFont, Size, Palette, SauceString};
 
@@ -234,7 +234,7 @@ pub fn convert_to_xb(buf: &Buffer) -> io::Result<Vec<u8>>
         result.extend(&vec);
     }
     if (flags & FLAG_COMPRESS) == FLAG_COMPRESS  {
-        compress_greedy(&mut result, buf);
+        compress_backtrack(&mut result, buf);
     } else {
         // store uncompressed
         for y in 0..buf.height {
@@ -300,6 +300,231 @@ fn compress_greedy(outputdata: &mut Vec<u8>, buffer: &Buffer)
                             let next2 = buffer.get_char(Position::from_index(buffer, x + 2)).unwrap_or_default();
                             let next3 = buffer.get_char(Position::from_index(buffer, x + 3)).unwrap_or_default();
                             end_run = cur == next && cur == next2 && cur == next3;
+                        }
+                    }
+                    Compression::Full => {
+                        end_run = cur != run_ch;
+                    }
+                }
+            }
+
+            if end_run {
+                outputdata.push((run_mode as u8) | (run_count - 1));
+                outputdata.extend(&run_buf);
+                run_count = 0;
+            }
+        }
+
+        if run_count > 0 {
+            match run_mode {
+                Compression::Off => {
+                    run_buf.push(cur.char_code);
+                    run_buf.push(cur.attribute.as_u8());
+                }
+                Compression::Char => {
+                    run_buf.push(cur.attribute.as_u8());
+                }
+                Compression::Attr => {
+                    run_buf.push(cur.char_code);
+                }
+                Compression::Full => {
+                    // nothing
+                }    
+            }
+        }
+        else
+        {
+            run_buf.clear();
+            if x < len - 1 {
+                if cur == next {
+                    run_mode = Compression::Full;
+                }
+                else if cur.char_code == next.char_code {
+                    run_mode = Compression::Char;
+                }
+                else if cur.attribute == next.attribute {
+                    run_mode = Compression::Attr;
+                }
+                else {
+                    run_mode = Compression::Off;
+                }
+            }
+            else {
+                run_mode = Compression::Off;
+            }
+
+            if let Compression::Attr = run_mode { 
+                run_buf.push(cur.attribute.as_u8());
+                run_buf.push(cur.char_code);
+            }
+            else
+            {
+                run_buf.push(cur.char_code);
+                run_buf.push(cur.attribute.as_u8());
+            }
+
+            run_ch = cur;
+        }
+        run_count += 1;
+    }
+
+    if run_count > 0 {
+        outputdata.push((run_mode as u8) | (run_count - 1));
+        outputdata.extend(run_buf);
+    }
+}
+
+fn count_length(mut run_mode: Compression, mut run_ch: DosChar, mut end_run: Option<bool>, mut run_count: u8, buffer: &Buffer, mut x: i32) -> i32 {
+    let len = min(x + 256, (buffer.height * buffer.width) as i32 - 1);
+    let mut count = 0;
+    while x < len {
+        let cur = buffer.get_char(Position::from_index(buffer, x)).unwrap_or_default();
+        let next = buffer.get_char(Position::from_index(buffer, x + 1)).unwrap_or_default();
+        
+        if run_count > 0 {
+            if end_run.is_none() {
+                if run_count >= 64 {
+                    end_run = Some(true);
+                } else if run_count > 0 {
+                    match run_mode {
+                        Compression::Off => {
+                            if x < len - 2 && cur == next {
+                                end_run = Some(true);
+                            }
+                            else if x < len - 2 {
+                                let next2 = buffer.get_char(Position::from_index(buffer, x + 2)).unwrap_or_default();
+                                end_run = Some(cur.char_code == next.char_code && cur.char_code == next2.char_code ||
+                                          cur.attribute == next.attribute && cur.attribute == next2.attribute);
+                            }
+                        }
+                        Compression::Char => {
+                            if cur.char_code != run_ch.char_code {
+                                end_run = Some(true);
+                            } else if x < len - 3 {
+                                let next2 = buffer.get_char(Position::from_index(buffer, x + 2)).unwrap_or_default();
+                                let next3 = buffer.get_char(Position::from_index(buffer, x + 3)).unwrap_or_default();
+                                end_run = Some(cur == next && cur == next2 && cur == next3);
+                            }
+                        }
+                        Compression::Attr => {
+                            if cur.attribute != run_ch.attribute {
+                                end_run = Some(true);
+                            } else if x < len - 3 {
+                                let next2 = buffer.get_char(Position::from_index(buffer, x + 2)).unwrap_or_default();
+                                let next3 = buffer.get_char(Position::from_index(buffer, x + 3)).unwrap_or_default();
+                                end_run = Some(cur == next && cur == next2 && cur == next3);
+                            }
+                        }
+                        Compression::Full => {
+                            end_run = Some(cur != run_ch);
+                        }
+                    }
+                }
+            }
+
+            if let Some(true) = end_run {
+                count += 1;
+                run_count = 0;
+            }
+        }
+        end_run = None;
+
+        if run_count > 0 {
+            match run_mode {
+                Compression::Off => {
+                    count += 2;
+                }
+                Compression::Char => {
+                    count += 1;
+                }
+                Compression::Attr => {
+                    count += 1;
+                }
+                Compression::Full => {
+                    // nothing
+                }    
+            }
+        }
+        else
+        {
+            if x < len - 1 {
+                if cur == next {
+                    run_mode = Compression::Full;
+                }
+                else if cur.char_code == next.char_code {
+                    run_mode = Compression::Char;
+                }
+                else if cur.attribute == next.attribute {
+                    run_mode = Compression::Attr;
+                }
+                else {
+                    run_mode = Compression::Off;
+                }
+            }
+            else {
+                run_mode = Compression::Off;
+            }
+            count += 2;
+            run_ch = cur;
+            end_run = None;
+        }
+        run_count += 1;
+        x += 1;
+    }
+    count
+}
+
+fn compress_backtrack(outputdata: &mut Vec<u8>, buffer: &Buffer)
+{
+    let mut run_mode = Compression::Off;
+    let mut run_count = 0;
+    let mut run_buf = Vec::new();
+    let mut run_ch = DosChar::default();
+    let len = (buffer.height * buffer.width) as i32;
+    for x in 0..len {
+        let cur = buffer.get_char(Position::from_index(buffer, x)).unwrap_or_default();
+
+        let next = if x < len - 1 {
+            buffer.get_char(Position::from_index(buffer, x + 1)).unwrap_or_default()
+        } else {
+            DosChar::default()
+        };
+        
+        if run_count > 0 {
+            let mut end_run = false;
+            if run_count >= 64 {
+                end_run = true;
+            } else if run_count > 0 {
+                match run_mode {
+                    Compression::Off => {
+                        if x < len - 2 && (cur.char_code == next.char_code || cur.attribute == next.attribute) {
+                            let l1 = count_length(run_mode, run_ch, Some(true), run_count, buffer, x);
+                            let l2 = count_length(run_mode, run_ch, Some(false), run_count, buffer, x);
+                            end_run = l1 < l2;
+                        }
+                    }
+                    Compression::Char => {
+                        if cur.char_code != run_ch.char_code {
+                            end_run = true;
+                        } else if x < len - 4 {
+                            let next2 = buffer.get_char(Position::from_index(buffer, x + 2)).unwrap_or_default();
+                            if cur.attribute == next.attribute && cur.attribute == next2.attribute {
+                                let l1 = count_length(run_mode, run_ch, Some(true), run_count, buffer, x);
+                                let l2 = count_length(run_mode, run_ch, Some(false), run_count, buffer, x);
+                                end_run = l1 < l2;
+                            }
+                        }
+                    }
+                    Compression::Attr => {
+                        if cur.attribute != run_ch.attribute {
+                            end_run = true;
+                        } else if x < len - 3 {
+                            let next2 = buffer.get_char(Position::from_index(buffer, x + 2)).unwrap_or_default();
+                            if cur.char_code == next.char_code && cur.char_code == next2.char_code  {
+                                let l1 = count_length(run_mode, run_ch, Some(true), run_count, buffer, x);
+                                let l2 = count_length(run_mode, run_ch, Some(false), run_count, buffer, x);
+                                end_run = l1 < l2;
+                            }
                         }
                     }
                     Compression::Full => {

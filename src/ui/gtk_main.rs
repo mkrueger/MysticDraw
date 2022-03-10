@@ -867,12 +867,16 @@ impl MainWindow {
             .vexpand(true)
             .child(&child2)
             .build();
+        let handle = Rc::new(RefCell::new(Editor::new(0, buf)));
 
         let page_box = gtk4::Box::builder()
             .orientation(Orientation::Vertical)
             .build();
-
-        page_box.append(&scroller);
+        let stack = gtk4::Stack::new();
+        stack.add_child(&scroller);
+        stack.add_child(&super::get_settings_page(&self, handle.clone()));
+    
+        page_box.append(&stack);
         let caret_pos_label = gtk4::Label::new(Some(""));
         caret_pos_label.set_valign(gtk4::Align::Center);
 
@@ -889,9 +893,7 @@ impl MainWindow {
         let status_bar = gtk4::Box::new(Orientation::Horizontal, 8);
         status_bar.set_margin_start(12);
         status_bar.set_margin_end(12);
-
         status_bar.append(&caret_pos_label);
-
         status_bar.append(&gtk4::Box::builder().hexpand(true).build());
 
         let size_label = gtk4::Label::new(Some(""));
@@ -902,10 +904,21 @@ impl MainWindow {
         status_bar.append(&key_set_view);
 
         page_box.append(&status_bar);
-
+        
         let page = Rc::new(self.tab_view.add_page(&page_box, None));
-        let handle = Rc::new(RefCell::new(Editor::new(0, buf)));
- 
+        
+        let gesture = gtk4::GestureClick::new();
+        gesture.set_button(1);
+        
+        gesture.connect_pressed(glib::clone!(@strong self as this => move |e, _clicks, x, y| {
+            if stack.visible_child() == stack.first_child() {
+                stack.set_visible_child(&stack.last_child().unwrap());
+            } else {
+                stack.set_visible_child(&stack.first_child().unwrap());
+            }
+        }));
+        size_label.add_controller(&gesture);
+
         handle.borrow_mut().cursor.pos_changed = std::boxed::Box::new(move |e, p| {
             caret_pos_label.set_text(format!("Ln {}, Col {}", p.x + 1, p.y + 1).as_str());
             if let Some(sel) = &e.cur_selection {
@@ -933,6 +946,8 @@ impl MainWindow {
 
         self.tab_to_view.borrow_mut().insert(page.clone(), Rc::new(child2));
         self.page_swap();
+
+
 
         MainWindow::set_file_name_for_page(&page, &handle3);
         handle2.borrow_mut().buf.file_name_changed = std::boxed::Box::new(move || {
