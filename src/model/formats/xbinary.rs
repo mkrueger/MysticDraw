@@ -114,12 +114,12 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
                 }
             }
             Compression::Char => {
-                let ch = bytes[o];
+                let char_code = bytes[o];
                 o += 1;
                 for _ in 0..repeat_counter {
                     if o + 1 > bytes.len() { return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Invalid XBin.\nRead char compression block beyond EOF.")); }
                     result.set_char(0, pos, Some(DosChar { 
-                        char_code: ch, 
+                        char_code, 
                         attribute: TextAttribute::from_u8(bytes[o])
                     }));
                     o += 1;
@@ -129,13 +129,13 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
                 }
             }
             Compression::Attr => {
-                let attr = TextAttribute::from_u8(bytes[o]);
+                let attribute = TextAttribute::from_u8(bytes[o]);
                 o += 1;
                 for _ in 0..repeat_counter {
                     if o + 1 > bytes.len() {return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Invalid XBin.\nRead attribute compression block beyond EOF.")); }
                     result.set_char(0, pos, Some(DosChar { 
                         char_code: bytes[o], 
-                        attribute: attr
+                        attribute
                     }));
                     o += 1;
                     if !advance_pos(result, &mut pos) {
@@ -144,13 +144,13 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
                 }
             }
             Compression::Full => {
-                let ch = bytes[o];
+                let char_code = bytes[o];
                 o += 1;
                 if o + 1 > bytes.len() { return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Invalid XBin.\nRead compression block beyond EOF.")); }
                 let attr = TextAttribute::from_u8(bytes[o]);
                 o += 1;
                 let rep_ch = Some(DosChar { 
-                    char_code: ch, 
+                    char_code, 
                     attribute: attr
                 });
 

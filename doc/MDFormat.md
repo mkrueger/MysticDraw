@@ -120,7 +120,7 @@ Field      Bytes  Meaning
 [Mode]     1      U8 - Unused yet
 [Flags]    2      BE_U16
                   [Bit 1   : Compression on/off]
-                  [Bit 2-3 : Attribute Length 00 - U8, 01 - U16, - 10 - U24, - 11 U32]
+                  [Bit 2-3 : Attribute Length 00 - U8, 01 - 2xU8 (FORE/BACK), - 10 - 2xU16(FORE/BACK), - 11 2xU32(FORE/BACK)]
                   [Bit 4   : Char Length - 0 - U8 1 - U16]
                   [Bit 5   : Unused]
                   [Bit 6   : is_visible]
@@ -129,7 +129,7 @@ Field      Bytes  Meaning
 [X]        4      BE_I32
 [Y]        4      BE_I32
 [Width]    2      BE_U16  - No need for storing the "height" the data determines that. No idea why all formats store that info
-[Data]     *      Data blocks
+[Data]     *      Data blocks, skip if width == 0
 ```
 
 Data block:
@@ -139,7 +139,6 @@ Field      Bytes  Meaning
 [Len]      2      BE_U16 n = 15 Bit - length, BIT 16 == 1 - append n empty chars, 00 == DONE
 [Data]     *      Uncompressed:
                   [CHAR] : 1/2 Depending on flags
-                  [FORE] : 1/2 Depending on flags
-                  [BACK] : 1/2 Depending on flags
+                  [ATTR] : U8, 2xU8, 3xU8, 4xU8 Depending on flags
                   Compression - See XBin
 ```

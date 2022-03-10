@@ -69,7 +69,7 @@ impl Palette {
     
     pub fn fill_to_16(&mut self) {
         if self.colors.len() < DOS_DEFAULT_PALETTE.len()  {
-            self.colors.extend(&DOS_DEFAULT_PALETTE[(self.colors.len() - 1)..]);
+            self.colors.extend(&DOS_DEFAULT_PALETTE[self.colors.len()..]);
         }
     }
 
