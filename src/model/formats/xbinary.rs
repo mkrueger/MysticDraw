@@ -58,6 +58,7 @@ pub fn read_xb(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resul
         let font_length = font_size as usize * if result.use_512_chars { 512 } else { 256 };
         result.font = Some(BitFont {
             name: SauceString::new(),
+            extended_font: result.use_512_chars,
             size: Size::from(8, font_size as usize),
             data: bytes[o..(o+font_length)].iter().map(|x| *x as u32).collect()
         });

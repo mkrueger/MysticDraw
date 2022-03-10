@@ -11,6 +11,7 @@ use super::{Layer, read_xb, Position, DosChar,  ParseStates, read_binary, displa
 #[allow(dead_code)]
 pub struct BitFont {
     pub name: SauceString<22, 0>,
+    pub extended_font: bool,
     pub size: Size,
     pub data: Vec<u32>,
 }
@@ -178,6 +179,16 @@ impl Buffer {
     pub fn from_bytes(file_name: &Path, bytes: &[u8]) -> io::Result<Buffer> {
         let mut result = Buffer::new();
         result.file_name = Some(file_name.to_path_buf());
+        let ext = file_name.extension();
+
+        if let Some(ext) = ext {
+            // mdf doesn't need sauce info.
+            let ext = OsStr::to_str(ext).unwrap().to_lowercase();
+            if ext.as_str() ==  "mdf" {
+                super::read_mdf(&mut result, bytes)?;
+                return Ok(result);
+            }
+        }
 
         let (sauce_type, file_size) = result.read_sauce_info(bytes)?;
         let mut parse_avt  = false;
@@ -209,7 +220,6 @@ impl Buffer {
         }
         
         if check_extension {
-            let ext = file_name.extension();
             if let Some(ext) = ext {
                 let ext = OsStr::to_str(ext).unwrap().to_lowercase();
                 match ext.as_str() {

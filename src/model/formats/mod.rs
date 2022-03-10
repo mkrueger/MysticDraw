@@ -26,6 +26,9 @@ pub use ice_draw::*;
 mod tundra;
 pub use tundra::*;
 
+mod mystic_draw;
+pub use mystic_draw::*;
+
 use super::{Position, TextAttribute};
 
 #[allow(clippy::struct_excessive_bools)]

@@ -36,6 +36,7 @@ pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
     let font_size = 4096;
     result.font = Some(BitFont {
         name: SauceString::new(),
+        extended_font: false,
         size: Size::from(8, 16),
         data: bytes[o..(o + font_size)].iter().map(|x| *x as u32).collect()
     });

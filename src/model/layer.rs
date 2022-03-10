@@ -18,7 +18,7 @@ pub struct Layer {
     pub is_locked: bool,
     pub is_position_locked: bool,
 
-    offset: Position,
+    pub offset: Position,
     pub lines: Vec<Line>,
 }
 

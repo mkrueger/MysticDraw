@@ -1,7 +1,7 @@
 use std::{cmp::{max, min}, path::Path, io::{Write, self}, fs::File, ffi::OsStr};
 use crate::model::{Buffer, Position, TextAttribute, Rectangle, convert_to_ans, convert_to_asc, convert_to_avt, convert_to_binary, convert_to_pcb, convert_to_xb};
 
-use super::{DosChar, UndoSetChar};
+use super::{DosChar, UndoSetChar, convert_to_mdf};
 
 pub struct Cursor {
     pos: Position,
@@ -244,6 +244,7 @@ impl Editor
     pub fn get_file_content(&self, extension: &str) -> io::Result<Vec<u8>>
     {
         match extension {
+            "mdf" => convert_to_mdf(&self.buf),
             "bin" => convert_to_binary(&self.buf),
             "xb" => convert_to_xb(&self.buf),
             "ans" => convert_to_ans(&self.buf),

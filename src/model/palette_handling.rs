@@ -6,6 +6,9 @@ pub struct Color {
 }
 
 impl Color {
+    pub fn new(r: u8, g: u8, b: u8) -> Self {
+        Color{r, g, b }
+    }
     pub fn get_rgb_f64(self) -> (f64, f64, f64) {
         (
             self.r as f64 / 255_f64,
@@ -54,6 +57,10 @@ pub const DOS_DEFAULT_PALETTE: [Color; 16] = [
 impl Palette {
     pub fn new() -> Self {
         Palette { colors: DOS_DEFAULT_PALETTE.to_vec() }
+    }
+
+    pub fn len(&self) -> u32 {
+        self.colors.len() as u32
     }
     
     pub fn clear(&mut self) {

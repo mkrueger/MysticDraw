@@ -70,6 +70,7 @@ pub fn read_idf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
     }
     result.font = Some(BitFont {
         name: crate::model::SauceString::new(),
+        extended_font: false,
         size: Size::from(8, 16),
         data: bytes[o..(o + FONT_SIZE)].iter().map(|x| *x as u32).collect()
     });
