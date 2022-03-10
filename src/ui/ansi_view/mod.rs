@@ -38,6 +38,16 @@ impl AnsiView {
         glib::Object::new(&[]).expect("Failed to create a AnsiEditorArea")
     }
 
+    pub fn set_mimap_mode(&self, is_minimap: bool)
+    {
+        self.imp().set_mimap_mode(is_minimap);
+    } 
+
+    pub fn get_is_mimap(&self) -> bool
+    {
+        *self.imp().is_minimap.borrow()
+    } 
+
     pub fn get_editor(&self) -> Rc<RefCell<Editor>> {
         self.imp().editor.borrow().clone()
     }
@@ -115,11 +125,17 @@ impl AnsiView {
     pub fn set_editor_handle(&self, handle: Rc<RefCell<Editor>>) {
         let buffer = &handle.borrow().buf;
         let font_dimensions = buffer.get_font_dimensions();
-        self.set_size_request(
-            (buffer.width as usize * font_dimensions.width) as i32,
-            (buffer.height as usize * font_dimensions.height) as i32,
-        );
+
         self.imp().set_editor_handle(handle.clone());
+        if !self.get_is_mimap() {
+            self.set_size_request(
+                (buffer.width as usize * font_dimensions.width) as i32,
+                (buffer.height as usize * font_dimensions.height) as i32,
+            );
+        } else {
+            return;
+        }
+
         // let dialog = Dialog { payload: editor };
         if !handle.borrow().is_inactive {
             let drag = gtk4::GestureDrag::new();
@@ -242,6 +258,7 @@ impl AnsiView {
                 glib::signal::Inhibit(true)
             }));
             self.add_controller(&key);
+            self.queue_draw();
         }
     }
 }

@@ -163,6 +163,7 @@ impl Buffer {
         if b"00" != &data[o..(o + 2)] {
             return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Unsupported sauce version {}{}", char::from_u32(data[o + 5] as u32).unwrap(), char::from_u32(data[o + 6] as u32).unwrap()).as_str()));
         }
+        self.write_sauce = true;
         o += 2;
         o += self.title.read(&data[o..]);
         o += self.author.read(&data[o..]);

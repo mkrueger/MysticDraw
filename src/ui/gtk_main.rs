@@ -7,7 +7,7 @@ use libadwaita as adw;
 
 use adw::{prelude::*, TabBar, TabPage, TabView};
 use adw::{ApplicationWindow, HeaderBar};
-use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, MessageType, ButtonsType, DialogFlags};
+use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, MessageType, ButtonsType, DialogFlags, Align};
 
 use crate::WORKSPACE;
 use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, Layer};
@@ -26,7 +26,9 @@ pub struct MainWindow {
     tool_container_box: gtk4::FlowBox,
     tool_notebook: gtk4::Notebook,
     fg_button: gtk4::CheckButton,
-    bg_button: gtk4::CheckButton
+    bg_button: gtk4::CheckButton,
+
+    mini_map: AnsiView
 }
 
 #[derive(Clone, Debug)]
@@ -68,7 +70,8 @@ impl MainWindow {
             bg_button: gtk4::CheckButton::builder()
                 .label("Background")
                 .active(true)
-                .build()
+                .build(),
+            mini_map: AnsiView::new()
         });
 
         content.append(&header_bar);
@@ -104,7 +107,6 @@ impl MainWindow {
             main_window.update_editor();
         }));
 
-
         main_window.layer_listbox.connect_row_selected(clone!(@strong main_window => move |_, row| {
             if let Some(row) = row {
                 let idx = row.index();
@@ -126,7 +128,6 @@ impl MainWindow {
                 main_window.update_editor();
             }
         }));
-
 
         main_window.layer_listbox.set_activate_on_single_click(false);
         main_window.layer_listbox.connect_row_activated(clone!(@strong main_window => move |_, row| {
@@ -302,8 +303,8 @@ impl MainWindow {
                     if let Some(row)= row {
                         main_window.layer_listbox.select_row(Some(&row));
                     }
-                    main_window.get_current_ansi_view().unwrap().queue_draw();
                 }
+                main_window.update_editor();
             }));
             app.add_action(&action);
             let action = SimpleAction::new("layer-up", None);
@@ -319,10 +320,10 @@ impl MainWindow {
                             if let Some(row)= row {
                                 main_window.layer_listbox.select_row(Some(&row));
                             }
-                            main_window.get_current_ansi_view().unwrap().queue_draw();
                         }
                     }
                 }
+                main_window.update_editor();
             }));
             app.add_action(&action);
             let action = SimpleAction::new("layer-down", None);
@@ -339,10 +340,10 @@ impl MainWindow {
                             if let Some(row)= row {
                                 main_window.layer_listbox.select_row(Some(&row));
                             }
-                            main_window.get_current_ansi_view().unwrap().queue_draw();
                         }
                     }
                 }
+                main_window.update_editor();
             }));
             app.add_action(&action);
 
@@ -358,9 +359,9 @@ impl MainWindow {
                         main_window.update_layer_view();
 
                         main_window.layer_listbox.select_row(Some(&row));
-                        main_window.get_current_ansi_view().unwrap().queue_draw();
                     }
                 }
+                main_window.update_editor();
             }));
             app.add_action(&action);
 
@@ -373,8 +374,8 @@ impl MainWindow {
                         editor.borrow_mut().buf.layers.remove(idx as usize);
                         main_window.update_layer_view();
                     }
-                    main_window.get_current_ansi_view().unwrap().queue_draw();
                 }
+                main_window.update_editor();
             }));
             app.add_action(&action);
             
@@ -511,8 +512,7 @@ impl MainWindow {
                         pos.x = x1;
                     }
                     editor.borrow_mut().end_atomic_undo();
-
-                    self.get_current_ansi_view().unwrap().queue_draw();
+                    self.update_editor();
                     return true;
                 }
             }
@@ -565,6 +565,7 @@ impl MainWindow {
                     clipboard.set_data("MysticDraw.Layer", copy_layer);
                 }
                 self.get_current_ansi_view().unwrap().queue_draw();
+                self.mini_map.queue_draw();
                 return true;
             }
         }
@@ -583,7 +584,6 @@ impl MainWindow {
         if let Some(view) = cur {
             let editor = view.get_editor();
             self.color_picker.set_editor(&editor);
-            
             let fn_opt = &(editor.borrow().buf.file_name);
             if fn_opt.is_none() {
                 self.title.set_title("Untitled");
@@ -595,9 +595,9 @@ impl MainWindow {
                 let path = name.parent().unwrap().to_str().unwrap();
                 self.title.set_subtitle(path);
             }
+            self.mini_map.set_editor_handle(editor.clone());
+            self.mini_map.queue_draw();
         }
-
-        
         self.update_layer_view();
     }
 
@@ -637,6 +637,7 @@ impl MainWindow {
     {
         if let Some(view) = &self.get_current_ansi_view() {
             view.queue_draw();
+            self.mini_map.queue_draw();
         }
     }
 
@@ -711,8 +712,15 @@ impl MainWindow {
         result
     }
 
-    fn construct_right_toolbar(&self) -> Box {
-        let result = Box::new(Orientation::Vertical, 0);
+    fn construct_right_toolbar(&self) -> gtk4::Box {
+
+        self.mini_map.set_mimap_mode(true);
+        let scroller = gtk4::ScrolledWindow::builder()
+            .hscrollbar_policy(gtk4::PolicyType::Never)
+            .min_content_width(10)
+            .min_content_height(10)
+            .child(&self.mini_map)
+            .build();
 
         let switcher = gtk4::StackSwitcher::new();
         let stack = gtk4::Stack::new();
@@ -726,15 +734,27 @@ impl MainWindow {
         page.set_title("Channels");
         
         switcher.set_stack(Some(&stack));
+        let layer_box = Box::new(Orientation::Vertical, 0);
+        layer_box.append(&switcher);
+        layer_box.append(&stack);
 
-        result.append(&switcher);
-        result.append(&stack);
+        let right_pane = gtk4::Paned::builder()
+            .orientation(Orientation::Vertical)
+            .start_child(&scroller)
+            .resize_end_child(false)
+            .end_child(&layer_box)
+            .build();
+            right_pane.set_position(1024 - 380);
 
-        result
+        let layer_box = Box::new(Orientation::Vertical, 0);
+        layer_box.set_vexpand(false);
+
+        layer_box.append(&right_pane);
+
+        layer_box
     }
 
     fn construct_layer_view(&self) -> gtk4::Box {
-        let result = Box::new(Orientation::Vertical, 0);
         self.layer_listbox.bind_model(
             Some(&self.layer_listbox_model), // 
             clone!(@strong self as window => @default-panic, move |item| {
@@ -748,19 +768,15 @@ impl MainWindow {
 
         let scrolled_window = gtk4::ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never) // Disable horizontal scrolling
-            .min_content_height(480)
-            .min_content_width(360)
             .vexpand(true)
+            .child(&self.layer_listbox)
             .build();
         
-        scrolled_window.set_child(Some(&self.layer_listbox));
-        result.append(&scrolled_window);
-
         let toolbar = Box::builder()
-        .orientation(Orientation::Horizontal)
-        .spacing(5)
-        .vexpand(false)
-        .build();
+            .orientation(Orientation::Horizontal)
+            .spacing(5)
+            .vexpand(false)
+            .build();
         toolbar.style_context().add_class("toolbar");
         let new_layer_button = gtk4::Button::builder()
             .icon_name("md-layer-add")
@@ -793,6 +809,8 @@ impl MainWindow {
             .build();
         toolbar.append(&layer_delete_button);
 
+        let result = Box::new(Orientation::Vertical, 0);
+        result.append(&scrolled_window);
         result.append(&toolbar);
         result
     }

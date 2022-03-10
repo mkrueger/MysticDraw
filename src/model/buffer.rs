@@ -102,7 +102,7 @@ impl Buffer {
         std::mem::replace( &mut self.overlay_layer, None)
     }
 
-    pub fn get_font_scanline(&self, ch: u8, y: usize) -> u32
+    pub fn get_font_scanline(&self, ch: u16, y: usize) -> u32
     {
         if let Some(font) = &self.font {
             font.data[ch as usize * font.size.height as usize + y]

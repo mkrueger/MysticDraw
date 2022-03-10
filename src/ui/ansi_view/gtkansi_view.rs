@@ -14,17 +14,34 @@ use crate::model::{Editor, Position, Size, Selection};
 pub struct GtkAnsiView {
     pub editor: RefCell<Rc<RefCell<Editor>>>,
     pub textures: RefCell<Vec<Texture>>,
+    pub has_editor: RefCell<bool>,
+    pub is_minimap: RefCell<bool>
 }
 
 impl GtkAnsiView {
 
+    pub fn set_mimap_mode(&self, is_minimap: bool)
+    {
+        self.is_minimap.replace(is_minimap);
+    } 
+
     pub fn set_editor_handle(&self, handle: Rc<RefCell<Editor>>) {
+        self.has_editor.replace(true);
         let mut textures = Vec::new();
         {   
             let buffer = &handle.borrow().buf;
+
+            let mut font_size = 256;
+
+            if let Some(f) = &buffer.font {
+                if f.extended_font {
+                    font_size = 512;
+                }
+            }
+
             for col in 0..buffer.palette.colors.len() {
                 let fg = buffer.palette.colors[col as usize].get_rgb();
-                for u in 0..=255_u8 {
+                for u in 0..font_size {
                     unsafe {
                         textures.push(render_char(buffer, u, fg));
                     }
@@ -61,26 +78,46 @@ impl WidgetImpl for GtkAnsiView {
             &gdk::RGBA::new(0.6, 0.6, 0.6, 1.0),
             &graphene::Rect::new(0.0, 0.0, widget.width() as f32, widget.height() as f32),
         );
-        let mut y = 0.0; 
-        let mut b = true;
-        while y < widget.height() as f32 {
-            let mut x = if b { 0.0 } else { 8.0 }; 
-            b = !b;
-            while x  < widget.width() as f32 {
-                snapshot.append_color(
-                    &gdk::RGBA::new(0.4, 0.4, 0.4, 1.0),
-                    &graphene::Rect::new(x, y, 8.0, 8.0),
-                );
-                x += 16.0;
+        if !*self.has_editor.borrow() { return; }
+        let is_minimap = *self.is_minimap.borrow();
+        if !is_minimap {
+            let mut y = 0.0; 
+            let mut b = true;
+            while y < widget.height() as f32 {
+                let mut x = if b { 0.0 } else { 8.0 }; 
+                b = !b;
+                while x  < widget.width() as f32 {
+                    snapshot.append_color(
+                        &gdk::RGBA::new(0.4, 0.4, 0.4, 1.0),
+                        &graphene::Rect::new(x, y, 8.0, 8.0),
+                    );
+                    x += 16.0;
+                }
+                y += 8.0;
             }
-            y += 8.0;
-        }
-
+        } 
+        
         let editor = &self.editor.borrow();
         let editor = editor.borrow();
         let buffer = &editor.buf;
         let font_dimensions = buffer.get_font_dimensions();
         let textures = self.textures.borrow();
+
+        let mut font_size = 256;
+        if let Some(f) = &buffer.font {
+            if f.extended_font {
+                font_size = 512;
+            }
+        }
+
+        if is_minimap {
+            let full_width = buffer.width as f32 * font_dimensions.width as f32;
+            let full_height = buffer.height as f32 * font_dimensions.height as f32;
+            let scale = widget.parent().unwrap().width() as f32 / full_width;
+            snapshot.scale(scale, scale);
+            widget.set_height_request( (full_height * scale) as i32);
+        }
+
         for y in 0..buffer.height {
             for x in 0..buffer.width {
                 let ch = buffer.get_char(Position::from(x as i32, y as i32));
@@ -92,15 +129,20 @@ impl WidgetImpl for GtkAnsiView {
                         bg = 0;
                     }      
                 }
+                let mut char_num = ch.char_code as usize;
 
                 let bg = buffer.palette.colors[bg].get_rgb_f64();
                 let mut fg = ch.attribute.get_foreground() as usize;
-                
                 unsafe {
                     if !WORKSPACE.show_fg_color {
                         fg = 7;
                     }      
                 }
+                if buffer.use_512_chars && (fg & 0b_1000) != 0 {
+                    char_num += 256;
+                    fg &= 0b_0111;
+                }
+
                 let bounds = graphene::Rect::new(
                     x as f32 * font_dimensions.width as f32,
                     y as f32 * font_dimensions.height as f32,
@@ -108,10 +150,11 @@ impl WidgetImpl for GtkAnsiView {
                     font_dimensions.height as f32
                 );
                 snapshot.append_color(&gdk::RGBA::new(bg.0 as f32, bg.1 as f32, bg.2 as f32, 1.0), &bounds);
-                snapshot.append_texture(&textures[fg * 256 + (ch.char_code as usize)], &bounds);
+                snapshot.append_texture(&textures[fg * font_size + char_num], &bounds);
             }
         }
-        if !editor.is_inactive {
+
+        if !editor.is_inactive && !is_minimap {
             unsafe {
                 if WORKSPACE.cur_tool().use_caret() {
                     draw_caret(editor.get_cursor_position(), snapshot, font_dimensions);
@@ -128,7 +171,7 @@ impl WidgetImpl for GtkAnsiView {
 
 impl DrawingAreaImpl for GtkAnsiView {}
 
-unsafe fn render_char(buffer: &crate::model::Buffer, ch: u8, fg: (u8, u8, u8)) -> Texture {
+unsafe fn render_char(buffer: &crate::model::Buffer, ch: u16, fg: (u8, u8, u8)) -> Texture {
 
     let font_dimensions = buffer.get_font_dimensions();
     let pix_buf = Pixbuf::new(Colorspace::Rgb, true, 8, font_dimensions.width as i32, font_dimensions.height as i32).unwrap();

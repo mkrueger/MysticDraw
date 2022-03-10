@@ -50,6 +50,8 @@ pub fn read_xb(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resul
     result.use_ice                 = (flags & FLAG_NON_BLINK_MODE) == FLAG_NON_BLINK_MODE;
     result.use_512_chars           = (flags & FLAG_512CHAR_MODE) == FLAG_512CHAR_MODE;
     
+    println!("ice: {} 512 chars: {}, compressed:{} ", result.use_ice, result.use_512_chars, is_compressed);
+
     if has_custom_palette {
         result.palette = Palette::from(&bytes[o..(o + 48)]);
         o += 48;
@@ -74,9 +76,6 @@ pub fn read_xb(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resul
 
 fn advance_pos(result: &Buffer, pos: &mut Position) -> bool
 {
-    if pos.y > result.height as i32 {
-        return false;
-    }
     pos.x += 1;
     if pos.x >= result.width as i32 {
         pos.x = 0;

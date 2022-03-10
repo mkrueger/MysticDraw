@@ -61,8 +61,31 @@ pub fn sync_workbench_state(editor: &mut Editor) {
 
 const RESOURCES_BYTES:&[u8] = include_bytes!("../data/resources.gresource");
 
-
+fn is_hidden(entry: &walkdir::DirEntry) -> bool {
+    entry.file_name()
+         .to_str()
+         .map_or(false, |s| s.starts_with('.'))
+}
 fn main() {
+    let walker = walkdir::WalkDir::new("/home/mkrueger/Dokumente/AnsiArt").into_iter();
+    for entry in walker.filter_entry(|e| !is_hidden(e)) {
+        let entry = entry.unwrap();
+        let path = entry.path();
+
+        if path.is_dir() {
+            continue;
+        }
+        let extension = path.extension();
+        if extension.is_none() { continue; }
+        let extension = extension.unwrap().to_str();
+        if extension.is_none() { continue; }
+        let extension = extension.unwrap().to_lowercase();
+
+        if extension == "xb" {
+            println!("{}", path.to_str().unwrap());
+        }
+    }
+
     if let Some(proj_dirs) = ProjectDirs::from("github.com", "mkrueger",  "Mystic Draw") {
         unsafe {
             WORKSPACE.settings.font_path = Some(proj_dirs.data_dir().to_path_buf().join("fonts"));
