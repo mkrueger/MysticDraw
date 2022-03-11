@@ -61,30 +61,7 @@ pub fn sync_workbench_state(editor: &mut Editor) {
 
 const RESOURCES_BYTES:&[u8] = include_bytes!("../data/resources.gresource");
 
-fn is_hidden(entry: &walkdir::DirEntry) -> bool {
-    entry.file_name()
-         .to_str()
-         .map_or(false, |s| s.starts_with('.'))
-}
 fn main() {
-    let walker = walkdir::WalkDir::new("/home/mkrueger/Dokumente/AnsiArt").into_iter();
-    for entry in walker.filter_entry(|e| !is_hidden(e)) {
-        let entry = entry.unwrap();
-        let path = entry.path();
-
-        if path.is_dir() {
-            continue;
-        }
-        let extension = path.extension();
-        if extension.is_none() { continue; }
-        let extension = extension.unwrap().to_str();
-        if extension.is_none() { continue; }
-        let extension = extension.unwrap().to_lowercase();
-
-        if extension == "xb" {
-            println!("{}", path.to_str().unwrap());
-        }
-    }
 
     if let Some(proj_dirs) = ProjectDirs::from("github.com", "mkrueger",  "Mystic Draw") {
         unsafe {
@@ -140,3 +117,84 @@ fn main() {
         <select outline mode>
 */
 
+
+
+#[cfg(test)]
+#[allow(dead_code)]
+mod tests {
+    use crate::model::{Buffer, self};
+
+    fn is_hidden(entry: &walkdir::DirEntry) -> bool {
+        entry.file_name()
+             .to_str()
+             .map_or(false, |s| s.starts_with('.'))
+    }
+    
+    fn comp(buf1: &Buffer, buf2: &Buffer) {
+        assert_eq!(buf1.width, buf2.width);
+        //assert_eq!(buf1.height, buf2.height);
+    
+        assert_eq!(buf1.title, buf2.title);
+        assert_eq!(buf1.group, buf2.group);
+        assert_eq!(buf1.author, buf2.author);
+        assert_eq!(buf1.comments, buf2.comments);
+        
+        assert_eq!(buf1.palette.colors[0..16], buf2.palette.colors[0..16]);
+    
+        for y in 0..buf1.height {
+            for x in 0..buf1.width {
+                let pos = model::Position::from(x as i32, y as i32);
+                let ch1 = buf1.get_char(pos);
+                let ch2 = buf2.get_char(pos);
+                if ch1.is_none() && ch2.is_none() { continue; }
+                let ch1 = ch1.unwrap_or_default();
+                let ch2 = ch2.unwrap_or_default();
+    
+                if ch1.is_transparent() && ch2.is_transparent() { continue; }
+                if (ch1.char_code == b' ' || ch1.char_code == 0) && (ch2.char_code== b' ' || ch2.char_code== 0) && ch2.attribute.get_background() == ch2.attribute.get_background() { continue; }
+                if ch1 != ch2 { 
+                    println!("mismatch at y {} x {}", y, x);
+                }
+                assert_eq!(ch1, ch2);
+            }
+        }
+    }
+    
+    // #[test]
+    fn test_clear() {
+        let walker = walkdir::WalkDir::new("/home/mkrueger/Dokumente/AnsiArt").into_iter();
+        
+        for entry in walker.filter_entry(|e| !is_hidden(e)) {
+            let entry = entry.unwrap();
+            let path = entry.path();
+
+            if path.is_dir() {
+                continue;
+            }
+            let extension = path.extension();
+            if extension.is_none() { continue; }
+            let extension = extension.unwrap().to_str();
+            if extension.is_none() { continue; }
+            let extension = extension.unwrap().to_lowercase();
+
+            if extension == "ice" {
+                let z = model::Buffer::load_buffer(path);
+                if let Err(m) = z { 
+                    eprintln!("Error loading file: {}", m);
+                    continue;
+                }
+                let buf = z.unwrap();
+
+                let mdf_bytes = model::convert_to_mdf(&buf).unwrap();
+                let mut mdf_buffer = model::Buffer::new();
+                model::read_mdf(&mut mdf_buffer, &mdf_bytes).unwrap();
+                comp(&buf, &mdf_buffer);
+
+                let adf_bytes = mdf_buffer.to_bytes(extension.as_str()).unwrap();
+                let buf2 = Buffer::from_bytes(&std::path::PathBuf::from(path), &adf_bytes).unwrap();
+                comp(&buf, &buf2);
+            }
+        }
+    }
+
+}

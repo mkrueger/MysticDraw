@@ -116,6 +116,7 @@ impl WidgetImpl for GtkAnsiView {
             let scale = widget.parent().unwrap().width() as f32 / full_width;
             snapshot.scale(scale, scale);
             widget.set_height_request( (full_height * scale) as i32);
+            return;
         }
 
         for y in 0..buffer.height {

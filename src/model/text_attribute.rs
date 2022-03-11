@@ -48,7 +48,7 @@ impl TextAttribute
     pub fn is_blink(self) -> bool
     {
         if self.background_color < 16 { 
-            self.background_color & 0b1000_0000 != 0
+            self.background_color & 0b1000 != 0
         } else {
             false
         }
@@ -93,9 +93,22 @@ impl TextAttribute
         self.background_color
     }
 
+    pub fn get_background_low(self) -> u8
+    {
+        self.background_color % 8
+    }
+
     pub fn set_background(&mut self, color: u8) 
     {
         self.background_color = color;
+    }
+
+    pub fn set_background_without_blink(&mut self, color: u8) 
+    {
+        assert!(color < 0b1000);
+        if self.background_color < 16  {
+            self.background_color = (0b1000 & self.background_color) | color;
+        }
     }
 }
 

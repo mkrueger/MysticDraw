@@ -4,6 +4,9 @@ use crate::model::{Buffer, DosChar};
 use super::{ Position, TextAttribute};
 
 // http://fileformats.archiveteam.org/wiki/TUNDRA
+// ANSI code for 24 bit: ESC[(0|1);R;G;Bt
+// 0 for background
+// 1 for foreground
 
 const TUNDRA_VER: u8 = 24;
 const TUNDRA_HEADER: &[u8] = b"TUNDRA24";
@@ -140,8 +143,8 @@ pub fn convert_to_tnd(buf: &Buffer) -> io::Result<Vec<u8>>
             }
             if attr != ch.attribute {
                 let mut cmd = 0; 
-                if attr.get_foreground() != ch.attribute.get_foreground() { cmd |= 2 }
-                if attr.get_background() != ch.attribute.get_background() { cmd |= 4 }
+                if attr.get_foreground() != ch.attribute.get_foreground() { cmd |= TUNDRA_COLOR_FOREGROUND }
+                if attr.get_background() != ch.attribute.get_background() { cmd |= TUNDRA_COLOR_BACKGROUND }
 
                 result.push(cmd);
                 result.push(ch.char_code);

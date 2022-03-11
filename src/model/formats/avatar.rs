@@ -144,16 +144,11 @@ pub fn convert_to_avt(buf: &Buffer) -> io::Result<Vec<u8>>
     let mut last_attr = TextAttribute::DEFAULT;
     let mut pos = Position::new();
     let height = buf.height as i32;
-    let mut last_line_skipped = false;
     let mut first_char = true;
 
     // TODO: implement repeat pattern compression (however even TheDraw never bothered to implement this cool RLE from fsc0037)
     while pos.y < height {
         let line_length = buf.get_line_length(pos.y);
-        if line_length == 0 && last_line_skipped {
-            result.push(13);
-            result.push(10);
-        }
 
         while pos.x < line_length {
             let mut repeat_count = 1;
@@ -196,15 +191,14 @@ pub fn convert_to_avt(buf: &Buffer) -> io::Result<Vec<u8>>
             }
             pos.x += 1;
         }
-        pos.y += 1;
-
         // do not end with eol
-        last_line_skipped = pos.y >= height || pos.x >= buf.width as i32;
-        if !last_line_skipped {
+        if pos.x < buf.width as i32 && pos.y + 1 < height {
             result.push(13);
             result.push(10);
         }
+
         pos.x = 0;
+        pos.y += 1;
     }
     if buf.write_sauce || buf.width != 80 {
         buf.write_sauce_info(&crate::model::SauceFileType::Avatar, &mut result)?;

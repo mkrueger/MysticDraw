@@ -50,8 +50,6 @@ pub fn read_xb(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resul
     result.use_ice                 = (flags & FLAG_NON_BLINK_MODE) == FLAG_NON_BLINK_MODE;
     result.use_512_chars           = (flags & FLAG_512CHAR_MODE) == FLAG_512CHAR_MODE;
     
-    println!("ice: {} 512 chars: {}, compressed:{} ", result.use_ice, result.use_512_chars, is_compressed);
-
     if has_custom_palette {
         result.palette = Palette::from(&bytes[o..(o + 48)]);
         o += 48;
@@ -214,7 +212,7 @@ pub fn convert_to_xb(buf: &Buffer) -> io::Result<Vec<u8>>
     if !buf.palette.is_default() {
         flags |= FLAG_PALETTE;
     }
-    flags |= FLAG_COMPRESS;
+  //  flags |= FLAG_COMPRESS;
 
     if buf.use_ice {
         flags |= FLAG_NON_BLINK_MODE;
@@ -252,6 +250,7 @@ pub fn convert_to_xb(buf: &Buffer) -> io::Result<Vec<u8>>
     Ok(result)
 }
 
+/* 
 fn compress_greedy(outputdata: &mut Vec<u8>, buffer: &Buffer)
 {
     let mut run_mode = Compression::Off;
@@ -372,7 +371,7 @@ fn compress_greedy(outputdata: &mut Vec<u8>, buffer: &Buffer)
         outputdata.push((run_mode as u8) | (run_count - 1));
         outputdata.extend(run_buf);
     }
-}
+}*/
 
 fn count_length(mut run_mode: Compression, mut run_ch: DosChar, mut end_run: Option<bool>, mut run_count: u8, buffer: &Buffer, mut x: i32) -> i32 {
     let len = min(x + 256, (buffer.height * buffer.width) as i32 - 1);
@@ -434,10 +433,7 @@ fn count_length(mut run_mode: Compression, mut run_ch: DosChar, mut end_run: Opt
                 Compression::Off => {
                     count += 2;
                 }
-                Compression::Char => {
-                    count += 1;
-                }
-                Compression::Attr => {
+                Compression::Char | Compression::Attr => {
                     count += 1;
                 }
                 Compression::Full => {

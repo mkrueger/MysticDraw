@@ -147,13 +147,7 @@ impl Buffer {
         for i in 0..self.layers.len() {
             let cur_layer = &self.layers[i];
             if !cur_layer.is_visible { continue; }
-            let ch = cur_layer.get_char(pos);
-            if ch.is_some() {
-                return ch;
-            }
-            if i == self.layers.len() - 1 {
-                return Some(DosChar::new());
-            }
+            return cur_layer.get_char(pos);
         }
 
         None
@@ -173,6 +167,23 @@ impl Buffer {
         super::ClearLayerOperation {
             layer_num,
             lines: layers,
+        }
+    }
+
+    pub fn to_bytes(&self, extension: &str) -> io::Result<Vec<u8>>
+    {
+        match extension {
+            "mdf" => super::convert_to_mdf(self),
+            "bin" => super::convert_to_binary(self),
+            "xb" => super::convert_to_xb(self),
+            "ice" |
+            "ans" => super::convert_to_ans(self),
+            "avt" => super::convert_to_avt(self),
+            "pcb" => super::convert_to_pcb(self),
+            "adf" => super::convert_to_adf(self),
+            "idf" => super::convert_to_idf(self),
+            "tnd" => super::convert_to_tnd(self),
+            _ => super::convert_to_asc(self)
         }
     }
 
@@ -197,9 +208,9 @@ impl Buffer {
         let mut check_extension = false;
 
         match sauce_type {
-            super::SauceFileType::Ascii => {  },
+            super::SauceFileType::Ascii => { parse_ansi = true; /* There are files that are marked as Ascii but contain ansi codes. */ },
             super::SauceFileType::Ansi => { parse_ansi = true; check_extension = true; },
-            super::SauceFileType::ANSiMation => { parse_ansi = true; },
+            super::SauceFileType::ANSiMation => { parse_ansi = true; eprintln!("WARNING: ANSiMations are not fully supported."); },
             super::SauceFileType::PCBoard => { parse_pcb = true; parse_ansi = true; },
             super::SauceFileType::Avatar => { parse_avt = true; },
             super::SauceFileType::TundraDraw => {
@@ -247,6 +258,7 @@ impl Buffer {
                         return Ok(result);
                     }
                     "ans" => { parse_ansi = true; }
+                    "ice" => { parse_ansi = true; result.use_ice = true; }
                     "avt" => { parse_avt = true;  }
                     "pcb" => { parse_pcb = true; parse_ansi = true; }
                     _ => {}
@@ -256,6 +268,7 @@ impl Buffer {
 
         let mut data = ParseStates::new();
         if result.width == 0 { result.width = 80; }
+        result.height = 1;
         data.screen_width = result.width;
 
         for b in bytes.iter().take(file_size) {
@@ -264,7 +277,7 @@ impl Buffer {
 
             if parse_ansi {
                 if let Some(c) = ch {
-                    ch = display_ans(&mut data, c)?;
+                    ch = display_ans(&mut result, &mut data, c)?;
                 }
             }
             if parse_pcb {
@@ -289,7 +302,6 @@ impl Buffer {
                 Buffer::output_char(&mut result,  &mut data, ch);
             }
         }
-        
         Ok(result)
     }
 
@@ -297,9 +309,17 @@ impl Buffer {
         if let Some(ch) = ch {
             match ch {
                 10 => {
+                    for x in data.cur_pos.x..(result.width as i32) {
+                        let p =Position::from(x, data.cur_pos.y);
+                        if result.get_char(p).is_none() {
+                            result.set_char(0, p, Some(DosChar::new()));
+                        }
+                    }
+    
                     data.cur_pos.x = 0;
                     data.cur_pos.y += 1;
                     data.cur_input_pos.y += 1;
+                    result.height = data.cur_pos.y as u16 + 1;
                     data.cur_input_pos.x = 1;
                 }
                 12 => {
@@ -311,6 +331,7 @@ impl Buffer {
                     data.cur_pos.x = 0;
                 }
                 _ => {
+                    result.height = data.cur_pos.y as u16 + 1;
                     result.set_char(
                         0,
                         data.cur_pos,
@@ -325,9 +346,6 @@ impl Buffer {
                         data.cur_pos.y += 1;
                     }
                 }
-            }
-            if data.cur_pos.y >= result.height as i32 {
-                result.set_height_for_pos(data.cur_pos);
             }
         }
     }
@@ -352,7 +370,14 @@ impl Buffer {
         for x in 0..(self.width as i32) {
             pos.x = x;
             if let Some(ch) = self.get_char(pos) {
-                if !ch.is_transparent() {
+                if x > 0 && ch.is_transparent() {
+                    if let Some(prev) = self.get_char(pos  + Position::from(-1, 0)) {
+                        if prev.attribute.get_background() > 0 {
+                            length = x + 1;
+                        }
+
+                    }
+                } else if !ch.is_transparent() {
                     length = x + 1;
                 }
             }

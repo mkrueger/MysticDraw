@@ -387,7 +387,7 @@ pub fn convert_to_mdf(buf: &Buffer) -> io::Result<Vec<u8>>
                 let ch = layer.get_char(Position { x: i % (width as i32) , y: i / (width as i32) });
                 let mut rle_count = 1;
                 let mut j = i + rle_count;
-                while j < len && rle_count < 0b1000_0000_0000_0000 {
+                while j < len && rle_count < 0b1000_0000_0000_0000 - 1 {
                     let n = layer.get_char(Position { x: j % (width as i32) , y: j / (width as i32)});
                     if ch.is_some() != n.is_some() || ch.is_none() != n.is_none() {
                         break;

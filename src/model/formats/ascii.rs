@@ -7,29 +7,23 @@ pub fn convert_to_asc(buf: &Buffer) -> io::Result<Vec<u8>>
     let mut result = Vec::new();
     let mut pos = Position::new();
     let height = buf.height as i32;
-    let mut last_line_skipped = false;
 
     while pos.y < height {
         let line_length = buf.get_line_length(pos.y);
-        if line_length == 0 && last_line_skipped {
-            result.push(13);
-            result.push(10);
-        }
-
         while pos.x < line_length {
             let ch = buf.get_char(pos).unwrap_or_default();
             result.push(if ch.char_code == 0 { b' ' } else { ch.char_code });
             pos.x += 1;
         }
-        pos.y += 1;
 
         // do not end with eol
-        last_line_skipped = pos.y >= height || pos.x >= buf.width as i32;
-        if !last_line_skipped {
+        if pos.x < buf.width as i32 && pos.y + 1 < height {
             result.push(13);
             result.push(10);
         }
+
         pos.x = 0;
+        pos.y += 1;
     }
 
     if buf.write_sauce || buf.width != 80 {
@@ -37,18 +31,6 @@ pub fn convert_to_asc(buf: &Buffer) -> io::Result<Vec<u8>>
     }
     Ok(result)
 }
-
-/* 
-pub fn convert_to_utf(char_code: u8) -> u16
-{
-    if char_code >= 0x80_u8 {
-        let low = (0xc0 | ((char_code >> 6) & 0x1f))  as u16;
-        let high = (0x80 | (char_code & 0x3f)) as u16;
-        low | (high << 8)
-    } else {
-        char_code as u16
-    }
-}*/
 
 #[cfg(test)]
 mod tests {
@@ -68,6 +50,49 @@ mod tests {
         let expected  = String::from_utf8_lossy(b.as_slice());
 
         assert_eq!(expected, converted);
+    }
+
+    #[test]
+    fn test_full_line_height() {
+        let mut vec = Vec::new();
+        vec.resize(80, b'-');
+        let buf = Buffer::from_bytes(&PathBuf::from("test.asc"), &vec).unwrap();
+        assert_eq!(1, buf.height);
+        vec.push(b'-');
+        let buf = Buffer::from_bytes(&PathBuf::from("test.asc"), &vec).unwrap();
+        assert_eq!(2, buf.height);
+    }
+
+
+    #[test]
+    fn test_emptylastline_height() {
+        let mut vec = Vec::new();
+        vec.resize(80, b'-');
+        vec.resize(80 * 2, b' ');
+        let buf = Buffer::from_bytes(&PathBuf::from("test.asc"), &vec).unwrap();
+        assert_eq!(2, buf.height);
+    }
+
+
+    #[test]
+    fn test_emptylastline_roundtrip() {
+        let mut vec = Vec::new();
+        vec.resize(80, b'-');
+        vec.resize(80 * 2, b' ');
+
+        let buf = Buffer::from_bytes(&PathBuf::from("test.asc"), &vec).unwrap();
+        assert_eq!(2, buf.height);
+        let vec2 = buf.to_bytes("asc").unwrap();
+        let buf2 = Buffer::from_bytes(&PathBuf::from("test.asc"), &vec2).unwrap();
+        assert_eq!(2, buf2.height);
+    }
+
+
+    #[test]
+    fn test_eol() {
+        let data = b"foo\r\n";
+        let buf = Buffer::from_bytes(&PathBuf::from("test.asc"), data).unwrap();
+        assert_eq!(2, buf.height);
     }
 
     #[test]

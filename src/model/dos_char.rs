@@ -1,9 +1,15 @@
 use super::TextAttribute;
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 pub struct DosChar {
     pub char_code: u8,
     pub attribute: TextAttribute,
+}
+
+impl Default for DosChar {
+    fn default() -> Self {
+        DosChar::new()
+    }
 }
 
 impl DosChar {

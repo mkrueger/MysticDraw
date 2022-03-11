@@ -1,7 +1,7 @@
 use std::{cmp::{max, min}, path::Path, io::{Write, self}, fs::File, ffi::OsStr};
-use crate::model::{Buffer, Position, TextAttribute, Rectangle, convert_to_ans, convert_to_asc, convert_to_avt, convert_to_binary, convert_to_pcb, convert_to_xb};
+use crate::model::{Buffer, Position, TextAttribute, Rectangle};
 
-use super::{DosChar, UndoSetChar, convert_to_mdf};
+use super::{DosChar, UndoSetChar};
 
 pub struct Cursor {
     pos: Position,
@@ -231,30 +231,14 @@ impl Editor
         let mut f = File::create(file_name)?;
 
         let content = 
-            if let Some(ext) = file_name.extension() {
-                let ext = OsStr::to_str(ext).unwrap().to_lowercase();
-                self.get_file_content(ext.as_str())?
+        if let Some(ext) = file_name.extension() {
+            let ext = OsStr::to_str(ext).unwrap().to_lowercase();
+                self.buf.to_bytes(ext.as_str())?
             } else {
-                self.get_file_content("")?
+                self.buf.to_bytes("mdf")?
             };
         f.write_all(&content)?;
         Ok(true)
-    }
-
-    pub fn get_file_content(&self, extension: &str) -> io::Result<Vec<u8>>
-    {
-        match extension {
-            "mdf" => convert_to_mdf(&self.buf),
-            "bin" => convert_to_binary(&self.buf),
-            "xb" => convert_to_xb(&self.buf),
-            "ans" => convert_to_ans(&self.buf),
-            "avt" => convert_to_avt(&self.buf),
-            "pcb" => convert_to_pcb(&self.buf),
-            "adf" => super::convert_to_adf(&self.buf),
-            "idf" => super::convert_to_idf(&self.buf),
-            "tnd" => super::convert_to_tnd(&self.buf),
-            _ => convert_to_asc(&self.buf)
-        }
     }
 
     pub fn get_outline_char_code(&self, i: i32) -> Result<u8, &str>

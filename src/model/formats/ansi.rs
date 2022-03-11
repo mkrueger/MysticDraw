@@ -1,7 +1,7 @@
 use std::cmp::{max, min};
 use std::io;
 
-use crate::model::{Buffer, Position};
+use crate::model::{Buffer, Position, DosChar};
 use crate::model::TextAttribute;
 
 use super::ParseStates;
@@ -13,7 +13,7 @@ const COLOR_OFFSETS : [u8; 8] = [ 0, 4, 2, 6, 1, 5, 3, 7 ];
 const FG_TABLE: [&[u8;2];8] = [ b"30", b"34", b"32", b"36", b"31", b"35", b"33", b"37" ];
 const BG_TABLE: [&[u8;2];8] = [ b"40", b"44", b"42", b"46", b"41", b"45", b"43", b"47" ];
 
-pub fn display_ans(data: &mut ParseStates, ch: u8) -> io::Result<Option<u8>> {
+pub fn display_ans(buf: &mut Buffer, data: &mut ParseStates, ch: u8) -> io::Result<Option<u8>> {
     if data.ans_esc {
         if ch == ANSI_CSI {
             data.ans_esc = false;
@@ -37,7 +37,7 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> io::Result<Option<u8>> {
                         // set foreaground color
                         30..=37 => data.text_attr.set_foreground_without_bold(COLOR_OFFSETS[*n as usize - 30]),
                         // set background color
-                        40..=47 => data.text_attr.set_background(COLOR_OFFSETS[*n as usize - 40]),
+                        40..=47 => data.text_attr.set_background_without_blink(COLOR_OFFSETS[*n as usize - 40]),
                         _ => { 
                             return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Unsupported ANSI graphic code {}", n)));
                         }
@@ -63,13 +63,21 @@ pub fn display_ans(data: &mut ParseStates, ch: u8) -> io::Result<Option<u8>> {
                 return Ok(None);
             }
             b'C' => { // Cursor Forward 
+                let old_x = data.cur_pos.x;
                 if data.ans_numbers.is_empty() {
                     data.cur_pos.x += 1;
                 } else {
                     data.cur_pos.x += data.ans_numbers[0];
                 }
                 data.cur_pos.x = min(data.screen_width as i32 - 1, data.cur_pos.x);
+                for x in old_x..=data.cur_pos.x {
+                    let p =Position::from(x, data.cur_pos.y);
+                    if buf.get_char(p).is_none() {
+                        buf.set_char(0, p, Some(DosChar::new()));
+                    }
+                }
                 data.ans_code = false;
+                buf.height = max( buf.height, data.cur_pos.y as u16 + 1);
                 return Ok(None);
             }
             b'D' => { // Cursor Back 
@@ -175,20 +183,16 @@ pub fn convert_to_ans(buf: &Buffer) -> io::Result<Vec<u8>>
     let mut pos = Position::new();
     let height = buf.height as i32;
     let mut first_char = true;
-    let mut last_line_skipped = false;
 
     while pos.y < height {
         let line_length = buf.get_line_length(pos.y);
-        if line_length == 0 && last_line_skipped {
-            result.push(13);
-            result.push(10);
-        }
+
         while pos.x < line_length {
             let mut space_count = 0;
             let mut ch = buf.get_char(pos).unwrap_or_default();
             let mut cur_attr = ch.attribute;
 
-            while (ch.char_code == b' ' || ch.char_code == 0) && last_attr.get_background() == cur_attr.get_background() && pos.x < line_length {
+            while (ch.char_code == b' ' || ch.char_code == 0) && ch.attribute.get_background() == 0 && pos.x < line_length {
                 space_count += 1;
                 pos.x += 1;                     
                 ch = buf.get_char(pos).unwrap_or_default();
@@ -245,12 +249,11 @@ pub fn convert_to_ans(buf: &Buffer) -> io::Result<Vec<u8>>
                     result.extend_from_slice(FG_TABLE[cur_attr.get_foreground_without_bold() as usize]);
                     wrote_part = true;
                 }
-                if last_attr.get_background() != cur_attr.get_background() {
+                if last_attr.get_background_low() != cur_attr.get_background_low() {
                     if wrote_part {
                         result.push(b';');
-                        print!(";");
                     }
-                    result.extend_from_slice(BG_TABLE[cur_attr.get_background() as usize]);
+                    result.extend_from_slice(BG_TABLE[cur_attr.get_background_low() as usize]);
                 }
                 result.push(b'm');
                 last_attr = cur_attr;
@@ -272,16 +275,18 @@ pub fn convert_to_ans(buf: &Buffer) -> io::Result<Vec<u8>>
             result.push(if ch.char_code == 0 { b' ' } else { ch.char_code });
             pos.x += 1;
         }
-        pos.y += 1;
 
         // do not end with eol
-        last_line_skipped = pos.y >= height || pos.x >= buf.width as i32;
-        if !last_line_skipped {
+        if pos.x < buf.width as i32 && pos.y + 1 < height {
             result.push(13);
             result.push(10);
         }
+
         pos.x = 0;
+        pos.y += 1;
     }
+
+
     if buf.write_sauce || buf.width != 80 {
         buf.write_sauce_info(&crate::model::SauceFileType::Ansi, &mut result)?;
     }
@@ -462,6 +467,29 @@ mod tests {
     }
 
     #[test]
+    fn test_eol() {
+        let data = b"\x1B[0mfoo\r\n";
+        test_ansi(data);
+    }
+
+    #[test]
+    fn test_noeol() {
+        let data = b"\x1B[0mfoo";
+        test_ansi(data);
+    }
+
+    #[test]
+    fn test_emptyeol() {
+        let data = b"\r\n";
+        test_ansi(data);
+        let data = b"\r\n\r\n";
+        test_ansi(data);
+        let data = b"\r\n\r\n\r\n";
+        test_ansi(data);
+    }
+
+
+    #[test]
     fn test_first_char_color() {
         let data = b"\x1B[0;1;36mA";
         test_ansi(data);
@@ -471,6 +499,31 @@ mod tests {
         test_ansi(data);
         let data = b"\x1B[0;1;33;45mA";
         test_ansi(data);
+    }
+
+    #[test]
+    fn test_bgcolor_change() {
+        let data = b"\x1B[0mA\x1B[44m \x1B[40m ";
+        test_ansi(data);
+    }
+
+    #[test]
+    fn test_bgcolor_change2() {
+        let data = b"\x1B[0m\x1B[69C\x1B[44m           ";
+        test_ansi(data);
+    }
+
+    #[test]
+    fn test_emptylastline_roundtrip() {
+        let mut vec = Vec::new();
+        vec.resize(80, b'-');
+        vec.resize(80 * 2, b' ');
+
+        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &vec).unwrap();
+        assert_eq!(2, buf.height);
+        let vec2 = buf.to_bytes("ans").unwrap();
+        let buf2 = Buffer::from_bytes(&PathBuf::from("test.ans"), &vec2).unwrap();
+        assert_eq!(2, buf2.height);
     }
 
 }

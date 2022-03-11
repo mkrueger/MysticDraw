@@ -13,7 +13,6 @@ use super::{ Position, TextAttribute};
 // A very simple format with a weird palette storage. Only 16 colors got used but a full 64 color palette is stored.
 // Maybe useful for DOS demos running in text mode.
 
-
 pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Result<bool>
 {
     result.width = 80;
@@ -23,14 +22,15 @@ pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
         return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid ADF - file too short"));
     }
 
-    // let version = bytes[o];
+    let version = bytes[o];
+    if version != 1 {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Unsupported ADF version {}", version)));
+    }
     o += 1;
 
     // convert EGA -> VGA colors.
     let palette_size = 3 * 64;
     result.palette = Palette::from(&bytes[o..(o + palette_size)]).cycle_ega_colors();
-    
-
     o += palette_size;
 
     let font_size = 4096;
@@ -41,6 +41,7 @@ pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
         data: bytes[o..(o + font_size)].iter().map(|x| *x as u32).collect()
     });
     o += font_size;
+
     loop {
         for _ in 0..result.width {
             if o + 2 > file_size {
@@ -63,8 +64,7 @@ pub fn convert_to_adf(buf: &Buffer) -> io::Result<Vec<u8>>
 {
     let mut result = vec![1]; // version
 
-    result.extend(buf.palette.cycle_ega_colors().to_vec());
-
+    result.extend(buf.palette.to_ega_palette());
     if let Some(font) = &buf.font {
         if font.size.width != 8 || font.size.height != 16 {
             return Err(io::Error::new(io::ErrorKind::InvalidData, "Only 8x16 fonts are supported by adf."));
@@ -79,7 +79,6 @@ pub fn convert_to_adf(buf: &Buffer) -> io::Result<Vec<u8>>
     } else {
         result.extend(crate::DEFAULT_FONT);
     }
-
     for y in 0..buf.height {
         for x in 0..buf.width {
             let ch = buf.get_char(Position::from(x as i32, y as i32)).unwrap_or_default();

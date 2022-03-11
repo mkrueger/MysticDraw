@@ -1,8 +1,8 @@
 use std::{rc::Rc, cell::RefCell};
 
 use glib::ObjectExt;
-use gtk4::{ traits::{ WidgetExt, BoxExt, GtkWindowExt, EditableExt, EntryExt, TextViewExt, TextBufferExt}, SpinButton, Orientation, Align, prelude::DisplayExt, subclass::prelude::TextViewImpl};
-use libadwaita::{ PreferencesGroup, ActionRow, traits::{PreferencesGroupExt, ActionRowExt}, HeaderBar};
+use gtk4::{ traits::{ WidgetExt, BoxExt, EditableExt, EntryExt, TextViewExt, TextBufferExt}, SpinButton, Orientation, Align, prelude::DisplayExt};
+use libadwaita::{ PreferencesGroup, ActionRow, traits::{PreferencesGroupExt, ActionRowExt}};
 
 use crate::model::Editor;
 
@@ -17,7 +17,7 @@ pub struct BufferSettingsPage {
 }
 
 
-pub fn get_settings_page(main_window: &MainWindow, editor: Rc<RefCell<Editor>>) -> gtk4::Box
+pub fn get_settings_page(_main_window: &MainWindow, editor: Rc<RefCell<Editor>>) -> gtk4::Box
 {
     let content_area = gtk4::Box::builder()
         .orientation(Orientation::Vertical)

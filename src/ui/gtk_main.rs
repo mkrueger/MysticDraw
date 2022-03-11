@@ -7,7 +7,7 @@ use libadwaita as adw;
 
 use adw::{prelude::*, TabBar, TabPage, TabView};
 use adw::{ApplicationWindow, HeaderBar};
-use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, MessageType, ButtonsType, DialogFlags, Align};
+use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, MessageType, ButtonsType, DialogFlags};
 
 use crate::WORKSPACE;
 use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, Layer};
@@ -181,6 +181,8 @@ impl MainWindow {
                     .modal(true)
                     .width_request(640)
                     .height_request(480)
+                    .vexpand(false)
+                    .hexpand(false)
                     .build();
 
                 file_chooser.add_button("Open", ResponseType::Ok);
@@ -206,7 +208,7 @@ impl MainWindow {
                     }
                     d.close();
                 }));
-                file_chooser.show();
+                file_chooser.present();
 
             }));
             app.add_action(&open_action);
@@ -874,7 +876,7 @@ impl MainWindow {
             .build();
         let stack = gtk4::Stack::new();
         stack.add_child(&scroller);
-        stack.add_child(&super::get_settings_page(&self, handle.clone()));
+        stack.add_child(&super::get_settings_page(self, handle.clone()));
     
         page_box.append(&stack);
         let caret_pos_label = gtk4::Label::new(Some(""));
@@ -910,7 +912,7 @@ impl MainWindow {
         let gesture = gtk4::GestureClick::new();
         gesture.set_button(1);
         
-        gesture.connect_pressed(glib::clone!(@strong self as this => move |e, _clicks, x, y| {
+        gesture.connect_pressed(glib::clone!(@strong self as this => move |_, _clicks, _, _| {
             if stack.visible_child() == stack.first_child() {
                 stack.set_visible_child(&stack.last_child().unwrap());
             } else {
