@@ -836,15 +836,15 @@ impl MainWindow {
         let mut page_content = Box::new(Orientation::Vertical, 0);
 
         if tool.get_icon_name() == "md-tool-fill" {
-            super::add_fill_tool_page(&mut page_content);
+            super::add_fill_tool_page(self, &mut page_content);
         } else if tool.get_icon_name() == "md-tool-rectangle" {
-            super::add_rectangle_tool_page(&mut page_content);
+            super::add_rectangle_tool_page(self, &mut page_content);
         } else if tool.get_icon_name() == "md-tool-circle" {
-            super::add_ellipse_tool_page(&mut page_content);
+            super::add_ellipse_tool_page(self, &mut page_content);
         } else if tool.get_icon_name() == "md-tool-line" {
-            super::add_line_tool_page(&mut page_content);
+            super::add_line_tool_page(self, &mut page_content);
         } else if tool.get_icon_name() == "md-tool-draw" {
-            super::add_brush_tool_page(&mut page_content);
+            super::add_brush_tool_page(self, &mut page_content);
         } else if tool.get_icon_name() == "md-tool-erase" {
             super::add_erase_tool_page(&mut page_content);
         } else if tool.get_icon_name() == "md-tool-font" {

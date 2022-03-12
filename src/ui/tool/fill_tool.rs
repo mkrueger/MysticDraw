@@ -2,7 +2,14 @@ use std::{rc::Rc, cell::RefCell};
 
 use gtk4::{traits::{BoxExt, CheckButtonExt, WidgetExt, StyleContextExt, ToggleButtonExt}, CheckButton, ToggleButton, Orientation, Align};
 
-use crate::{model::{FILL_TOOL, Buffer, Editor, DosChar, TextAttribute}, ui::{AnsiView}};
+use crate::{model::{FILL_TOOL, Buffer, Editor, DosChar, TextAttribute}, ui::{AnsiView, MainWindow}};
+
+fn set_char(char_code: u16)
+{
+    unsafe {
+        FILL_TOOL.char_code = char_code as u8;
+    }
+}
 
 pub fn create_char_view() -> (AnsiView, Rc<RefCell<Editor>>)
 {
@@ -39,7 +46,7 @@ pub fn get_preview_char() -> DosChar
     }
 }
 
-pub fn add_fill_tool_page(content_box: &mut gtk4::Box)
+pub fn add_fill_tool_page(main_window: &MainWindow, content_box: &mut gtk4::Box)
 {
     unsafe {
         content_box.set_margin_top(20);
@@ -79,8 +86,8 @@ pub fn add_fill_tool_page(content_box: &mut gtk4::Box)
             .build();
         char_container.append(&char_checkbox);
 
-        let button = crate::ui::CharButton::new(FILL_TOOL.char_code);
-        char_container.append(&button);
+        let button = crate::ui::create_char_button(main_window, FILL_TOOL.char_code as u16, Box::new(&set_char));
+        char_container.append(&button.button);
         content_box.append(&char_container);
 
         //let (ansi_view, editor) = create_char_view();

@@ -1,6 +1,6 @@
 use std::io;
 
-use crate::model::{Buffer, Position, SauceString, Color, BitFont, Size, Layer, DosChar, TextAttribute};
+use crate::model::{Buffer, Position, SauceString, Color, BitFont, Layer, DosChar, TextAttribute};
 const MDF_HEADER: &[u8] = b"MDf";
 const MDF_VERSION: u16 = 0;
 const ID_SIZE: usize = 4;
@@ -99,12 +99,7 @@ pub fn read_mdf(result: &mut Buffer, bytes: &[u8]) -> io::Result<bool>
                         }
                     }
                 }
-                result.font = Some(BitFont {
-                    name: font_name,
-                    extended_font,
-                    size: Size { width: width as usize, height: height as usize },
-                    data,
-                });
+                result.font = Some(BitFont::create_32(font_name, extended_font, width as usize, height as usize, &data));
             } 
             BLK_LAYER => {
                 let title_len = u16::from_be_bytes(bytes[o..(o + 2)].try_into().unwrap()) as usize;
@@ -337,12 +332,7 @@ pub fn convert_to_mdf(buf: &Buffer) -> io::Result<Vec<u8>>
         result.push(font.size.width as u8);
         result.push(font.size.height as u8);
         result.push(if font.extended_font { 1 } else { 0 });
-        for data in &font.data {
-            if font.size.width > 8  { 
-                result.push((data >> 8) as u8);
-            }
-            result.push(*data as u8);
-        }
+        font.push_u8_data(&mut result);
     } else if let Some(name) = &buf.font_name {
         result.push(BLK_FONT_NAME);
         name.append_to(&mut result);

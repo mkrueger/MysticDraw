@@ -45,8 +45,16 @@ pub struct Size {
     pub height: usize
 }
 
+impl PartialEq for Size {
+    fn eq(&self, other: &Size) -> bool {
+        self.width == other.width && self.height == other.height
+    }
+}
+
 impl Size 
 {
+    pub const DEFAULT:Size = Size { width:8, height: 16 };
+    
     pub fn new() -> Self
     {
         Size::from(0, 0)

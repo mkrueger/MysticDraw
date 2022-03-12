@@ -56,12 +56,7 @@ pub fn read_xb(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resul
     }
     if has_custom_font {
         let font_length = font_size as usize * if result.use_512_chars { 512 } else { 256 };
-        result.font = Some(BitFont {
-            name: SauceString::new(),
-            extended_font: result.use_512_chars,
-            size: Size::from(8, font_size as usize),
-            data: bytes[o..(o+font_length)].iter().map(|x| *x as u32).collect()
-        });
+        result.font = Some(BitFont::create_8(SauceString::new(), result.use_512_chars, 8, font_size as usize, &bytes[o..(o+font_length)]));
         o += font_length;
     }
 
@@ -228,8 +223,11 @@ pub fn convert_to_xb(buf: &Buffer) -> io::Result<Vec<u8>>
     }
 
     if let Some(font) = &buf.font {
-        let vec: Vec<u8> = font.data.iter().map(|x| *x as u8).collect();
-        result.extend(&vec);
+        if font.size == Size::from(8, 16) {
+            font.push_u8_data(&mut result);
+        } else {
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "Unexpected - invalid font data."));
+        }
     }
     if (flags & FLAG_COMPRESS) == FLAG_COMPRESS  {
         compress_backtrack(&mut result, buf);

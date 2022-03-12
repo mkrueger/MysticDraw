@@ -35,7 +35,7 @@ impl Workspace {
         }
     }
     pub fn get_font_dimensions(&self) -> model::Size { self.font_dimensions }
-    pub fn get_font_scanline(&self, ch: u8, y: usize) -> u32
+    pub fn get_font_scanline(&self, ch: u16, y: usize) -> u32
     {
         DEFAULT_FONT[ch as usize * 16 + y] as u32
     }

@@ -102,6 +102,7 @@ const CP437_TO_CHAR: [char;128] = [
 ];
 
 impl<const LEN: usize, const EMPTY: u8> std::fmt::Display for SauceString<LEN, EMPTY> {
+
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut str = String::new(); 
         let len = self.len();
@@ -136,6 +137,8 @@ impl<const LEN: usize, const EMPTY: u8> std::fmt::Debug for SauceString<LEN, EMP
 
 
 impl<const LEN: usize, const EMPTY: u8> SauceString<LEN, EMPTY> {
+    pub const EMPTY: SauceString<LEN, EMPTY> = SauceString(Vec::new());
+
     pub fn new() -> Self {
         SauceString(Vec::new())
     }

@@ -43,6 +43,13 @@ impl AnsiView {
         self.imp().set_mimap_mode(is_minimap);
     } 
 
+    pub fn set_preview_rectangle(&self, rect: Option<crate::model::Rectangle>)
+    {
+        println!("set rect to {:?}", rect);
+        self.imp().set_preview_rectangle(rect);
+        self.queue_draw();
+    } 
+
     pub fn get_is_mimap(&self) -> bool
     {
         *self.imp().is_minimap.borrow()

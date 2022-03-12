@@ -1,6 +1,6 @@
 use std::io;
 
-use crate::model::{Buffer, DosChar, BitFont, Size, Palette, SauceString};
+use crate::model::{Buffer, DosChar, BitFont, Size, Palette};
 use super::{ Position, TextAttribute};
 
 // http://fileformats.archiveteam.org/wiki/ArtWorx_Data_Format
@@ -34,12 +34,7 @@ pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
     o += palette_size;
 
     let font_size = 4096;
-    result.font = Some(BitFont {
-        name: SauceString::new(),
-        extended_font: false,
-        size: Size::from(8, 16),
-        data: bytes[o..(o + font_size)].iter().map(|x| *x as u32).collect()
-    });
+    result.font = Some(BitFont::from_basic(8, 16, &bytes[o..(o + font_size)]));
     o += font_size;
 
     loop {
@@ -70,9 +65,8 @@ pub fn convert_to_adf(buf: &Buffer) -> io::Result<Vec<u8>>
             return Err(io::Error::new(io::ErrorKind::InvalidData, "Only 8x16 fonts are supported by adf."));
         }
 
-        if font.data.len() == 4096 {
-            let vec: Vec<u8> = font.data.iter().map(|x| *x as u8).collect();
-            result.extend(vec);
+        if font.size == Size::from(8, 16) {
+            font.push_u8_data(&mut result);
         } else {
             return Err(io::Error::new(io::ErrorKind::InvalidData, "Unexpected - invalid font data."));
         }

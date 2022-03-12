@@ -415,7 +415,7 @@ pub static mut LINE_TOOL: line_imp::LineTool = line_imp::LineTool {
     use_fore: true, 
     use_back: true, 
     attr: TextAttribute::DEFAULT, 
-    char_code: b'#',
+    char_code: 176,
     old_pos: Position { x: 0, y: 0 }
 };
 
@@ -425,7 +425,7 @@ pub static mut RECT_TOOL: draw_rectangle_imp::DrawRectangleTool = draw_rectangle
     use_back: true, 
     fill_mode: false, 
     attr: TextAttribute::DEFAULT, 
-    char_code: b'#'
+    char_code: 176
 };
 
 pub static mut ELLIPSE_TOOL: draw_ellipse_imp::DrawEllipseTool = draw_ellipse_imp::DrawEllipseTool {
@@ -434,7 +434,7 @@ pub static mut ELLIPSE_TOOL: draw_ellipse_imp::DrawEllipseTool = draw_ellipse_im
     use_back: true, 
     fill_mode: false, 
     attr: TextAttribute::DEFAULT, 
-    char_code: b'#'
+    char_code: 176
 };
 
 pub static mut BRUSH_TOOL: brush_imp::BrushTool = brush_imp::BrushTool {
@@ -442,7 +442,7 @@ pub static mut BRUSH_TOOL: brush_imp::BrushTool = brush_imp::BrushTool {
     use_back: true,
     use_fore: true,
     brush_type: brush_imp::BrushType::Shade,
-    char_code: b'#',
+    char_code: 176,
  };
 
 pub static mut ERASE_TOOL: erase_imp::EraseTool = erase_imp::EraseTool { size: 3, brush_type: erase_imp::EraseType::Shade };
@@ -451,7 +451,7 @@ pub static mut FILL_TOOL: fill_imp::FillTool = fill_imp::FillTool {
     use_char: true,
     use_fore: true,
     use_back: true,
-    char_code: b'#',
+    char_code: 176,
     attr: TextAttribute::DEFAULT
 };
 pub static mut FLIP_TOOL: flip_imp::FlipTool = flip_imp::FlipTool { };

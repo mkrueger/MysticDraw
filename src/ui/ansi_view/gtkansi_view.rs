@@ -15,7 +15,8 @@ pub struct GtkAnsiView {
     pub editor: RefCell<Rc<RefCell<Editor>>>,
     pub textures: RefCell<Vec<Texture>>,
     pub has_editor: RefCell<bool>,
-    pub is_minimap: RefCell<bool>
+    pub is_minimap: RefCell<bool>,
+    pub preview_rectangle: RefCell<Option<crate::model::Rectangle>>,
 }
 
 impl GtkAnsiView {
@@ -23,6 +24,11 @@ impl GtkAnsiView {
     pub fn set_mimap_mode(&self, is_minimap: bool)
     {
         self.is_minimap.replace(is_minimap);
+    } 
+
+    pub fn set_preview_rectangle(&self, rect: Option<crate::model::Rectangle>)
+    {
+        self.preview_rectangle.replace(rect);
     } 
 
     pub fn set_editor_handle(&self, handle: Rc<RefCell<Editor>>) {
@@ -116,7 +122,6 @@ impl WidgetImpl for GtkAnsiView {
             let scale = widget.parent().unwrap().width() as f32 / full_width;
             snapshot.scale(scale, scale);
             widget.set_height_request( (full_height * scale) as i32);
-            return;
         }
 
         for y in 0..buffer.height {
@@ -166,6 +171,11 @@ impl WidgetImpl for GtkAnsiView {
                     }
                 }
             }
+        }
+
+        if self.preview_rectangle.borrow().is_some() {
+            let rect = self.preview_rectangle.borrow().unwrap();
+            draw_preview_rectangle(&rect, snapshot, font_dimensions);
         }
     }
 }
@@ -230,6 +240,25 @@ fn draw_selection(cur_selection: &Selection, snapshot: &gtk4::Snapshot, font_dim
     cr.set_source_rgb(0.0, 0.0, 0.0);
     cr.set_line_width(1f64);
     cr.stroke().expect("error while calling stroke.");
+}
+
+
+fn draw_preview_rectangle(rect: &crate::model::Rectangle, snapshot: &gtk4::Snapshot, font_dimensions: Size)
+{
+    let bounds = graphene::Rect::new(
+        rect.start.x as f32 * font_dimensions.width as f32,
+        rect.start.y as f32 * font_dimensions.height as f32,
+        rect.size.width as f32 * font_dimensions.width as f32,
+        rect.size.height as f32 * font_dimensions.height as f32
+    );
+    let cr = snapshot.append_cairo(&bounds);
+    cr.rectangle(bounds.x() as f64,
+                 bounds.y() as f64,
+              bounds.width() as f64,
+             bounds.height() as f64);
+    cr.set_source_rgb(2.0, 2.0, 6.0);
+    cr.set_line_width(3f64);
+    cr.stroke_preserve().expect("error while calling stroke.");
 }
 
 fn draw_caret(cursor_pos: Position, snapshot: &gtk4::Snapshot, font_dimensions: Size) {
