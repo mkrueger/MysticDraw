@@ -1,9 +1,14 @@
+use glib::translate::ToGlibPtr;
+use gtk4::cairo::Rectangle;
 use gtk4::gdk::Texture;
 use gtk4::gdk_pixbuf::{Pixbuf, Colorspace};
+use gtk4::gsk::BlendMode;
+use gtk4::prelude::TextureExt;
 use gtk4::subclass::prelude::*;
 use gtk4::traits::WidgetExt;
 use gtk4::{glib, gdk, graphene};
 use std::cell::RefCell;
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use crate::WORKSPACE;
@@ -17,6 +22,8 @@ pub struct GtkAnsiView {
     pub has_editor: RefCell<bool>,
     pub is_minimap: RefCell<bool>,
     pub preview_rectangle: RefCell<Option<crate::model::Rectangle>>,
+    pub reference_image_file: RefCell<Option<PathBuf>>,
+    pub reference_image: RefCell<Option<gtk4::gdk::Texture>>
 }
 
 impl GtkAnsiView {
@@ -124,6 +131,34 @@ impl WidgetImpl for GtkAnsiView {
             widget.set_height_request( (full_height * scale) as i32);
         }
 
+        if !self.reference_image_file.borrow().eq(&editor.reference_image) {
+            self.reference_image_file.replace(editor.reference_image.clone());
+
+            if let Some(file_name) = &editor.reference_image {
+                if let Ok(img) = Texture::from_filename(file_name) {
+                    self.reference_image.replace(Some(img));
+                } else {
+                    eprintln!("Error loading image");
+                }
+            } else {
+                self.reference_image.replace(None);
+            }
+        }
+
+        let paint_texture = if let Some(texture) = &*self.reference_image.borrow() {
+            let full_width = buffer.width as f32 * font_dimensions.width as f32;
+            let scale =  full_width / texture.width() as f32 ;
+            let bounds = graphene::Rect::new(
+                0.0,
+                0.0,
+                full_width,
+                texture.height() as f32 * scale
+            );
+            snapshot.append_texture(texture, &bounds);
+            snapshot.push_opacity(0.7);
+            true 
+        } else { false };
+
         for y in 0..buffer.height {
             for x in 0..buffer.width {
                 let ch = buffer.get_char(Position::from(x as i32, y as i32));
@@ -160,6 +195,10 @@ impl WidgetImpl for GtkAnsiView {
             }
         }
 
+        if paint_texture {
+            snapshot.pop();
+        }
+
         if !editor.is_inactive && !is_minimap {
             unsafe {
                 if WORKSPACE.cur_tool().use_caret() {
@@ -183,7 +222,6 @@ impl WidgetImpl for GtkAnsiView {
 impl DrawingAreaImpl for GtkAnsiView {}
 
 unsafe fn render_char(buffer: &crate::model::Buffer, ch: u16, fg: (u8, u8, u8)) -> Texture {
-
     let font_dimensions = buffer.get_font_dimensions();
     let pix_buf = Pixbuf::new(Colorspace::Rgb, true, 8, font_dimensions.width as i32, font_dimensions.height as i32).unwrap();
     let pixels = pix_buf.pixels();
@@ -241,7 +279,6 @@ fn draw_selection(cur_selection: &Selection, snapshot: &gtk4::Snapshot, font_dim
     cr.set_line_width(1f64);
     cr.stroke().expect("error while calling stroke.");
 }
-
 
 fn draw_preview_rectangle(rect: &crate::model::Rectangle, snapshot: &gtk4::Snapshot, font_dimensions: Size)
 {

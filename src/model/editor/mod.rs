@@ -1,4 +1,4 @@
-use std::{cmp::{max, min}, path::Path, io::{Write, self}, fs::File, ffi::OsStr};
+use std::{cmp::{max, min}, path::{Path, PathBuf}, io::{Write, self}, fs::File, ffi::OsStr};
 use crate::model::{Buffer, Position, TextAttribute, Rectangle};
 
 use super::{DosChar, UndoSetChar};
@@ -98,6 +98,7 @@ pub struct Editor {
     cur_outline: i32,
     pub is_inactive: bool,
 
+    pub reference_image: Option<PathBuf>,
     pub cur_layer: i32,
     pub outline_changed: std::boxed::Box<dyn Fn(&Editor)>,
     pub request_refresh: Box<dyn Fn ()>,
@@ -129,6 +130,7 @@ impl Editor
             cur_selection: None,
             cur_outline: 0,
             is_inactive: false,
+            reference_image: None,
             outline_changed: Box::new(|_| {}),
             request_refresh: Box::new(|| {}),
             cur_layer: 0,

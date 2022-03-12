@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 
 # UI libraries
-gtk4 = "0.4.6"
+gtk4 = { version = "0.4.6", features = ["v4_6"] }
 libadwaita = "0.1.0"
 glib = "0.15.6"
 
