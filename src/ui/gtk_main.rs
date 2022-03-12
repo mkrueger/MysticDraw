@@ -626,7 +626,7 @@ impl MainWindow {
             }
             let len = editor.borrow().buf.layers.len();
             if len > 0 {
-                let row = self.layer_listbox.row_at_index(len as i32 - 1);
+                let row = self.layer_listbox.row_at_index(0);
                 if let Some(row)= row {
                     self.layer_listbox.select_row(Some(&row));
                 }

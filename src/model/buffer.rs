@@ -5,7 +5,7 @@ use std::{
 };
 use std::ffi::OsStr;
 
-use super::{Layer, read_xb, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size, UndoOperation, Palette, SauceString };
+use super::{Layer, read_xb, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size, UndoOperation, Palette, SauceString, Line };
 
 #[derive(Debug, Default)]
 #[allow(dead_code)]
@@ -84,6 +84,12 @@ impl Buffer {
         let mut res = Buffer::new();
         res.width = width;
         res.height = height;
+        res.layers[0].lines.resize(height as usize, Line::create(width));
+        res.layers[0].is_locked = true;
+
+        let mut editing_layer =Layer::new();
+        editing_layer.title = "Editing".to_string();
+        res.layers.insert(0, editing_layer);
 
         res
     }
@@ -147,7 +153,8 @@ impl Buffer {
         for i in 0..self.layers.len() {
             let cur_layer = &self.layers[i];
             if !cur_layer.is_visible { continue; }
-            return cur_layer.get_char(pos);
+            let ch = cur_layer.get_char(pos);
+            if ch.is_some() { return ch; }
         }
 
         None

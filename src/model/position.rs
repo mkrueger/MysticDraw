@@ -1,19 +1,25 @@
-use std::{cmp::Ordering, ops::{Add, Sub}};
+use std::{cmp::Ordering, ops::{Add, Sub}, hash::Hash};
 
 use super::Buffer;
 
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq)]
 pub struct Position {
     pub x: i32,
     pub y: i32,
+}
+
+impl Hash for Position {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.x.hash(state);
+        self.y.hash(state);
+    }
 }
 
 impl std::fmt::Display for Position {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "(x: {}, y: {})", self.x, self.y)
     }
-
 }
 
 impl Position {

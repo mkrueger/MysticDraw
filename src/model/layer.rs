@@ -9,6 +9,11 @@ impl Line {
     pub fn new() -> Self {
         Line { chars: Vec::new() }
     }
+    pub fn create(width : u16) -> Self {
+        let mut chars = Vec::new();
+        chars.resize(width as usize, Some(DosChar::new()));
+        Line { chars }
+    }
 }
 
 #[derive(Clone, Debug, Default)]

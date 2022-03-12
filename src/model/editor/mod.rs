@@ -362,7 +362,11 @@ impl Editor
             let mut pos = selection.rectangle.start;
             for _ in 0..selection.rectangle.size.height {
                 for _ in 0..selection.rectangle.size.width {
-                    self.set_char(pos, None);
+                    if self.cur_layer == self.buf.layers.len() as i32 - 1 {
+                        self.set_char(pos, Some(DosChar::new()));
+                    } else {
+                        self.set_char(pos, None);
+                    }
                     pos.x += 1;
                 }
                 pos.y += 1;
