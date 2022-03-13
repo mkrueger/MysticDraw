@@ -4,12 +4,51 @@ Back in the 90' I made my own ANSI drawing tool which I used in my BBS for drawi
 I updated it from time to time - but nobody seemed to use it. Never got a single feedback on that.
 
 Doesn't matter - I know why: Because it was not written in rust :). First I used Turbo Pascal, moved to C 1996? (I think), reworked it in C++ (and introduced a lot of bugs, but with the lack of users it didn't matter).
-Now I've translated it to rust. Loading/Saving/Modelling is way better than before and unit tested.
 
-The state of the UI basicall non usuable. Mostly I blame the GTK4 bindings for rust. I know GTK 2.x quite well but for rust the bindings are nearly unusuable in my opnion. So development is a bit slower than I expected.
-
-Note: You can use it as an ansi viewer.
+Now I learn rust and as a medium sized UI project - why not ressurrect my 25 year old ANSI editor?
 
 # Features
 
- * File formats: Ansi, Ascii, Artworx ADF, Avatar, BIN, XBIN, PCBoard, iCE
+ * File formats: Ansi, Ascii, Artworx ADF, Avatar, BIN, XBIN, PCBoard, iCE, Tundra Draw
+ * Own custom file format: .mdf
+ * Layer model & transparent pixels
+ * Support for 256 char fonts of various sizes - fonts can be exported and imported.
+ * Support for the draw fonts
+ * Can open multiple files at once
+
+# TODO
+
+It's still in it's infant stages. I wouldn't call that 2.0. But I can start to listen to input if you're keen enough to try it.
+
+ * ANSI & Minimap controls need a rework, they're only placeholders. Minimap crashes if file is too large.
+ * Extended char set support (512 chars - everything is ready for it, would help to have some .xbin
+   files that contain an extended char set - I couldn't find any)
+ * Color Picker that doesn't suck
+ * Switch for iCE/Blink (atm it's only in iCE Mode)
+ * Guides & Grid display
+
+ * Tools:
+    * Brush & Shading need a configuration dialog
+    * Design: filled rect/ellipse as own tool?
+    * Outline mode for rectangle/circle/line
+    * Ellipse tool is garbage
+    * Pipette tool needs better functionality and look
+
+ * Need an UX approach for:
+    * Justify left/right/center
+    * Selection/Buffer tools (rotate/flip/crop)
+    
+ * 1.6 features missing
+    * .TDF font editor (1.6 had this featuree)
+    * Effects tool (1.6 had some custom effects)
+ * Moebius features missing
+    * Moebius has a cool line drawing approach with smaller chars
+    * Mirror mode (super cool in my opinion)
+
+# Building
+
+Todo. Short:
+
+* get rust
+* get a gtk4 rust environment running
+* type "cargo run" and it just works.
