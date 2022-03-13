@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use gtk4::{traits::{BoxExt, CheckButtonExt, WidgetExt, StyleContextExt, ToggleButtonExt, OrientableExt}, CheckButton, ToggleButton, Orientation, Align, Label};
 use crate::{model::{RECT_TOOL, DrawMode}, ui::MainWindow};
 fn set_char(char_code: u16)
@@ -6,7 +8,7 @@ fn set_char(char_code: u16)
         RECT_TOOL.char_code = char_code as u8;
     }
 }
-pub fn add_rectangle_tool_page(main_window: &MainWindow, content_box: &mut gtk4::Box)
+pub fn add_rectangle_tool_page(main_window: std::rc::Rc<MainWindow>, content_box: &mut gtk4::Box)
 {
     unsafe {
         content_box.set_orientation(Orientation::Vertical);
@@ -57,8 +59,9 @@ pub fn add_rectangle_tool_page(main_window: &MainWindow, content_box: &mut gtk4:
             .build();
         char_container.append(&char_checkbox);
 
-        let button = crate::ui::create_char_button(main_window, RECT_TOOL.char_code as u16, Box::new(&set_char));
-        char_container.append(&button.button);
+        let button = Rc::new(RefCell::new(crate::ui::create_char_button(main_window.clone(), RECT_TOOL.char_code as u16, Box::new(&set_char))));
+        char_container.append(&button.borrow().button);
+        main_window.char_buttons.borrow_mut().push(button);
         mode_box.append(&char_container);
 
         let shade_checkbox = CheckButton::builder()

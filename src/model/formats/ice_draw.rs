@@ -68,7 +68,7 @@ pub fn read_idf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
             rle_count -= 1;
         }
     }
-    result.font = Some(BitFont::from_basic(8, 16, &bytes[o..(o + FONT_SIZE)]));
+    result.font = BitFont::from_basic(8, 16, &bytes[o..(o + FONT_SIZE)]);
     o += FONT_SIZE;
 
     result.palette = Palette::from(&bytes[o..(o + PALETTE_SIZE)]);
@@ -125,18 +125,10 @@ pub fn convert_to_idf(buf: &Buffer) -> io::Result<Vec<u8>>
     }
 
     // font
-    if let Some(font) = &buf.font {
-        if font.size.width != 8 || font.size.height != 16 {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "Only 8x16 fonts are supported by idf."));
-        }
-        if font.size == Size::from(8, 16) {
-            font.push_u8_data(&mut result);
-        } else {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "Unexpected - invalid font data."));
-        }
-    } else {
-        result.extend(crate::DEFAULT_FONT);
+    if buf.get_font_dimensions() != Size::from(8, 16) {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "Only 8x16 fonts are supported by adf."));
     }
+    buf.font.push_u8_data(&mut result);
 
     // palette
     result.extend(buf.palette.to_16color_vec());

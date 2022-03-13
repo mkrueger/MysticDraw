@@ -1,3 +1,5 @@
+use std::{rc::Rc, cell::RefCell};
+
 use gtk4::{traits::{BoxExt, CheckButtonExt, WidgetExt, StyleContextExt, ToggleButtonExt, OrientableExt}, CheckButton, ToggleButton, Orientation, Align, Label, SpinButton};
 use crate::{model::{BRUSH_TOOL, brush_imp::BrushType}, ui::MainWindow};
 
@@ -9,7 +11,7 @@ fn set_char(char_code: u16)
     }
 }
 
-pub fn add_brush_tool_page(main_window: &MainWindow, content_box: &mut gtk4::Box)
+pub fn add_brush_tool_page(main_window: std::rc::Rc<MainWindow>, content_box: &mut gtk4::Box)
 {
     unsafe {
         content_box.set_orientation(Orientation::Vertical);
@@ -76,9 +78,11 @@ pub fn add_brush_tool_page(main_window: &MainWindow, content_box: &mut gtk4::Box
             .build();
         char_container.append(&char_checkbox);
 
-        let button = crate::ui::create_char_button(main_window, BRUSH_TOOL.char_code as u16, Box::new(&set_char));
-        char_container.append(&button.button);
+        let button = Rc::new(RefCell::new(crate::ui::create_char_button(main_window.clone(), BRUSH_TOOL.char_code as u16, Box::new(&set_char))));
+        char_container.append(&button.borrow().button);
         mode_box.append(&char_container);
+        
+        main_window.char_buttons.borrow_mut().push(button);
 
         let colorize_checkbox = CheckButton::builder()
             .label("Colorize")

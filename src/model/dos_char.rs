@@ -15,7 +15,7 @@ impl Default for DosChar {
 impl DosChar {
     pub fn new() -> Self {
         DosChar {
-            char_code: 0,
+            char_code: b' ',
             attribute: super::TextAttribute::DEFAULT,
         }
     }

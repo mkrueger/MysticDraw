@@ -1,3 +1,5 @@
+use std::{rc::Rc, cell::RefCell};
+
 use gtk4::{traits::{BoxExt, CheckButtonExt, WidgetExt, StyleContextExt, ToggleButtonExt, OrientableExt}, CheckButton, ToggleButton, Orientation, Align, Label};
 use crate::{model::{ELLIPSE_TOOL, DrawMode}, ui::MainWindow};
 
@@ -8,7 +10,7 @@ fn set_char(char_code: u16)
     }
 }
 
-pub fn add_ellipse_tool_page(main_window: &MainWindow, content_box: &mut gtk4::Box)
+pub fn add_ellipse_tool_page(main_window: std::rc::Rc<MainWindow>, content_box: &mut gtk4::Box)
 {
     unsafe {
         content_box.set_orientation(Orientation::Vertical);
@@ -59,8 +61,9 @@ pub fn add_ellipse_tool_page(main_window: &MainWindow, content_box: &mut gtk4::B
             .build();
         char_container.append(&char_checkbox);
 
-        let button = crate::ui::create_char_button(main_window, ELLIPSE_TOOL.char_code as u16, Box::new(&set_char));
-        char_container.append(&button.button);
+        let button = Rc::new(RefCell::new(crate::ui::create_char_button(main_window.clone(), ELLIPSE_TOOL.char_code as u16, Box::new(&set_char))));
+        char_container.append(&button.borrow().button);
+        main_window.char_buttons.borrow_mut().push(button);
         mode_box.append(&char_container);
 
         let shade_checkbox = CheckButton::builder()

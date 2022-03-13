@@ -1,6 +1,6 @@
 use std::io;
 
-use crate::model::{Buffer, Position, SauceString, Color, BitFont, Layer, DosChar, TextAttribute};
+use crate::model::{Buffer, Position, SauceString, Color, BitFont, Layer, DosChar, TextAttribute, BitFontType};
 const MDF_HEADER: &[u8] = b"MDf";
 const MDF_VERSION: u16 = 0;
 const ID_SIZE: usize = 4;
@@ -72,7 +72,13 @@ pub fn read_mdf(result: &mut Buffer, bytes: &[u8]) -> io::Result<bool>
             BLK_FONT_NAME => {
                 let mut font_name: SauceString<22, 0> = SauceString::new();
                 o += font_name.read(&bytes[o..]);
-                result.font_name = Some(font_name);
+                let font =  BitFont::from_name(&font_name.to_string());
+
+                if font.is_none() {
+                    eprintln!("Font {} can't be found. Falling back to default.", font_name);
+                }
+
+                result.font = BitFont::from_name(&font_name.to_string()).unwrap_or_default();
             }
             BLK_FONT => {
                 let mut font_name: SauceString<22, 0> = SauceString::new();
@@ -99,7 +105,7 @@ pub fn read_mdf(result: &mut Buffer, bytes: &[u8]) -> io::Result<bool>
                         }
                     }
                 }
-                result.font = Some(BitFont::create_32(font_name, extended_font, width as usize, height as usize, &data));
+                result.font = BitFont::create_32(font_name, extended_font, width as usize, height as usize, &data);
             } 
             BLK_LAYER => {
                 let title_len = u16::from_be_bytes(bytes[o..(o + 2)].try_into().unwrap()) as usize;
@@ -326,16 +332,16 @@ pub fn convert_to_mdf(buf: &Buffer) -> io::Result<Vec<u8>>
         }
     }
 
-    if let Some(font) = &buf.font {
-        result.push(BLK_FONT);
-        font.name.append_to(&mut result);
-        result.push(font.size.width as u8);
-        result.push(font.size.height as u8);
-        result.push(if font.extended_font { 1 } else { 0 });
-        font.push_u8_data(&mut result);
-    } else if let Some(name) = &buf.font_name {
+    if buf.font.font_type() == BitFontType::BuiltIn {
         result.push(BLK_FONT_NAME);
-        name.append_to(&mut result);
+        buf.font.name.append_to(&mut result);
+    } else  {
+        result.push(BLK_FONT);
+        buf.font.name.append_to(&mut result);
+        result.push(buf.font.size.width as u8);
+        result.push(buf.font.size.height as u8);
+        result.push(if buf.font.extended_font { 1 } else { 0 });
+        buf.font.push_u8_data(&mut result);
     }
 
     for layer in &buf.layers {

@@ -46,7 +46,7 @@ pub fn get_preview_char() -> DosChar
     }
 }
 
-pub fn add_fill_tool_page(main_window: &MainWindow, content_box: &mut gtk4::Box)
+pub fn add_fill_tool_page(main_window: std::rc::Rc<MainWindow>, content_box: &mut gtk4::Box)
 {
     unsafe {
         content_box.set_margin_top(20);
@@ -86,8 +86,9 @@ pub fn add_fill_tool_page(main_window: &MainWindow, content_box: &mut gtk4::Box)
             .build();
         char_container.append(&char_checkbox);
 
-        let button = crate::ui::create_char_button(main_window, FILL_TOOL.char_code as u16, Box::new(&set_char));
-        char_container.append(&button.button);
+        let button = Rc::new(RefCell::new(crate::ui::create_char_button(main_window.clone(), FILL_TOOL.char_code as u16, Box::new(&set_char))));
+        char_container.append(&button.borrow().button);
+        main_window.char_buttons.borrow_mut().push(button);
         content_box.append(&char_container);
 
         //let (ansi_view, editor) = create_char_view();

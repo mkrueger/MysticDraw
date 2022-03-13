@@ -1,9 +1,9 @@
-use std::{rc::Rc, cell::RefCell};
+use std::{rc::Rc, cell::{RefCell, Ref}};
 
 use gtk4::{ traits::{ WidgetExt, BoxExt, GtkWindowExt, GestureSingleExt}, Orientation};
 use libadwaita::{ HeaderBar };
 
-use crate::{ui::AnsiView, model::{Buffer, Editor, Position, DosChar, TextAttribute, Rectangle}};
+use crate::{ui::{AnsiView, MainWindow}, model::{Buffer, Editor, Position, DosChar, TextAttribute, Rectangle, BitFont}};
 
 pub struct CharSelectorDialog {
     pub dialog: libadwaita::Window,
@@ -16,7 +16,16 @@ pub struct CharSelectorDialog {
 
 const CHARS_PER_LINE : u16 = 32;
 
-pub fn display_select_char_dialog(parent: &libadwaita::ApplicationWindow, font_size: crate::model::Size, char_code: Rc<RefCell<u16>>, result_char: Rc<RefCell<u16>>) -> CharSelectorDialog
+pub fn display_select_char_dialog(parent: &libadwaita::ApplicationWindow, main_window: Ref<Rc<MainWindow>>, char_code: Rc<RefCell<u16>>, result_char: Rc<RefCell<u16>>) -> CharSelectorDialog
+{
+    if let Some(editor) = main_window.get_current_editor() {
+        display_select_char_dialog2(parent, &editor.borrow().buf.font, char_code, result_char)
+    } else {
+        display_select_char_dialog2(parent, &BitFont::default(), char_code, result_char)
+    }
+}
+
+pub fn display_select_char_dialog2(parent: &libadwaita::ApplicationWindow, font: &BitFont, char_code: Rc<RefCell<u16>>, result_char: Rc<RefCell<u16>>) -> CharSelectorDialog
 {
     let main_area = gtk4::Box::builder()
     .orientation(Orientation::Vertical)
@@ -49,10 +58,9 @@ pub fn display_select_char_dialog(parent: &libadwaita::ApplicationWindow, font_s
         .build();
 
     let mut key_preview_buf = Buffer::new();
+    key_preview_buf.font = font.clone();
     key_preview_buf.width = CHARS_PER_LINE;
     key_preview_buf.height = 256 / CHARS_PER_LINE;
-
-    println!("{}x{}", key_preview_buf.width, key_preview_buf.height);
 
     for y in 0..key_preview_buf.height {
         for x in 0..key_preview_buf.width {
@@ -67,11 +75,10 @@ pub fn display_select_char_dialog(parent: &libadwaita::ApplicationWindow, font_s
     key_preview_editor.is_inactive = true;
     let key_handle = Rc::new(RefCell::new(key_preview_editor));
 
-
     let key_set_view = AnsiView::new();
     key_set_view.set_mimap_mode(true);
-    key_set_view.set_width_request((CHARS_PER_LINE * font_size.width as u16 * 2) as i32);
-    key_set_view.set_height_request((256 / CHARS_PER_LINE * font_size.height as u16 * 2) as i32);
+    key_set_view.set_width_request((CHARS_PER_LINE * font.size.width as u16 * 2) as i32);
+    key_set_view.set_height_request((256 / CHARS_PER_LINE * font.size.height as u16 * 2) as i32);
     
     key_set_view.set_valign(gtk4::Align::Center);
     key_set_view.set_editor_handle(key_handle);
@@ -85,8 +92,8 @@ pub fn display_select_char_dialog(parent: &libadwaita::ApplicationWindow, font_s
     gesture.set_button(1);
     let code = char_code.clone();
 
-    let font_width  = font_size.width as u16;
-    let font_height = font_size.height as u16;
+    let font_width  = font.size.width as u16;
+    let font_height = font.size.height as u16;
     set_selected_char(&key_set_view, &char_label, *char_code.borrow());
     gesture.connect_pressed(glib::clone!(@strong key_set_view as this, @weak char_label => move |_, _clicks, x, y| {
         let x = (x / 2.0) as u16;
@@ -99,7 +106,6 @@ pub fn display_select_char_dialog(parent: &libadwaita::ApplicationWindow, font_s
         this.grab_focus();
     }));
     key_set_view.add_controller(&gesture);
-
 
     main_area.append(&content_area);
     dialog.show();

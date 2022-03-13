@@ -34,7 +34,7 @@ pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
     o += palette_size;
 
     let font_size = 4096;
-    result.font = Some(BitFont::from_basic(8, 16, &bytes[o..(o + font_size)]));
+    result.font = BitFont::from_basic(8, 16, &bytes[o..(o + font_size)]);
     o += font_size;
 
     loop {
@@ -60,19 +60,11 @@ pub fn convert_to_adf(buf: &Buffer) -> io::Result<Vec<u8>>
     let mut result = vec![1]; // version
 
     result.extend(buf.palette.to_ega_palette());
-    if let Some(font) = &buf.font {
-        if font.size.width != 8 || font.size.height != 16 {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "Only 8x16 fonts are supported by adf."));
-        }
-
-        if font.size == Size::from(8, 16) {
-            font.push_u8_data(&mut result);
-        } else {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "Unexpected - invalid font data."));
-        }
-    } else {
-        result.extend(crate::DEFAULT_FONT);
+    if buf.get_font_dimensions() != Size::from(8, 16) {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "Only 8x16 fonts are supported by adf."));
     }
+    buf.font.push_u8_data(&mut result);
+
     for y in 0..buf.height {
         for x in 0..buf.width {
             let ch = buf.get_char(Position::from(x as i32, y as i32)).unwrap_or_default();

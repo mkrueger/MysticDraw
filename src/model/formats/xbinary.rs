@@ -1,6 +1,6 @@
 use std::{io, cmp::min};
 
-use crate::model::{Buffer, DosChar, BitFont, Size, Palette, SauceString};
+use crate::model::{Buffer, DosChar, BitFont, Palette, SauceString};
 
 use super::{ Position, TextAttribute };
 
@@ -56,7 +56,7 @@ pub fn read_xb(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resul
     }
     if has_custom_font {
         let font_length = font_size as usize * if result.use_512_chars { 512 } else { 256 };
-        result.font = Some(BitFont::create_8(SauceString::new(), result.use_512_chars, 8, font_size as usize, &bytes[o..(o+font_length)]));
+        result.font = BitFont::create_8(SauceString::new(), result.use_512_chars, 8, font_size as usize, &bytes[o..(o+font_length)]);
         o += font_length;
     }
 
@@ -94,7 +94,10 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
         match compression {
             Compression::Off => {
                 for _ in 0..repeat_counter {
-                    if o + 2 > bytes.len() { return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Invalid XBin.\nRead char block beyond EOF.")); }
+                    if o + 2 > bytes.len() { 
+                        eprintln!("Invalid XBin. Read char block beyond EOF.");
+                        break;
+                    }
                     result.set_char(0, pos, Some(DosChar { 
                         char_code: bytes[o], 
                         attribute: TextAttribute::from_u8(bytes[o + 1])
@@ -109,7 +112,10 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
                 let char_code = bytes[o];
                 o += 1;
                 for _ in 0..repeat_counter {
-                    if o + 1 > bytes.len() { return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Invalid XBin.\nRead char compression block beyond EOF.")); }
+                    if o + 1 > bytes.len() {
+                        eprintln!("Invalid XBin. Read char compression block beyond EOF.");
+                        break;
+                    }
                     result.set_char(0, pos, Some(DosChar { 
                         char_code, 
                         attribute: TextAttribute::from_u8(bytes[o])
@@ -124,7 +130,10 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
                 let attribute = TextAttribute::from_u8(bytes[o]);
                 o += 1;
                 for _ in 0..repeat_counter {
-                    if o + 1 > bytes.len() {return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Invalid XBin.\nRead attribute compression block beyond EOF.")); }
+                    if o + 1 > bytes.len() {
+                        eprintln!("Invalid XBin. Read attribute compression block beyond EOF.");
+                        break;
+                    }
                     result.set_char(0, pos, Some(DosChar { 
                         char_code: bytes[o], 
                         attribute
@@ -138,7 +147,10 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
             Compression::Full => {
                 let char_code = bytes[o];
                 o += 1;
-                if o + 1 > bytes.len() { return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Invalid XBin.\nRead compression block beyond EOF.")); }
+                if o + 1 > bytes.len() { 
+                    eprintln!("Invalid XBin. nRead compression block beyond EOF.");
+                    break;
+                }
                 let attr = TextAttribute::from_u8(bytes[o]);
                 o += 1;
                 let rep_ch = Some(DosChar { 
@@ -193,21 +205,20 @@ pub fn convert_to_xb(buf: &Buffer) -> io::Result<Vec<u8>>
     result.push((buf.height >> 8) as u8);
 
     let mut flags = 0;
-    if let Some(font) = &buf.font {
-        if font.size.width != 8 || font.size.height < 1 || font.size.height > 32 {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "font not supported by the .xb format only fonts with 8px width and a height from 1 to 32 are supported."));
-        }
-
-        result.push(font.size.height as u8);
-        flags |= FLAG_FONT;
-    } else {
-        // default font
-        result.push(16);
+    if buf.font.size.width != 8 || buf.font.size.height < 1 || buf.font.size.height > 32 {
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "font not supported by the .xb format only fonts with 8px width and a height from 1 to 32 are supported."));
     }
+
+    result.push(buf.font.size.height as u8);
+    if !buf.font.is_default() {
+        flags |= FLAG_FONT;
+    }
+
     if !buf.palette.is_default() {
         flags |= FLAG_PALETTE;
     }
-  //  flags |= FLAG_COMPRESS;
+    
+    flags |= FLAG_COMPRESS;
 
     if buf.use_ice {
         flags |= FLAG_NON_BLINK_MODE;
@@ -217,18 +228,15 @@ pub fn convert_to_xb(buf: &Buffer) -> io::Result<Vec<u8>>
         flags |= FLAG_512CHAR_MODE;
     }
     result.push(flags);
-
+    
     if (flags & FLAG_PALETTE) == FLAG_PALETTE {
         result.extend(buf.palette.to_16color_vec());
     }
 
-    if let Some(font) = &buf.font {
-        if font.size == Size::from(8, 16) {
-            font.push_u8_data(&mut result);
-        } else {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "Unexpected - invalid font data."));
-        }
+    if flags & FLAG_FONT == FLAG_FONT {
+        buf.font.push_u8_data(&mut result);
     }
+
     if (flags & FLAG_COMPRESS) == FLAG_COMPRESS  {
         compress_backtrack(&mut result, buf);
     } else {

@@ -1,3 +1,5 @@
+use std::fs;
+
 use gtk4::{gio::{ApplicationFlags, self}};
 use libadwaita as adw;
 use directories::{ ProjectDirs};
@@ -9,10 +11,9 @@ use ui::MainWindow;
 mod model;
 pub mod ui;
 
-pub const DEFAULT_FONT: &[u8] = include_bytes!("../data/font.fnt");
-
 pub struct Settings {
     font_path: Option<std::path::PathBuf>,
+    console_font_path: Option<std::path::PathBuf>,
     tab_size: i32
 }
 
@@ -23,8 +24,6 @@ pub struct Workspace {
 
     pub show_fg_color: bool,
     pub show_bg_color: bool,
-
-    font_dimensions: model::Size
 }
 
 impl Workspace {
@@ -34,20 +33,14 @@ impl Workspace {
             std::boxed::Box::new(t)
         }
     }
-    pub fn get_font_dimensions(&self) -> model::Size { self.font_dimensions }
-    pub fn get_font_scanline(&self, ch: u16, y: usize) -> u32
-    {
-        DEFAULT_FONT[ch as usize * 16 + y] as u32
-    }
 }
 
 pub static mut WORKSPACE: Workspace = Workspace {
-    settings: Settings { tab_size: 8, font_path: None},
+    settings: Settings { tab_size: 8, font_path: None, console_font_path: None},
     selected_tool: 0,
     selected_attribute: TextAttribute::DEFAULT,
     show_fg_color: true,
     show_bg_color: true,
-    font_dimensions: model::Size { width: 8, height: 16 }
 };
 
 pub fn sync_workbench_state(editor: &mut Editor) {
@@ -65,7 +58,15 @@ fn main() {
 
     if let Some(proj_dirs) = ProjectDirs::from("github.com", "mkrueger",  "Mystic Draw") {
         unsafe {
-            WORKSPACE.settings.font_path = Some(proj_dirs.data_dir().to_path_buf().join("fonts"));
+            WORKSPACE.settings.font_path = Some(proj_dirs.data_dir().to_path_buf().join("fonts/tdf"));
+            WORKSPACE.settings.console_font_path = Some(proj_dirs.data_dir().to_path_buf().join("fonts/console"));
+
+            if let Some(p) = &WORKSPACE.settings.font_path {
+                fs::create_dir_all(p).expect("can't create tdf font path");
+            }
+            if let Some(p) = &WORKSPACE.settings.console_font_path {
+                fs::create_dir_all(p).expect("can't create console font path");
+            }
         }
     }
 

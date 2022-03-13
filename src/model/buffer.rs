@@ -5,79 +5,7 @@ use std::{
 };
 use std::ffi::OsStr;
 
-use super::{Layer, read_xb, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size, UndoOperation, Palette, SauceString, Line };
-
-#[derive(Debug, Default)]
-#[allow(dead_code)]
-pub struct BitFont {
-    pub name: SauceString<22, 0>,
-    pub extended_font: bool,
-    pub size: Size,
-    data_32: Option<Vec<u32>>,
-    data_8: Vec<u8>
-}
-
-impl BitFont {/*
-    pub const DEFAULT: BitFont = BitFont {
-        name: SauceString::EMPTY, 
-        extended_font: false,
-        size: Size::DEFAULT,
-        data_32: None,
-        data_8: DEFAULT_FONT.to_vec()
-    };
-*/
-    pub fn push_u8_data(&self, vec: &mut Vec<u8>)
-    {
-        if let Some(data_u32) = &self.data_32 {
-            let v: Vec<u8> = data_u32.iter().map(|x| *x as u8).collect();
-            vec.extend(v);
-        } else {
-            vec.extend(&self.data_8);
-        }
-    }
-
-    pub fn create_32(name: SauceString<22, 0>, extended_font: bool, width: usize, height: usize, data: &[u32]) -> Self
-    {
-        BitFont {
-            name, 
-            extended_font,
-            size: Size::from(width, height),
-            data_32: Some(data.to_vec()),
-            data_8: Vec::new()
-        }
-    }
-
-    pub fn create_8(name: SauceString<22, 0>, extended_font: bool, width: usize, height: usize, data: &[u8]) -> Self
-    {
-        BitFont {
-            name, 
-            extended_font,
-            size: Size::from(width, height),
-            data_32: None,
-            data_8: data.to_vec()
-        }
-    }
-
-    pub fn from_basic(width: usize, height: usize, data: &[u8]) -> Self
-    {
-        BitFont {
-            name: SauceString::EMPTY, 
-            extended_font: false,
-            size: Size::from(width, height),
-            data_32: None,
-            data_8: data.to_vec()
-        }
-    }
-
-    pub fn get_scanline(&self, ch: u16, y: usize) -> u32
-    {
-        if let Some(data_32) = &self.data_32 {
-            data_32[ch as usize * self.size.height as usize + y]
-        } else {
-            self.data_8[ch as usize * self.size.height as usize + y] as u32
-        }
-    }
-}
+use super::{Layer, read_xb, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size, UndoOperation, Palette, SauceString, Line, BitFont };
 
 pub struct Buffer {
     pub file_name: Option<PathBuf>,
@@ -98,9 +26,7 @@ pub struct Buffer {
     pub palette: Palette,
     pub overlay_layer: Option<Layer>,
 
-    /// Read if provided and no font can be matched - if font != None font_name is None.
-    pub font_name: Option<SauceString<22, 0>>,
-    pub font: Option<BitFont>,
+    pub font: BitFont,
     pub layers: Vec<Layer>,
 
     pub undo_stack: Vec<Box<dyn UndoOperation>>,
@@ -112,8 +38,6 @@ impl std::fmt::Debug for Buffer {
         f.debug_struct("Buffer").field("file_name", &self.file_name).field("width", &self.width).field("height", &self.height).field("custom_palette", &self.palette).field("font", &self.font).field("layers", &self.layers).finish()
     }
 }
-
-const DEFAULT_FONT: &[u8] = include_bytes!("../../data/font.fnt");
 
 impl Buffer {
     pub fn new() -> Self {
@@ -133,8 +57,7 @@ impl Buffer {
 
             palette: Palette::new(),
 
-            font: None,
-            font_name: None,
+            font: BitFont::default(),
             overlay_layer: None,
             layers: vec!(Layer::new()),
             file_name_changed: Box::new(|| {}),
@@ -173,21 +96,12 @@ impl Buffer {
 
     pub fn get_font_scanline(&self, ch: u16, y: usize) -> u32
     {
-        if let Some(font) = &self.font {
-            font.get_scanline(ch, y)
-        } else {
-            DEFAULT_FONT[ch as usize * 16 + y] as u32
-        }
+        self.font.get_scanline(ch, y)
     }
 
     pub fn get_font_dimensions(&self) -> Size
     {
-        if let Some(font) = &self.font {
-            font.size
-        } else {
-            // default font.
-            Size::from(8, 16)
-        }
+        self.font.size
     }
 
     pub fn set_char(&mut self, layer: usize, pos: Position, dos_char: Option<DosChar>) {

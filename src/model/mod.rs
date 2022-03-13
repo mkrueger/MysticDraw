@@ -39,6 +39,9 @@ pub use undo_stack::*;
 mod palette_handling;
 pub use palette_handling::*;
 
+mod fonts;
+pub use fonts::*;
+
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Size {
     pub width: usize,

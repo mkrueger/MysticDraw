@@ -12,7 +12,7 @@ use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, Messa
 use crate::WORKSPACE;
 use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, Layer};
 
-use super::{AnsiView, ColorPicker, layer_view};
+use super::{AnsiView, ColorPicker, layer_view, CharButton};
 
 pub struct MainWindow {
     pub window: ApplicationWindow,
@@ -27,6 +27,8 @@ pub struct MainWindow {
     tool_notebook: gtk4::Notebook,
     fg_button: gtk4::CheckButton,
     bg_button: gtk4::CheckButton,
+
+    pub char_buttons: RefCell<Vec<Rc<RefCell<CharButton>>>>,
 
     mini_map: AnsiView
 }
@@ -71,7 +73,8 @@ impl MainWindow {
                 .label("Background")
                 .active(true)
                 .build(),
-            mini_map: AnsiView::new()
+            mini_map: AnsiView::new(),
+            char_buttons: RefCell::new(Vec::new())
         });
 
         content.append(&header_bar);
@@ -89,7 +92,7 @@ impl MainWindow {
         right_pane.set_position(1024 - 380);
 
         let left_pane = Box::new(Orientation::Horizontal, 0);
-        left_pane.append(&main_window.construct_left_toolbar());
+        left_pane.append(&main_window.construct_left_toolbar(main_window.clone()));
         left_pane.append(&right_pane);
         content.append(&left_pane);
         main_window.window.present();
@@ -156,7 +159,7 @@ impl MainWindow {
                 nfd.open_button.connect_clicked(clone!(@strong main_window => move |_| {
                     let mut buffer = Buffer::create(ws.value() as u16, hs.value() as u16);
                     buffer.file_name = None;
-                    let editor = main_window.load_page(buffer);
+                    let editor = main_window.load_page(main_window.clone(), buffer);
                     editor.borrow_mut().request_refresh = std::boxed::Box::new(clone!(@strong main_window => move || {
                         main_window.update_editor();
                     }));
@@ -200,7 +203,7 @@ impl MainWindow {
                             return;
                         }
 
-                        let editor = main_window.load_page(res.unwrap());
+                        let editor = main_window.load_page(main_window.clone(), res.unwrap());
                         editor.borrow_mut().request_refresh = std::boxed::Box::new(clone!(@strong main_window => move || {
                             main_window.update_editor();
                         }));
@@ -479,12 +482,11 @@ impl MainWindow {
             }
         });
     }
-    fn handle_error<T, E: std::fmt::Display, F>(&self, error: std::result::Result<T, E>, get_title: F) 
+    pub fn handle_error<T, E: std::fmt::Display, F>(&self, error: std::result::Result<T, E>, get_title: F) 
         where F: Fn()->String {
         if let Err(e) = error {
             self.show_error(get_title(), Some(e.to_string().as_str()));
         }
-
     }
     fn paste_from_clipboard(&self) -> bool {
         unsafe {
@@ -600,6 +602,11 @@ impl MainWindow {
             self.mini_map.set_editor_handle(editor.clone());
             self.mini_map.queue_draw();
         }
+        for area in &*self.char_buttons.borrow() {
+            let button = area.borrow();
+            button.drawing_area.borrow().queue_draw();
+        }
+
         self.update_layer_view();
     }
 
@@ -696,15 +703,15 @@ impl MainWindow {
         (title, hb)
     }
 
-    fn construct_left_toolbar(&self) -> Box {
+    fn construct_left_toolbar(&self, my_box: Rc<MainWindow>) -> Box {
         let result = Box::new(Orientation::Vertical, 0);
         result.set_hexpand(false);
         result.set_width_request(200);
         result.append(&self.color_picker);
         unsafe {
-            let first = self.add_tool(TOOLS[0]);
+            let first = self.add_tool(my_box.clone(), TOOLS[0]);
             for t in TOOLS.iter().skip(1) {
-                self.add_tool(*t).set_group(Some(&first));
+                self.add_tool(my_box.clone(), *t).set_group(Some(&first));
             }
             first.set_active(true);
         }
@@ -827,6 +834,7 @@ impl MainWindow {
 
     fn add_tool(
         &self,
+        my_box: Rc<MainWindow>,
         tool: &dyn Tool,
     ) -> gtk4::ToggleButton {
         let button = gtk4::ToggleButton::builder()
@@ -834,17 +842,16 @@ impl MainWindow {
             .build();
         self.tool_container_box.insert(&button, -1);
         let mut page_content = Box::new(Orientation::Vertical, 0);
-
         if tool.get_icon_name() == "md-tool-fill" {
-            super::add_fill_tool_page(self, &mut page_content);
+            super::add_fill_tool_page(my_box, &mut page_content);
         } else if tool.get_icon_name() == "md-tool-rectangle" {
-            super::add_rectangle_tool_page(self, &mut page_content);
+            super::add_rectangle_tool_page(my_box, &mut page_content);
         } else if tool.get_icon_name() == "md-tool-circle" {
-            super::add_ellipse_tool_page(self, &mut page_content);
+            super::add_ellipse_tool_page(my_box, &mut page_content);
         } else if tool.get_icon_name() == "md-tool-line" {
-            super::add_line_tool_page(self, &mut page_content);
+            super::add_line_tool_page(my_box, &mut page_content);
         } else if tool.get_icon_name() == "md-tool-draw" {
-            super::add_brush_tool_page(self, &mut page_content);
+            super::add_brush_tool_page(my_box, &mut page_content);
         } else if tool.get_icon_name() == "md-tool-erase" {
             super::add_erase_tool_page(&mut page_content);
         } else if tool.get_icon_name() == "md-tool-font" {
@@ -862,7 +869,7 @@ impl MainWindow {
         button
     }
 
-    fn load_page(&self, buf: Buffer) -> Rc<RefCell<Editor>> {
+    fn load_page(&self, my_box: Rc<MainWindow>, buf: Buffer) -> Rc<RefCell<Editor>> {
         let child2 = AnsiView::new();
         let scroller = gtk4::ScrolledWindow::builder()
             .hexpand(true)
@@ -876,7 +883,8 @@ impl MainWindow {
             .build();
         let stack = gtk4::Stack::new();
         stack.add_child(&scroller);
-        stack.add_child(&super::get_settings_page(self, handle.clone()));
+        let settings_page = super::get_settings_page(my_box, handle.clone());
+        stack.add_child(&settings_page.content_area);
     
         page_box.append(&stack);
         let caret_pos_label = gtk4::Label::new(Some(""));
@@ -917,6 +925,7 @@ impl MainWindow {
                 stack.set_visible_child(&stack.last_child().unwrap());
             } else {
                 stack.set_visible_child(&stack.first_child().unwrap());
+                settings_page.sync_back();
             }
         }));
         size_label.add_controller(&gesture);
@@ -948,7 +957,6 @@ impl MainWindow {
 
         self.tab_to_view.borrow_mut().insert(page.clone(), Rc::new(child2));
         self.page_swap();
-
 
 
         MainWindow::set_file_name_for_page(&page, &handle3);

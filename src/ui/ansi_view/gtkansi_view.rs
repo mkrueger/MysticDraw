@@ -1,8 +1,5 @@
-use glib::translate::ToGlibPtr;
-use gtk4::cairo::Rectangle;
 use gtk4::gdk::Texture;
 use gtk4::gdk_pixbuf::{Pixbuf, Colorspace};
-use gtk4::gsk::BlendMode;
 use gtk4::prelude::TextureExt;
 use gtk4::subclass::prelude::*;
 use gtk4::traits::WidgetExt;
@@ -46,10 +43,8 @@ impl GtkAnsiView {
 
             let mut font_size = 256;
 
-            if let Some(f) = &buffer.font {
-                if f.extended_font {
-                    font_size = 512;
-                }
+            if buffer.font.extended_font {
+                font_size = 512;
             }
 
             for col in 0..buffer.palette.colors.len() {
@@ -117,10 +112,8 @@ impl WidgetImpl for GtkAnsiView {
         let textures = self.textures.borrow();
 
         let mut font_size = 256;
-        if let Some(f) = &buffer.font {
-            if f.extended_font {
-                font_size = 512;
-            }
+        if buffer.font.extended_font {
+            font_size = 512;
         }
 
         if is_minimap {

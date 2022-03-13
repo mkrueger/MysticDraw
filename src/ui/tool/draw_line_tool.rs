@@ -1,3 +1,5 @@
+use std::{rc::Rc, cell::RefCell};
+
 use gtk4::{traits::{BoxExt, CheckButtonExt, WidgetExt, StyleContextExt, ToggleButtonExt, OrientableExt}, CheckButton, ToggleButton, Orientation, Align};
 use crate::{model::{LINE_TOOL, DrawMode}, ui::MainWindow};
 
@@ -7,7 +9,7 @@ fn set_char(char_code: u16)
         LINE_TOOL.char_code = char_code as u8;
     }
 }
-pub fn add_line_tool_page(main_window: &MainWindow, content_box: &mut gtk4::Box)
+pub fn add_line_tool_page(main_window: std::rc::Rc<MainWindow>, content_box: &mut gtk4::Box)
 {
     unsafe {
         content_box.set_orientation(Orientation::Vertical);
@@ -58,8 +60,9 @@ pub fn add_line_tool_page(main_window: &MainWindow, content_box: &mut gtk4::Box)
             .build();
         char_container.append(&char_checkbox);
 
-        let button = crate::ui::create_char_button(main_window, LINE_TOOL.char_code as u16, Box::new(&set_char));
-        char_container.append(&button.button);
+        let button = Rc::new(RefCell::new(crate::ui::create_char_button(main_window.clone(), LINE_TOOL.char_code as u16, Box::new(&set_char))));
+        char_container.append(&button.borrow().button);
+        main_window.char_buttons.borrow_mut().push(button);
         mode_box.append(&char_container);
 
         let shade_checkbox = CheckButton::builder()
