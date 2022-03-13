@@ -27,16 +27,16 @@ It's still in it's infant stages. I wouldn't call that 2.0. But I can start to l
  * Switch for iCE/Blink (atm it's only in iCE Mode)
  * Guides & Grid display
 
- * Tools:
+ * Tools
     * Brush & Shading need a configuration dialog
     * Design: filled rect/ellipse as own tool?
     * Outline mode for rectangle/circle/line
     * Ellipse tool is garbage
     * Pipette tool needs better functionality and look
 
- * Need an UX approach for:
-    * Justify left/right/center
-    * Selection/Buffer tools (rotate/flip/crop)
+ * Settings
+    * Change F key sets
+    * Set outline format for tdf outline fonts
     
  * 1.6 features missing
     * .TDF font editor (1.6 had this featuree)

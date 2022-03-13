@@ -99,7 +99,7 @@ impl Buffer {
         self.font.get_scanline(ch, y)
     }
 
-    pub fn get_font_dimensions(&self) -> Size
+    pub fn get_font_dimensions(&self) -> Size<u8>
     {
         self.font.size
     }

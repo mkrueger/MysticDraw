@@ -44,7 +44,7 @@ pub fn create_char_button(
     let font_size = if let Some(editor) = main_window.get_current_editor() {
         editor.borrow().buf.get_font_dimensions()
     } else {
-        crate::model::Size::DEFAULT
+        crate::model::Size::<u8>::DEFAULT
     };
 
     let mut char_img = gtk4::cairo::ImageSurface::create(

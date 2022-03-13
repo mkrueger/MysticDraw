@@ -1,7 +1,7 @@
 use std::{cmp::{max, min}, path::{Path, PathBuf}, io::{Write, self}, fs::File, ffi::OsStr};
 use crate::model::{Buffer, Position, TextAttribute, Rectangle};
 
-use super::{DosChar, UndoSetChar};
+use super::{DosChar, UndoSetChar, Layer, Size};
 
 pub struct Cursor {
     pos: Position,
@@ -330,7 +330,6 @@ impl Editor
         self.end_atomic_undo();
     }
 
-
     pub fn point_is_valid(&self, pos: Position) -> bool {
         if let Some(selection) = &self.cur_selection {
             return selection.rectangle.is_inside(pos);
@@ -382,6 +381,204 @@ impl Editor
     pub fn clear_cur_layer(&mut self) {
         let b = Box::new(self.buf.clear_layer(self.cur_layer));
         self.buf.undo_stack.push(b);
+    }
+
+    fn get_blockaction_rectangle(&self) -> (i32, i32, i32, i32) {
+        if let Some(selection) = &self.cur_selection {
+            let r = &selection.rectangle;
+            (r.start.x, r.start.y, r.start.x + r.size.width as i32 - 1, r.start.y + r.size.height as i32 - 1)
+        } else {
+            (0, self.cursor.pos.y, self.buf.width as i32 - 1, self.cursor.pos.y)
+        }
+    }
+
+    pub fn justify_left(&mut self) {
+        self.begin_atomic_undo();
+        let (x1, y1, x2, y2) = self.get_blockaction_rectangle();
+        let is_bg_layer = self.cur_layer as usize == self.buf.layers.len() - 1;
+        let layer = &mut self.buf.layers[self.cur_layer as usize];
+        for y in y1..=y2 {
+            let mut removed_chars = 0;
+            let len = x2 - x1 + 1;
+            while removed_chars < len {
+                let ch = layer.get_char(Position::from(x1 + removed_chars, y));
+                if let Some(ch) = ch {
+                    if !ch.is_transparent() {
+                        break;
+                    }
+                }
+                removed_chars += 1;
+            }
+            if len == removed_chars { continue; }
+            for x in x1..=x2 {
+                let ch = if x + removed_chars <= x2 {
+                    layer.get_char(Position::from(x + removed_chars, y))
+                } else if is_bg_layer {
+                    Some(DosChar::new())
+                } else {
+                    None
+                };
+
+                let pos = Position::from(x, y);
+                let old = layer.get_char(pos);
+                layer.set_char(pos, ch);
+                self.buf.undo_stack.push(Box::new(UndoSetChar { pos, layer: self.cur_layer as usize, old, new: ch } ));
+            }
+        }
+        self.end_atomic_undo();
+    }
+
+    pub fn justify_center(&mut self) {
+        self.begin_atomic_undo();
+        self.justify_left();
+
+        let (x1, y1, x2, y2) = self.get_blockaction_rectangle();
+        let is_bg_layer = self.cur_layer as usize == self.buf.layers.len() - 1;
+        let layer = &mut self.buf.layers[self.cur_layer as usize];
+        for y in y1..=y2 {
+            let mut removed_chars = 0;
+            let len = x2 - x1 + 1;
+            while removed_chars < len {
+                let ch = layer.get_char(Position::from(x2 - removed_chars, y));
+                if let Some(ch) = ch {
+                    if !ch.is_transparent() {
+                        break;
+                    }
+                }
+                removed_chars += 1;
+            }
+            
+            if len == removed_chars { continue; }
+            removed_chars /= 2;
+            for x in 0..len {
+                let ch = if x2 - x - removed_chars >= x1 {
+                    layer.get_char(Position::from(x2 - x - removed_chars, y))
+                } else if is_bg_layer {
+                    Some(DosChar::new())
+                } else {
+                    None
+                };
+
+                let pos = Position::from(x2 - x, y);
+                let old = layer.get_char(pos);
+                layer.set_char(pos, ch);
+                self.buf.undo_stack.push(Box::new(UndoSetChar { pos, layer: self.cur_layer as usize, old, new: ch } ));
+            }
+        }
+        self.end_atomic_undo();
+    }
+    
+    pub fn justify_right(&mut self) {
+        self.begin_atomic_undo();
+        let (x1, y1, x2, y2) = self.get_blockaction_rectangle();
+        let is_bg_layer = self.cur_layer as usize == self.buf.layers.len() - 1;
+        let layer = &mut self.buf.layers[self.cur_layer as usize];
+        for y in y1..=y2 {
+            let mut removed_chars = 0;
+            let len = x2 - x1 + 1;
+            while removed_chars < len {
+                let ch = layer.get_char(Position::from(x2 - removed_chars, y));
+                if let Some(ch) = ch {
+                    if !ch.is_transparent() {
+                        break;
+                    }
+                }
+                removed_chars += 1;
+            }
+            
+            if len == removed_chars { continue; }
+            for x in 0..len {
+                let ch = if x2 - x - removed_chars >= x1 {
+                    layer.get_char(Position::from(x2 - x - removed_chars, y))
+                } else if is_bg_layer {
+                    Some(DosChar::new())
+                } else {
+                    None
+                };
+
+                let pos = Position::from(x2 - x, y);
+                let old = layer.get_char(pos);
+                layer.set_char(pos, ch);
+                self.buf.undo_stack.push(Box::new(UndoSetChar { pos, layer: self.cur_layer as usize, old, new: ch } ));
+            }
+        }
+        self.end_atomic_undo();
+    }
+
+
+    pub fn flip_x(&mut self) {
+        self.begin_atomic_undo();
+        let (x1, y1, x2, y2) = self.get_blockaction_rectangle();
+        let layer = &mut self.buf.layers[self.cur_layer as usize];
+        for y in y1..=y2 {
+            for x in 0..=(x2 - x1) / 2 {
+                let pos1 = Position::from(x1 + x, y);
+                let pos2 = Position::from(x2 - x, y);
+                layer.swap_char(pos1, pos2);
+                self.buf.undo_stack.push(Box::new(super::UndoSwapChar { layer: self.cur_layer as usize, pos1, pos2 } ));
+            }
+        }
+        self.end_atomic_undo();
+    }
+
+    pub fn flip_y(&mut self) {
+        self.begin_atomic_undo();
+        let (x1, y1, x2, y2) = self.get_blockaction_rectangle();
+        let layer = &mut self.buf.layers[self.cur_layer as usize];
+        for x in x1..=x2 {
+            for y in 0..=(y2 - y1) / 2 {
+                let pos1 = Position::from(x, y1 + y);
+                let pos2 = Position::from(x, y2 - y);
+                layer.swap_char(pos1, pos2);
+                self.buf.undo_stack.push(Box::new(super::UndoSwapChar { layer: self.cur_layer as usize, pos1, pos2 } ));
+            }
+        }
+        self.end_atomic_undo();
+    }
+    pub fn crop(&mut self) {
+        self.begin_atomic_undo();
+        let (x1, y1, x2, y2) = self.get_blockaction_rectangle();
+
+        let new_height = (y2 - y1) as u16;
+        let new_width = (x2 - x1) as u16;
+
+        if new_height == self.buf.height && new_width == self.buf.width {
+            return;
+        }
+
+        let mut new_layers = Vec::new();
+        for l in 0..self.buf.layers.len() {
+            let old_layer = &self.buf.layers[l];
+            let mut new_layer = Layer {
+                title: old_layer.title.clone(),
+                is_visible: old_layer.is_visible,
+                is_locked: false,
+                is_position_locked: false,
+                offset: Position::from(0, 0),
+                lines: Vec::new(),
+            };
+            for y in y1..=y2 {
+                for x in x1..=x2 {
+                    new_layer.set_char(Position::from(x - x1, y - y1), old_layer.get_char(Position::from(x, y)));
+                }
+            }
+
+            new_layer.is_locked = old_layer.is_locked;
+            new_layer.is_position_locked = old_layer.is_position_locked;
+            new_layers.push(new_layer);
+        }
+
+        self.buf.undo_stack.push(Box::new(super::UndoReplaceLayers { 
+            old_layer: self.buf.layers.clone(), 
+            new_layer: new_layers.clone(), 
+            old_size: Size::from(self.buf.width, self.buf.height), 
+            new_size: Size::from(new_width, new_height) 
+        }));
+
+        self.buf.layers = new_layers;
+        self.buf.width = new_width;
+        self.buf.height = new_height;
+        self.end_atomic_undo();
     }
 }
 

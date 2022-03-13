@@ -99,7 +99,7 @@ impl TheDrawFont
         self.font_data[1]
     }
     
-    pub fn render(&self, editor: &mut std::cell::RefMut<Editor>, pos: Position, color: TextAttribute, char_code: u8) -> Option<Size>
+    pub fn render(&self, editor: &mut std::cell::RefMut<Editor>, pos: Position, color: TextAttribute, char_code: u8) -> Option<Size<usize>>
     {
         let char_offset = (char_code as i32) - b' '  as i32 - 1;
         if char_offset < 0 || char_offset > self.char_table.len() as i32 {

@@ -56,7 +56,7 @@ pub fn read_xb(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resul
     }
     if has_custom_font {
         let font_length = font_size as usize * if result.use_512_chars { 512 } else { 256 };
-        result.font = BitFont::create_8(SauceString::new(), result.use_512_chars, 8, font_size as usize, &bytes[o..(o+font_length)]);
+        result.font = BitFont::create_8(SauceString::new(), result.use_512_chars, 8, font_size, &bytes[o..(o+font_length)]);
         o += font_length;
     }
 

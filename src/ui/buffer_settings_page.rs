@@ -1,7 +1,7 @@
 use std::{rc::Rc, cell::RefCell, fs::File, io::Write};
 
 use glib::{clone, StaticType };
-use gtk4::{ traits::{ WidgetExt, BoxExt, EditableExt, EntryExt, TextViewExt, TextBufferExt, StyleContextExt, ButtonExt, DialogExt, FileChooserExt, GtkWindowExt}, SpinButton, Orientation, Align, prelude::{ FileExt, EntryBufferExtManual}, pango::EllipsizeMode, FileChooserAction, ResponseType, StringObject, PropertyExpression, StringList };
+use gtk4::{ traits::{ WidgetExt, BoxExt, EditableExt, EntryExt, TextViewExt, TextBufferExt, StyleContextExt, ButtonExt, DialogExt, FileChooserExt, GtkWindowExt}, SpinButton, Orientation, Align, prelude::{ FileExt, EntryBufferExtManual}, pango::EllipsizeMode, FileChooserAction, ResponseType, StringObject, PropertyExpression };
 use libadwaita::{ PreferencesGroup, ActionRow, traits::{PreferencesGroupExt, ActionRowExt}};
 
 use crate::model::{Editor, SauceString, BitFont, BitFontType};
@@ -335,7 +335,7 @@ pub fn get_settings_page(main_window: Rc<MainWindow>, editor_ref: Rc<RefCell<Edi
                 let mut f = File::create(file_name).unwrap();
                 let mut result = Vec::new();
                 custom_font.push_u8_data(&mut result);
-                f.write_all(&result);
+                f.write_all(&result).expect("can't write file");
             
                 /* 
                 if font.is_err() {

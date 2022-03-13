@@ -136,8 +136,8 @@ impl AnsiView {
         self.imp().set_editor_handle(handle.clone());
         if !self.get_is_mimap() {
             self.set_size_request(
-                (buffer.width as usize * font_dimensions.width) as i32,
-                (buffer.height as usize * font_dimensions.height) as i32,
+                buffer.width as i32 * font_dimensions.width as i32,
+                buffer.height as i32 * font_dimensions.height as i32,
             );
         } else {
             return;
@@ -240,6 +240,7 @@ impl AnsiView {
             menu_model.append(Some("Rotate"), Some("app.right_justify"));
             menu_model.append(Some("Flip X"), Some("app.flip_x"));
             menu_model.append(Some("Flip Y"), Some("app.flip_y"));
+            menu_model.append(Some("Crop"), Some("app.crop"));
 
             let menu = gtk4::PopoverMenu::from_model(Some(&menu_model));
             menu.set_parent(self);

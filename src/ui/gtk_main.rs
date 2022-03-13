@@ -36,7 +36,7 @@ pub struct MainWindow {
 #[derive(Clone, Debug)]
 pub struct ClipboardLayer {
     pub layer: crate::model::Layer,
-    pub size: crate::model::Size
+    pub size: crate::model::Size<usize>
 }
 
 impl MainWindow {
@@ -455,6 +455,91 @@ impl MainWindow {
             }));
             app.add_action(&action);
 
+
+            let action = SimpleAction::new("erase", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    if editor.borrow().cur_selection.is_some() {
+                        editor.borrow_mut().delete_selection();
+                    } else {
+                        editor.borrow_mut().clear_cur_layer();
+                    }
+                }
+                 main_window.update_editor();
+            }));
+            app.add_action(&action);
+
+
+            let action = SimpleAction::new("left_justify", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    editor.borrow_mut().justify_left();
+                }
+                 main_window.update_editor();
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("center_justify", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    editor.borrow_mut().justify_center();
+                }
+                 main_window.update_editor();
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("right_justify", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    editor.borrow_mut().justify_right();
+                }
+                 main_window.update_editor();
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("flip_x", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    editor.borrow_mut().flip_x();
+                }
+                 main_window.update_editor();
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("flip_y", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    editor.borrow_mut().flip_y();
+                }
+                 main_window.update_editor();
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("crop", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    editor.borrow_mut().crop();
+                }
+                 main_window.update_editor();
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("select_all", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let w = editor.borrow().buf.width;
+                    let h = editor.borrow().buf.height;
+    
+                    editor.borrow_mut().cur_selection = Some(crate::model::Selection { 
+                        rectangle: crate::model::Rectangle::from_pt(Position::from(0, 0), Position::from(w as i32, h as i32)),
+                        is_preview: false,
+                        shape: crate::model::Shape::Rectangle
+                    });
+                }
+                 main_window.update_editor();
+            }));
+            app.add_action(&action);
+
             app.set_accels_for_action("app.open", &["<primary>o"]);
             app.set_accels_for_action("app.preferences", &["<primary>comma"]);
             app.set_accels_for_action("app.cut", &["<primary>x"]);
@@ -462,6 +547,7 @@ impl MainWindow {
             app.set_accels_for_action("app.paste", &["<primary>v"]);
             app.set_accels_for_action("app.undo", &["<primary>z"]);
             app.set_accels_for_action("app.redo", &["<Primary><Shift>z"]);
+            app.set_accels_for_action("app.select_all", &["<primary>a"]);
         }
     }
 

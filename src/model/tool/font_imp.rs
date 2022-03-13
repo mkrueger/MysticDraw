@@ -7,7 +7,7 @@ use walkdir::{DirEntry, WalkDir};
 pub struct FontTool {
     pub selected_font: i32,
     pub fonts: Vec<TheDrawFont>,
-    pub sizes: Vec<Size>
+    pub sizes: Vec<Size<usize>>
 }
 
 impl FontTool 

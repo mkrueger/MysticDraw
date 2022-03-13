@@ -248,7 +248,7 @@ unsafe fn render_char(buffer: &crate::model::Buffer, ch: u16, fg: (u8, u8, u8)) 
     Texture::for_pixbuf(&pix_buf)
 }
 
-fn draw_selection(cur_selection: &Selection, snapshot: &gtk4::Snapshot, font_dimensions: Size)
+fn draw_selection(cur_selection: &Selection, snapshot: &gtk4::Snapshot, font_dimensions: Size<u8>)
 {
     let rect = &cur_selection.rectangle;
 
@@ -273,7 +273,7 @@ fn draw_selection(cur_selection: &Selection, snapshot: &gtk4::Snapshot, font_dim
     cr.stroke().expect("error while calling stroke.");
 }
 
-fn draw_preview_rectangle(rect: &crate::model::Rectangle, snapshot: &gtk4::Snapshot, font_dimensions: Size)
+fn draw_preview_rectangle(rect: &crate::model::Rectangle, snapshot: &gtk4::Snapshot, font_dimensions: Size<u8>)
 {
     let bounds = graphene::Rect::new(
         rect.start.x as f32 * font_dimensions.width as f32,
@@ -291,7 +291,7 @@ fn draw_preview_rectangle(rect: &crate::model::Rectangle, snapshot: &gtk4::Snaps
     cr.stroke_preserve().expect("error while calling stroke.");
 }
 
-fn draw_caret(cursor_pos: Position, snapshot: &gtk4::Snapshot, font_dimensions: Size) {
+fn draw_caret(cursor_pos: Position, snapshot: &gtk4::Snapshot, font_dimensions: Size<u8>) {
     let x = cursor_pos.x;
     let y = cursor_pos.y;
 

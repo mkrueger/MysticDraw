@@ -43,27 +43,30 @@ mod fonts;
 pub use fonts::*;
 
 #[derive(Copy, Clone, Debug, Default)]
-pub struct Size {
-    pub width: usize,
-    pub height: usize
+pub struct Size<T> 
+{
+    pub width: T,
+    pub height: T
 }
 
-impl PartialEq for Size {
-    fn eq(&self, other: &Size) -> bool {
+impl<T> PartialEq for Size<T>
+where T: PartialEq {
+    fn eq(&self, other: &Size<T>) -> bool {
         self.width == other.width && self.height == other.height
     }
 }
 
-impl Size 
+impl<T> Size<T> 
+where T: Default
 {
-    pub const DEFAULT:Size = Size { width:8, height: 16 };
+    pub const DEFAULT:Size<u8> = Size { width:8, height: 16 };
     
     pub fn new() -> Self
     {
-        Size::from(0, 0)
+        Size::from(T::default(), T::default())
     }
 
-    pub fn from(width: usize, height: usize) -> Self
+    pub fn from(width: T, height: T) -> Self
     {
         Size { width, height }
     }
@@ -73,7 +76,7 @@ impl Size
 pub struct Rectangle
 {
     pub start: Position,
-    pub size: Size
+    pub size: Size<usize>
 }
 
 impl Rectangle 

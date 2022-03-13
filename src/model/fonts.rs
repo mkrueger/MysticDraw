@@ -19,7 +19,7 @@ pub enum BitFontType {
 pub struct BitFont {
     pub name: SauceString<22, 0>,
     pub extended_font: bool,
-    pub size: Size,
+    pub size: Size<u8>,
     font_type: BitFontType,
     data_32: Option<Vec<u32>>,
     data_8: Vec<u8>
@@ -95,7 +95,7 @@ impl BitFont {
         }
     }
 
-    pub fn create_32(name: SauceString<22, 0>, extended_font: bool, width: usize, height: usize, data: &[u32]) -> Self
+    pub fn create_32(name: SauceString<22, 0>, extended_font: bool, width: u8, height: u8, data: &[u32]) -> Self
     {
         BitFont {
             name, 
@@ -107,7 +107,7 @@ impl BitFont {
         }
     }
 
-    pub fn create_8(name: SauceString<22, 0>, extended_font: bool, width: usize, height: usize, data: &[u8]) -> Self
+    pub fn create_8(name: SauceString<22, 0>, extended_font: bool, width: u8, height: u8, data: &[u8]) -> Self
     {
         BitFont {
             name, 
@@ -119,7 +119,7 @@ impl BitFont {
         }
     }
 
-    pub fn from_basic(width: usize, height: usize, data: &[u8]) -> Self
+    pub fn from_basic(width: u8, height: u8, data: &[u8]) -> Self
     {
         BitFont {
             name: SauceString::EMPTY, 
@@ -168,7 +168,7 @@ impl BitFont {
                             size: len_to_size(bytes.len()),
                             font_type: BitFontType::Library,
                             data_32: None,
-                            data_8: bytes.to_vec()
+                            data_8: bytes
                         });
                     }
                 }
@@ -485,7 +485,7 @@ pub const SUPPORTED_FONTS: [&str;90] = [
     //"Atari ATASCII",
 ];
 
-fn len_to_size(len: usize) -> Size
+fn len_to_size(len: usize) -> Size<u8>
 {
     // only some variants are supported.
     match len / 256 {

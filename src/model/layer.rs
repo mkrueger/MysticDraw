@@ -117,4 +117,11 @@ impl Layer {
         assert!(!(index < 0 || index > self.lines.len() as i32), "line out of range");
         self.lines.insert(index as usize, line);
     }
+
+    pub fn swap_char(&mut self, pos1: Position, pos2: Position) 
+    {
+        let tmp = self.get_char(pos1);
+        self.set_char(pos1, self.get_char(pos2));
+        self.set_char(pos2, tmp);
+    }
 }

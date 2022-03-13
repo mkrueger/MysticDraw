@@ -88,38 +88,6 @@ fn main() {
     app.run();
 }
 
-/*
-    Tool ideas:
-
-    <click> - click to set caret/normal typing.
-
-    <paint> - paint with specific char/color
-
-    <select> - Select Rectangle/Elipse/Triangle
-
-    <brush> - brush <shape> with gradient,
-        <solid brush>
-        <color brush>
-    <erase> - erase <shape> with gradient
-
-    <draw shape>
-        <line>
-        <rectangle>
-        <elipse>
-        <triangle>
-
-    <fill>
-        <char>
-        <color fg/bg>
-
-    <font mode> - type with thedraw font
-        <select font>
-        <edit font>
-        <select outline mode>
-*/
-
-
-
 #[cfg(test)]
 #[allow(dead_code)]
 mod tests {

@@ -105,7 +105,7 @@ pub fn read_mdf(result: &mut Buffer, bytes: &[u8]) -> io::Result<bool>
                         }
                     }
                 }
-                result.font = BitFont::create_32(font_name, extended_font, width as usize, height as usize, &data);
+                result.font = BitFont::create_32(font_name, extended_font, width, height, &data);
             } 
             BLK_LAYER => {
                 let title_len = u16::from_be_bytes(bytes[o..(o + 2)].try_into().unwrap()) as usize;
