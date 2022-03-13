@@ -289,11 +289,12 @@ const AMIGA_MOSOUL : &[u8] = include_bytes!("../../data/fonts/Amiga/Amiga mOsOul
 
 const C64_PETSCII_SHIFTED : &[u8] = include_bytes!("../../data/fonts/C64/C64 PETSCII shifted.F08");
 const C64_PETSCII_UNSHIFTED : &[u8] = include_bytes!("../../data/fonts/C64/C64 PETSCII unshifted.F08");
+const ATARI_ATASCII : &[u8] = include_bytes!("../../data/fonts/Atari/Atari ATASCII.F08");
 
 const DEFAULT_FONT_NAME: &str = "IBM VGA";
 const ALT_DEFAULT_FONT_NAME: &str = "IBM VGA 437";
 
-pub const SUPPORTED_FONTS: [&str;90] = [
+pub const SUPPORTED_FONTS: [&str;91] = [
     "IBM VGA",
     "IBM VGA50",
     "IBM VGA25G",
@@ -482,7 +483,7 @@ pub const SUPPORTED_FONTS: [&str;90] = [
     "C64 PETSCII unshifted",
     "C64 PETSCII shifted",
 
-    //"Atari ATASCII",
+    "Atari ATASCII",
 ];
 
 fn len_to_size(len: usize) -> Size<u8>
@@ -677,8 +678,7 @@ fn get_font_data(font_name: &str) -> Option<&[u8]>
         "C64 PETSCII unshifted" => Some(C64_PETSCII_SHIFTED),
         "C64 PETSCII shifted" => Some(C64_PETSCII_UNSHIFTED),
 
-//        "Atari ATASCII" => Some(ATARI_ATASCII),
-
+        "Atari ATASCII" => Some(ATARI_ATASCII),
         _ => None
     }
 }

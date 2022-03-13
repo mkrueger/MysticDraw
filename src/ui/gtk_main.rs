@@ -547,7 +547,7 @@ impl MainWindow {
             app.set_accels_for_action("app.paste", &["<primary>v"]);
             app.set_accels_for_action("app.undo", &["<primary>z"]);
             app.set_accels_for_action("app.redo", &["<Primary><Shift>z"]);
-            app.set_accels_for_action("app.select_all", &["<primary>a"]);
+            app.set_accels_for_action ("app.select_all", &["<primary>a"]);
         }
     }
 
