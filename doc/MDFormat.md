@@ -93,7 +93,7 @@ Field      Bytes  Meaning
 #### Monochromatic font block
 
 Font is a bit more flexible than in the other formats - however due to sauce the 'font name' is always an option.
-So there is no real limit here.
+So there is no real limit here. Extended fonts just get splitted into 2 256 font blocks.
 
 ```
 Field      Bytes  Meaning
@@ -101,8 +101,8 @@ Field      Bytes  Meaning
 [Name]     22     Font name CP 437 0 Terminated - 22 chars max
 [Width]    1      U8 - 1..32 width  - all other values are invalid
 [Height]   1      U8 - 1..32 height - all other values are invalid
-[Flags]    1      U8 [Bit 1: 512 Font]
-[Data]     *      Height * (256/512) * Byte Width - Note: Stored as BE
+[Flags]    1      U8 Unused 
+[Data]     *      Height * 256 * Byte Width - Note: Stored as BE
 ```
 
 Note either ID = 2 or ID = 3 is valid. If no font data is availabe fallback to 8x16 DOS.

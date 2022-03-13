@@ -8,6 +8,8 @@ use super::MainWindow;
 pub struct SettingsDialog {
     pub dialog: libadwaita::PreferencesWindow,
     pub open_button: gtk4::Button,
+    pub guide_dropdown: gtk4::DropDown,
+    pub grid_dropdown: gtk4::DropDown
 }
 
 pub fn display_settings_dialog(main_window: &MainWindow) -> SettingsDialog
@@ -69,6 +71,46 @@ pub fn display_settings_dialog(main_window: &MainWindow) -> SettingsDialog
         .build();
     row.add_suffix(&name_entry);
     group.add(&row);
+    let grid_names = [
+        "Off",
+        "4x2",
+        "6x3",
+        "8x4",
+        "12x6",
+        "16x8"
+    ];
+    
+    let grid_dropdown = gtk4::DropDown::from_strings(&grid_names);
+    grid_dropdown.set_valign(Align::Center);
+    unsafe {
+        grid_dropdown.set_selected(WORKSPACE.grid as u32);
+    }
+
+    let row = ActionRow::builder()
+        .title("Show grid")
+        .build();
+    row.add_suffix(&grid_dropdown);
+    group.add(&row);
+
+    let guide_names = [
+        "Off",
+        "80x25",
+        "80x40",
+        "80x50",
+        "44x22",
+    ];
+    
+    let guide_dropdown = gtk4::DropDown::from_strings(&guide_names);
+    guide_dropdown.set_valign(Align::Center);
+    unsafe {
+        guide_dropdown.set_selected(WORKSPACE.guide as u32);
+    }
+
+    let row = ActionRow::builder()
+        .title("Show guide")
+        .build();
+    row.add_suffix(&guide_dropdown);
+    group.add(&row);
 
     content_area.append(&group);
     main_area.append(&content_area);
@@ -77,5 +119,7 @@ pub fn display_settings_dialog(main_window: &MainWindow) -> SettingsDialog
     SettingsDialog {
         dialog,
         open_button,
+        grid_dropdown,
+        guide_dropdown
     }
 }

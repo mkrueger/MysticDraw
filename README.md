@@ -25,7 +25,6 @@ It's still in it's infant stages. I wouldn't call that 2.0. But I can start to l
    files that contain an extended char set - I couldn't find any)
  * Color Picker that doesn't suck
  * Switch for iCE/Blink (atm it's only in iCE Mode)
- * Guides & Grid display
 
  * Tools
     * Brush & Shading need a configuration dialog
@@ -35,7 +34,7 @@ It's still in it's infant stages. I wouldn't call that 2.0. But I can start to l
     * Pipette tool needs better functionality and look
 
  * Settings
-    * Change F key sets
+    * Change F key sets - key sets should be able to be defined for font name.
     * Set outline format for tdf outline fonts
     
  * 1.6 features missing

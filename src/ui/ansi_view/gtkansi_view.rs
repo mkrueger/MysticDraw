@@ -194,6 +194,66 @@ impl WidgetImpl for GtkAnsiView {
 
         if !editor.is_inactive && !is_minimap {
             unsafe {
+                if let Some(grid) = WORKSPACE.get_grid_size() {
+                    let mut x = 0;
+                    let w = buffer.width as f32 * font_dimensions.width as f32;
+                    let h = buffer.height as f32 * font_dimensions.height as f32;
+                    while x < buffer.width {
+                        snapshot.append_color(
+                            &gdk::RGBA::new(1.0, 1.0, 1.0, 0.5),
+                            &graphene::Rect::new(
+                                x as f32 * font_dimensions.width as f32, 
+                                0.0, 
+                                1.0, 
+                                h),
+                        );
+                        x += grid.width as u16;
+                    }
+                    let mut y = 0;
+                    while y < buffer.height {
+                        snapshot.append_color(
+                            &gdk::RGBA::new(1.0, 1.0, 1.0, 0.5),
+                            &graphene::Rect::new(
+                                0.0, 
+                                y as f32 * font_dimensions.height as f32, 
+                                w,
+                                1.0
+                                ),
+                        );
+                        y += grid.height as u16;
+                    }
+                }
+
+                if let Some(guide) = WORKSPACE.get_guide_size() {
+                    let mut x = 0;
+                    let w = buffer.width as f32 * font_dimensions.width as f32;
+                    let h = buffer.height as f32 * font_dimensions.height as f32;
+                    while x < buffer.width {
+                        snapshot.append_color(
+                            &gdk::RGBA::new(1.0, 1.0, 0.0, 0.5),
+                            &graphene::Rect::new(
+                                x as f32 * font_dimensions.width as f32, 
+                                0.0, 
+                                1.0, 
+                                h),
+                        );
+                        x += guide.width as u16;
+                    }
+                    let mut y = 0;
+                    while y < buffer.height {
+                        snapshot.append_color(
+                            &gdk::RGBA::new(1.0, 1.0, 0.0, 0.5),
+                            &graphene::Rect::new(
+                                0.0, 
+                                y as f32 * font_dimensions.height as f32, 
+                                w,
+                                1.0
+                                ),
+                        );
+                        y += guide.height as u16;
+                    }
+                }
+
                 if WORKSPACE.cur_tool().use_caret() {
                     draw_caret(editor.get_cursor_position(), snapshot, font_dimensions);
                 }

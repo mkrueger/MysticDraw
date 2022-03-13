@@ -406,8 +406,11 @@ impl MainWindow {
             action.connect_activate(clone!(@strong main_window => move |_,_| {
                 let dialog = super::display_settings_dialog(&main_window);
                 dialog.open_button.connect_clicked(clone!(@strong main_window => move |_| {
-                   
                     dialog.dialog.close();
+                    unsafe {
+                        WORKSPACE.grid = std::mem::transmute(dialog.grid_dropdown.selected());
+                        WORKSPACE.guide = std::mem::transmute(dialog.guide_dropdown.selected());
+                    }
                     main_window.update_layer_view();
                     main_window.update_editor();
                 }));

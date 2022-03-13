@@ -5,7 +5,7 @@ use libadwaita as adw;
 use directories::{ ProjectDirs};
 use adw::{prelude::*};
 use gtk4::{Application};
-use model::{init_tools, Editor, TextAttribute, Tool, TOOLS};
+use model::{init_tools, Editor, TextAttribute, Tool, TOOLS, Size};
 use ui::MainWindow;
 
 mod model;
@@ -17,6 +17,28 @@ pub struct Settings {
     tab_size: i32
 }
 
+#[repr(u32)]
+#[derive(Copy, Clone, Debug)]
+pub enum Grid {
+    Off,
+    Raster4x2,
+    Raster6x3,
+    Raster8x4,
+    Raster12x6,
+    Raster16x8
+}
+
+
+#[repr(u32)]
+#[derive(Copy, Clone, Debug)]
+pub enum Guide {
+    Off,
+    Guide80x25,
+    Guide80x40,
+    Guide80x50,
+    Guide44x22
+}
+
 pub struct Workspace {
     pub settings: Settings,
     selected_tool: usize,
@@ -24,6 +46,9 @@ pub struct Workspace {
 
     pub show_fg_color: bool,
     pub show_bg_color: bool,
+
+    pub grid: Grid,
+    pub guide: Guide
 }
 
 impl Workspace {
@@ -31,6 +56,27 @@ impl Workspace {
         unsafe {
             let t = &TOOLS[self.selected_tool];
             std::boxed::Box::new(t)
+        }
+    }
+
+    pub fn get_grid_size(&self) -> Option<Size<u8>> {
+        match self.grid {
+            Grid::Off => None,
+            Grid::Raster4x2 => Some(Size::from(4, 2)),
+            Grid::Raster6x3 => Some(Size::from(6, 3)),
+            Grid::Raster8x4 => Some(Size::from(8, 4)),
+            Grid::Raster12x6 => Some(Size::from(12, 6)),
+            Grid::Raster16x8 => Some(Size::from(16, 8)),
+        }
+    }
+
+    pub fn get_guide_size(&self) -> Option<Size<u8>> {
+        match self.guide {
+            Guide::Off => None,
+            Guide::Guide80x25 => Some(Size::from(80, 25)),
+            Guide::Guide80x40 => Some(Size::from(80, 40)),
+            Guide::Guide80x50 => Some(Size::from(80, 50)),
+            Guide::Guide44x22 => Some(Size::from(44, 22)),
         }
     }
 }
@@ -41,6 +87,8 @@ pub static mut WORKSPACE: Workspace = Workspace {
     selected_attribute: TextAttribute::DEFAULT,
     show_fg_color: true,
     show_bg_color: true,
+    grid: Grid::Off,
+    guide: Guide::Off
 };
 
 pub fn sync_workbench_state(editor: &mut Editor) {
