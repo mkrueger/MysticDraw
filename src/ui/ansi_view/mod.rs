@@ -1,6 +1,5 @@
 use std::{
     cell::RefCell,
-    cmp::{max, min},
     rc::Rc,
 };
 
@@ -59,10 +58,13 @@ impl AnsiView {
         self.imp().editor.borrow().clone()
     }
 
-    fn calc_xy(c: &Rc<RefCell<Editor>>, xy: (f64, f64)) -> Position {
+    fn calc_xy(&self, c: &Rc<RefCell<Editor>>, xy: (f64, f64)) -> Position {
+
+        let (sx, sy) = self.imp().get_start_pos(self);
+
         let dim = c.borrow().buf.get_font_dimensions();
-        let x = xy.0;
-        let y = xy.1;
+        let x = xy.0 - sx as f64;
+        let y = xy.1 - sy as f64;
         Position::from(
             (x / dim.width as f64) as i32,
             (y / dim.height as f64) as i32,
@@ -154,8 +156,8 @@ impl AnsiView {
                 if start.is_none() || cur.is_none() {
                     return;
                 }
-                let start = AnsiView::calc_xy(&handle1, start.unwrap());
-                let end   = AnsiView::calc_xy(&handle1, cur.unwrap());
+                let start = this.calc_xy(&handle1, start.unwrap());
+                let end   = this.calc_xy(&handle1, cur.unwrap());
                 unsafe {
                     DRAG_POS = start;
                     TOOLS[WORKSPACE.selected_tool].handle_drag_begin(handle1.clone(), start, end);
@@ -175,8 +177,8 @@ impl AnsiView {
                 let start = start.unwrap();
                 let cur = cur.unwrap();
                 let cur = (start.0 + cur.0, start.1 + cur.1);
-                let start = AnsiView::calc_xy(&handle1, start);
-                let end   = AnsiView::calc_xy(&handle1, cur);
+                let start = this.calc_xy(&handle1, start);
+                let end   = this.calc_xy(&handle1, cur);
                 unsafe {
                     TOOLS[WORKSPACE.selected_tool].handle_drag_end(handle1.clone(), start, end);
                 }
@@ -195,8 +197,8 @@ impl AnsiView {
                 let start = start.unwrap();
                 let cur = cur.unwrap();
                 let cur = (start.0 + cur.0, start.1 + cur.1);
-                let start = AnsiView::calc_xy(&handle1, start);
-                let end   = AnsiView::calc_xy(&handle1, cur);
+                let start = this.calc_xy(&handle1, start);
+                let end   = this.calc_xy(&handle1, cur);
                 unsafe {
                     if DRAG_POS != end {
                         DRAG_POS = end;
@@ -213,11 +215,9 @@ impl AnsiView {
             gesture.set_button(1);
             gesture.connect_pressed(glib::clone!(@strong self as this => move |e, _clicks, x, y| {
                 sync_workbench_state(&mut handle1.borrow_mut());
-                
-                let x = min(handle1.borrow().buf.width as i32, max(0, x as i32 / font_dimensions.width as i32));
-                let y = min(handle1.borrow().buf.height as i32, max(0, y as i32 / font_dimensions.height as i32));
+                let pos = this.calc_xy(&handle1, (x, y));
                 unsafe {
-                    TOOLS[WORKSPACE.selected_tool].handle_click(handle1.clone(), e.button(), Position::from(x, y));
+                    TOOLS[WORKSPACE.selected_tool].handle_click(handle1.clone(), e.button(), pos);
                 }
                 this.queue_draw();
                 this.grab_focus();

@@ -12,7 +12,6 @@ use crate::WORKSPACE;
 use crate::model::{Editor, Position, Size, Selection};
 
 #[derive(Default)]
-
 pub struct GtkAnsiView {
     pub editor: RefCell<Rc<RefCell<Editor>>>,
     pub textures: RefCell<Vec<Texture>>,
@@ -24,6 +23,23 @@ pub struct GtkAnsiView {
 }
 
 impl GtkAnsiView {
+    pub fn get_start_pos(&self, widget: &super::AnsiView) -> (f32, f32)
+    {
+        if !*self.has_editor.borrow() { return (0.0, 0.0); }
+
+        let editor = &self.editor.borrow();
+        let editor = editor.borrow();
+        let buffer = &editor.buf;
+
+        let font_dimensions = buffer.get_font_dimensions();
+        let full_width = buffer.width as f32 * font_dimensions.width as f32;
+        let full_height = buffer.height as f32 * font_dimensions.height as f32;
+        
+        let start_x = if full_width < widget.width() as f32 { ((widget.width() as f32 - full_width) / 2.0).floor() } else { 0.0 };
+        let start_y = if full_height < widget.height() as f32 { ((widget.height() as f32 - full_height) / 2.0).floor() } else { 0.0 };
+
+        (start_x, start_y)
+    }
 
     pub fn set_mimap_mode(&self, is_minimap: bool)
     {
@@ -83,7 +99,7 @@ impl WidgetImpl for GtkAnsiView {
 
     fn snapshot(&self, widget: &Self::Type, snapshot: &gtk4::Snapshot) {
         snapshot.append_color(
-            &gdk::RGBA::new(0.6, 0.6, 0.6, 1.0),
+            &gdk::RGBA::new(0.2, 0.2, 0.2, 1.0),
             &graphene::Rect::new(0.0, 0.0, widget.width() as f32, widget.height() as f32),
         );
         if !*self.has_editor.borrow() { return; }
@@ -96,7 +112,7 @@ impl WidgetImpl for GtkAnsiView {
                 b = !b;
                 while x  < widget.width() as f32 {
                     snapshot.append_color(
-                        &gdk::RGBA::new(0.4, 0.4, 0.4, 1.0),
+                        &gdk::RGBA::new(0.1, 0.1, 0.1, 1.0),
                         &graphene::Rect::new(x, y, 8.0, 8.0),
                     );
                     x += 16.0;
@@ -110,6 +126,11 @@ impl WidgetImpl for GtkAnsiView {
         let buffer = &editor.buf;
         let font_dimensions = buffer.get_font_dimensions();
         let textures = self.textures.borrow();
+        let full_width = buffer.width as f32 * font_dimensions.width as f32;
+        let full_height = buffer.height as f32 * font_dimensions.height as f32;
+
+        let start_x = if full_width < widget.width() as f32 { ((widget.width() as f32 - full_width) / 2.0).floor() } else { 0.0 };
+        let start_y = if full_height < widget.height() as f32 { ((widget.height() as f32 - full_height) / 2.0).floor() } else { 0.0 };
 
         let mut font_size = 256;
         if buffer.font.extended_font {
@@ -139,7 +160,6 @@ impl WidgetImpl for GtkAnsiView {
         }
 
         let paint_texture = if let Some(texture) = &*self.reference_image.borrow() {
-            let full_width = buffer.width as f32 * font_dimensions.width as f32;
             let scale =  full_width / texture.width() as f32 ;
             let bounds = graphene::Rect::new(
                 0.0,
@@ -178,8 +198,8 @@ impl WidgetImpl for GtkAnsiView {
                 }
 
                 let bounds = graphene::Rect::new(
-                    x as f32 * font_dimensions.width as f32,
-                    y as f32 * font_dimensions.height as f32,
+                    start_x + x as f32 * font_dimensions.width as f32,
+                    start_y + y as f32 * font_dimensions.height as f32,
                     font_dimensions.width as f32,
                     font_dimensions.height as f32
                 );
@@ -202,8 +222,8 @@ impl WidgetImpl for GtkAnsiView {
                         snapshot.append_color(
                             &gdk::RGBA::new(1.0, 1.0, 1.0, 0.5),
                             &graphene::Rect::new(
-                                x as f32 * font_dimensions.width as f32, 
-                                0.0, 
+                                start_x + x as f32 * font_dimensions.width as f32, 
+                                start_y + 0.0, 
                                 1.0, 
                                 h),
                         );
@@ -214,8 +234,8 @@ impl WidgetImpl for GtkAnsiView {
                         snapshot.append_color(
                             &gdk::RGBA::new(1.0, 1.0, 1.0, 0.5),
                             &graphene::Rect::new(
-                                0.0, 
-                                y as f32 * font_dimensions.height as f32, 
+                                start_x + 0.0, 
+                                start_y + y as f32 * font_dimensions.height as f32, 
                                 w,
                                 1.0
                                 ),
@@ -232,8 +252,8 @@ impl WidgetImpl for GtkAnsiView {
                         snapshot.append_color(
                             &gdk::RGBA::new(1.0, 1.0, 0.0, 0.5),
                             &graphene::Rect::new(
-                                x as f32 * font_dimensions.width as f32, 
-                                0.0, 
+                                start_x + x as f32 * font_dimensions.width as f32, 
+                                start_y + 0.0, 
                                 1.0, 
                                 h),
                         );
@@ -244,8 +264,8 @@ impl WidgetImpl for GtkAnsiView {
                         snapshot.append_color(
                             &gdk::RGBA::new(1.0, 1.0, 0.0, 0.5),
                             &graphene::Rect::new(
-                                0.0, 
-                                y as f32 * font_dimensions.height as f32, 
+                                start_x + 0.0, 
+                                start_y + y as f32 * font_dimensions.height as f32, 
                                 w,
                                 1.0
                                 ),
@@ -255,11 +275,11 @@ impl WidgetImpl for GtkAnsiView {
                 }
 
                 if WORKSPACE.cur_tool().use_caret() {
-                    draw_caret(editor.get_cursor_position(), snapshot, font_dimensions);
+                    draw_caret(start_x, start_y, editor.get_cursor_position(), snapshot, font_dimensions);
                 }
                 if WORKSPACE.cur_tool().use_selection() {
                     if let Some(cur_selection) = &editor.cur_selection{
-                        draw_selection(cur_selection, snapshot, font_dimensions);
+                        draw_selection(start_x, start_y, cur_selection, snapshot, font_dimensions);
                     }
                 }
             }
@@ -267,7 +287,7 @@ impl WidgetImpl for GtkAnsiView {
 
         if self.preview_rectangle.borrow().is_some() {
             let rect = self.preview_rectangle.borrow().unwrap();
-            draw_preview_rectangle(&rect, snapshot, font_dimensions);
+            draw_preview_rectangle(start_x, start_y, &rect, snapshot, font_dimensions);
         }
     }
 }
@@ -308,13 +328,13 @@ unsafe fn render_char(buffer: &crate::model::Buffer, ch: u16, fg: (u8, u8, u8)) 
     Texture::for_pixbuf(&pix_buf)
 }
 
-fn draw_selection(cur_selection: &Selection, snapshot: &gtk4::Snapshot, font_dimensions: Size<u8>)
+fn draw_selection(start_x: f32, start_y: f32, cur_selection: &Selection, snapshot: &gtk4::Snapshot, font_dimensions: Size<u8>)
 {
     let rect = &cur_selection.rectangle;
 
     let bounds = graphene::Rect::new(
-        rect.start.x as f32 * font_dimensions.width as f32,
-        rect.start.y as f32 * font_dimensions.height as f32,
+        start_x + rect.start.x as f32 * font_dimensions.width as f32,
+        start_y + rect.start.y as f32 * font_dimensions.height as f32,
         rect.size.width as f32 * font_dimensions.width as f32,
         rect.size.height as f32 * font_dimensions.height as f32
     );
@@ -333,11 +353,11 @@ fn draw_selection(cur_selection: &Selection, snapshot: &gtk4::Snapshot, font_dim
     cr.stroke().expect("error while calling stroke.");
 }
 
-fn draw_preview_rectangle(rect: &crate::model::Rectangle, snapshot: &gtk4::Snapshot, font_dimensions: Size<u8>)
+fn draw_preview_rectangle(start_x: f32, start_y: f32, rect: &crate::model::Rectangle, snapshot: &gtk4::Snapshot, font_dimensions: Size<u8>)
 {
     let bounds = graphene::Rect::new(
-        rect.start.x as f32 * font_dimensions.width as f32,
-        rect.start.y as f32 * font_dimensions.height as f32,
+        start_x + rect.start.x as f32 * font_dimensions.width as f32,
+        start_y + rect.start.y as f32 * font_dimensions.height as f32,
         rect.size.width as f32 * font_dimensions.width as f32,
         rect.size.height as f32 * font_dimensions.height as f32
     );
@@ -351,13 +371,13 @@ fn draw_preview_rectangle(rect: &crate::model::Rectangle, snapshot: &gtk4::Snaps
     cr.stroke_preserve().expect("error while calling stroke.");
 }
 
-fn draw_caret(cursor_pos: Position, snapshot: &gtk4::Snapshot, font_dimensions: Size<u8>) {
+fn draw_caret(start_x: f32, start_y: f32, cursor_pos: Position, snapshot: &gtk4::Snapshot, font_dimensions: Size<u8>) {
     let x = cursor_pos.x;
     let y = cursor_pos.y;
 
     let bounds = graphene::Rect::new(
-        x as f32 * font_dimensions.width as f32,
-        y as f32 * font_dimensions.height as f32,
+        start_x + x as f32 * font_dimensions.width as f32,
+        start_y + y as f32 * font_dimensions.height as f32,
         font_dimensions.width as f32,
         font_dimensions.height as f32
     );
@@ -365,8 +385,8 @@ fn draw_caret(cursor_pos: Position, snapshot: &gtk4::Snapshot, font_dimensions: 
     let cr = snapshot.append_cairo(&bounds);
     
     cr.rectangle(
-        (x as i32 * font_dimensions.width as i32) as f64,
-        (y as i32 * font_dimensions.height as i32) as f64,
+        start_x as f64 + (x as i32 * font_dimensions.width as i32) as f64,
+        start_y as f64 + (y as i32 * font_dimensions.height as i32) as f64,
         font_dimensions.width as f64,
         font_dimensions.height as f64,
     );
@@ -378,4 +398,3 @@ fn draw_caret(cursor_pos: Position, snapshot: &gtk4::Snapshot, font_dimensions: 
     cr.set_operator(gtk4::cairo::Operator::Difference);
     cr.fill().expect("error while calling fill.");
 }
-

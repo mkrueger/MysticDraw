@@ -7,6 +7,8 @@ pub mod brush_imp;
 mod click_imp;
 pub mod draw_rectangle_imp;
 mod draw_ellipse_imp;
+mod draw_rectangle_filled_imp;
+mod draw_ellipse_filled_imp;
 pub mod erase_imp;
 mod fill_imp;
 mod font_imp;
@@ -426,7 +428,14 @@ pub static mut RECT_TOOL: draw_rectangle_imp::DrawRectangleTool = draw_rectangle
     draw_mode: DrawMode::Line, 
     use_fore: true, 
     use_back: true, 
-    fill_mode: false, 
+    attr: TextAttribute::DEFAULT, 
+    char_code: 176
+};
+
+pub static mut RECT_FILLED_TOOL: draw_rectangle_filled_imp::DrawRectangleFilledTool = draw_rectangle_filled_imp::DrawRectangleFilledTool { 
+    draw_mode: DrawMode::Line, 
+    use_fore: true, 
+    use_back: true, 
     attr: TextAttribute::DEFAULT, 
     char_code: 176
 };
@@ -435,7 +444,14 @@ pub static mut ELLIPSE_TOOL: draw_ellipse_imp::DrawEllipseTool = draw_ellipse_im
     draw_mode: DrawMode::Line, 
     use_fore: true, 
     use_back: true, 
-    fill_mode: false, 
+    attr: TextAttribute::DEFAULT, 
+    char_code: 176
+};
+
+pub static mut ELLIPSE_FILLED_TOOL: draw_ellipse_filled_imp::DrawEllipseFilledTool = draw_ellipse_filled_imp::DrawEllipseFilledTool {
+    draw_mode: DrawMode::Line, 
+    use_fore: true, 
+    use_back: true, 
     attr: TextAttribute::DEFAULT, 
     char_code: 176
 };
@@ -473,6 +489,8 @@ pub fn init_tools()
         TOOLS.push(&mut LINE_TOOL);
         TOOLS.push(&mut RECT_TOOL);
         TOOLS.push(&mut ELLIPSE_TOOL);
+        TOOLS.push(&mut RECT_FILLED_TOOL);
+        TOOLS.push(&mut ELLIPSE_FILLED_TOOL);
         
         TOOLS.push(&mut FILL_TOOL);
         TOOLS.push(&mut FLIP_TOOL);

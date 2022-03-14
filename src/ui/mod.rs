@@ -24,3 +24,5 @@ pub use settings_dialog::*;
 
 mod buffer_settings_page;
 pub use buffer_settings_page::*;
+
+pub mod minimap;

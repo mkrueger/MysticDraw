@@ -1,12 +1,12 @@
 use crate::model::{Rectangle, TextAttribute};
 
-use super::{ DrawMode, Editor, Event, Plottable, Position, Tool, ScanLines, line_imp::set_half_block};
+use super::{plot_point, DrawMode, Editor, Event, Plottable, Position, Tool, ScanLines };
 use std::{
     cell::RefCell,
     rc::Rc,
 };
 
-pub struct DrawEllipseTool {
+pub struct DrawEllipseFilledTool {
     pub draw_mode: DrawMode,
 
     pub use_fore: bool,
@@ -15,7 +15,7 @@ pub struct DrawEllipseTool {
     pub char_code: u8,
 }
 
-impl Plottable for DrawEllipseTool {
+impl Plottable for DrawEllipseFilledTool {
     fn get_draw_mode(&self) -> DrawMode {
         self.draw_mode
     }
@@ -30,9 +30,9 @@ impl Plottable for DrawEllipseTool {
     }
 }
 
-impl Tool for DrawEllipseTool {
+impl Tool for DrawEllipseFilledTool {
     fn get_icon_name(&self) -> &'static str {
-        "md-tool-circle"
+        "md-tool-circle-filled"
     }
 
     fn use_caret(&self) -> bool {
@@ -49,26 +49,20 @@ impl Tool for DrawEllipseTool {
 
         let mut lines = ScanLines::new(1);
 
-        if self.draw_mode == DrawMode::Line {
-            start.y *= 2;
-            cur.y *= 2;
-        }
-
         if start < cur {
             lines.add_ellipse(Rectangle::from_pt( start, cur));
         } else {
             lines.add_ellipse(Rectangle::from_pt(cur, start));
         }
 
-        let col = editor.borrow().cursor.get_attribute().get_foreground();
         let draw = move |rect: Rectangle| {
             for y in 0..rect.size.height {
                 for x in 0..rect.size.width {
-                    set_half_block(&editor, Position::from(rect.start.x + x, rect.start.y + y ), col);
+                    plot_point(&editor, self, Position::from(rect.start.x + x, rect.start.y + y));
                 }
             }
         };
-        lines.outline(draw);
+        lines.fill(draw);
         Event::None
     }
 

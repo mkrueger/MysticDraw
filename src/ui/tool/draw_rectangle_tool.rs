@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use gtk4::{traits::{BoxExt, CheckButtonExt, WidgetExt, StyleContextExt, ToggleButtonExt, OrientableExt}, CheckButton, ToggleButton, Orientation, Align, Label};
+use gtk4::{traits::{BoxExt, CheckButtonExt, WidgetExt, StyleContextExt, ToggleButtonExt, OrientableExt}, CheckButton, ToggleButton, Orientation, Align };
 use crate::{model::{RECT_TOOL, DrawMode}, ui::MainWindow};
 fn set_char(char_code: u16)
 {
@@ -85,15 +85,6 @@ pub fn add_rectangle_tool_page(main_window: std::rc::Rc<MainWindow>, content_box
             .halign(Align::Start)
             .build();
 
-        let label = Label::builder()
-            .label("Fill")
-            .build();
-        fill_container.append(&label);
-        let colorize_switcher = gtk4::Switch::builder()
-            .active(RECT_TOOL.fill_mode)
-            .build();
-        fill_container.append(&colorize_switcher);
-
         content_box.append(&fill_container);
 
         fg_button.connect_toggled(move |x| {
@@ -126,11 +117,6 @@ pub fn add_rectangle_tool_page(main_window: std::rc::Rc<MainWindow>, content_box
             if x.is_active() {
                 RECT_TOOL.draw_mode = DrawMode::Colorize;
             }
-        });
-
-        colorize_switcher.connect_state_set(|_, state| {
-            RECT_TOOL.fill_mode = state;
-            gtk4::Inhibit(false)
         });
     }
 }

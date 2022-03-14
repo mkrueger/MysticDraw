@@ -1,12 +1,12 @@
 use crate::model::{TextAttribute, Rectangle};
 
-use super::{Editor, Event, Position, Tool, DrawMode, Plottable, ScanLines, line_imp::set_half_block};
+use super::{Editor, Event, Position, Tool, DrawMode, Plottable, plot_point, ScanLines};
 use std::{
     cell::{RefCell},
     rc::Rc,
 };
 
-pub struct DrawRectangleTool {
+pub struct DrawRectangleFilledTool {
     pub draw_mode: DrawMode,
 
     pub use_fore: bool,
@@ -15,7 +15,7 @@ pub struct DrawRectangleTool {
     pub char_code: u8
 }
 
-impl Plottable for DrawRectangleTool {
+impl Plottable for DrawRectangleFilledTool {
     fn get_draw_mode(&self) -> DrawMode { self.draw_mode }
 
     fn get_use_fore(&self) -> bool { self.use_fore }
@@ -23,9 +23,9 @@ impl Plottable for DrawRectangleTool {
     fn get_char_code(&self) -> u8 { self.char_code }
 }
 
-impl Tool for DrawRectangleTool {
+impl Tool for DrawRectangleFilledTool {
     fn get_icon_name(&self) -> &'static str {
-        "md-tool-rectangle"
+        "md-tool-rectangle-filled"
     }
 
     fn use_caret(&self) -> bool { false }
@@ -36,23 +36,17 @@ impl Tool for DrawRectangleTool {
             layer.clear();
         }
 
-        if self.draw_mode == DrawMode::Line {
-            start.y *= 2;
-            cur.y *= 2;
-        }
-
         let mut lines = ScanLines::new(1);
         lines.add_rectangle(Rectangle::from_pt(start, cur));
 
-        let col = editor.borrow().cursor.get_attribute().get_foreground();
         let draw = move |rect: Rectangle| {
             for y in 0..rect.size.height {
                 for x in 0..rect.size.width {
-                    set_half_block(&editor, Position::from(rect.start.x + x, rect.start.y + y ), col);
+                    plot_point(&editor, self, Position::from(rect.start.x + x, rect.start.y + y));
                 }
             }
         };
-        lines.outline(draw);
+        lines.fill(draw);
 
         Event::None
     }

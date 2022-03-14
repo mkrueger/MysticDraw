@@ -62,27 +62,27 @@ pub fn create_char_button(
     let result_char = res.char_code.clone();
     let main_window2 = RefCell::new(main_window.clone());
     res.drawing_area.borrow().set_draw_func(move |_, cr, width, height| {
-            GdkCairoContextExt::set_source_rgba(cr, &background_rgba);
-            cr.paint().expect("Invalid cairo surface state");
+        GdkCairoContextExt::set_source_rgba(cr, &background_rgba);
+        cr.paint().expect("Invalid cairo surface state");
 
-            {
-                let mut data = char_img.data().expect("Can't lock image");
-                let ptr = data.as_mut_ptr();
-                render_char(main_window2.borrow(), *ch.borrow(), ptr, (255, 255, 255));
-            }
+        {
+            let mut data = char_img.data().expect("Can't lock image");
+            let ptr = data.as_mut_ptr();
+            render_char(main_window2.borrow(), *ch.borrow(), ptr, (255, 255, 255));
+        }
 
-            cr.translate(width as f64  / 2.0, height as f64 / 2.0);
-            cr.scale(1.8, 1.8);
-            cr.set_source_surface(
-                &char_img,
-                -char_img.width() as f64 / 2.0,
-                -char_img.height() as f64 / 2.0,
-            ).expect("error while calling fill.");
+        cr.translate(width as f64  / 2.0, height as f64 / 2.0);
+        cr.scale(1.8, 1.8);
+        cr.set_source_surface(
+            &char_img,
+            -char_img.width() as f64 / 2.0,
+            -char_img.height() as f64 / 2.0,
+        ).expect("error while calling fill.");
 
-            cr.paint().expect("error while calling fill.");
-        },
-    );
-    let drawing_area2 = res.drawing_area.clone();
+        cr.paint().expect("error while calling fill.");
+    },
+);
+let drawing_area2 = res.drawing_area.clone();
     let main_window2 = RefCell::new(main_window.clone());
     res.button.connect_clicked(glib::clone!(@weak dialog, @strong callback => move |_| {
         let char_sel_dialog = char_selector_dialog::display_select_char_dialog(&dialog, main_window2.borrow(), dialog_char.clone(), result_char.clone());
@@ -95,7 +95,6 @@ pub fn create_char_button(
             drawing_area2.borrow().queue_draw();
         }));
     }));
-
 
     res
 }

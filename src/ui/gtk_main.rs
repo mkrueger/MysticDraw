@@ -12,7 +12,7 @@ use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, Messa
 use crate::WORKSPACE;
 use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, Layer};
 
-use super::{AnsiView, ColorPicker, layer_view, CharButton};
+use super::{AnsiView, ColorPicker, layer_view, CharButton, minimap};
 
 pub struct MainWindow {
     pub window: ApplicationWindow,
@@ -29,8 +29,7 @@ pub struct MainWindow {
     bg_button: gtk4::CheckButton,
 
     pub char_buttons: RefCell<Vec<Rc<RefCell<CharButton>>>>,
-
-    mini_map: AnsiView
+    mini_map: minimap::MinimapAnsiView
 }
 
 #[derive(Clone, Debug)]
@@ -73,7 +72,7 @@ impl MainWindow {
                 .label("Background")
                 .active(true)
                 .build(),
-            mini_map: AnsiView::new(),
+            mini_map: minimap::MinimapAnsiView::new(),
             char_buttons: RefCell::new(Vec::new())
         });
 
@@ -812,7 +811,6 @@ impl MainWindow {
 
     fn construct_right_toolbar(&self) -> gtk4::Box {
 
-        self.mini_map.set_mimap_mode(true);
         let scroller = gtk4::ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
             .min_content_width(10)
@@ -935,8 +933,12 @@ impl MainWindow {
             super::add_fill_tool_page(my_box, &mut page_content);
         } else if tool.get_icon_name() == "md-tool-rectangle" {
             super::add_rectangle_tool_page(my_box, &mut page_content);
+        } else if tool.get_icon_name() == "md-tool-rectangle-filled" {
+            super::add_rectangle_filled_tool_page(my_box, &mut page_content);
         } else if tool.get_icon_name() == "md-tool-circle" {
             super::add_ellipse_tool_page(my_box, &mut page_content);
+        } else if tool.get_icon_name() == "md-tool-circle-filled" {
+            super::add_ellipse_filled_tool_page(my_box, &mut page_content);
         } else if tool.get_icon_name() == "md-tool-line" {
             super::add_line_tool_page(my_box, &mut page_content);
         } else if tool.get_icon_name() == "md-tool-draw" {
@@ -945,8 +947,10 @@ impl MainWindow {
             super::add_erase_tool_page(&mut page_content);
         } else if tool.get_icon_name() == "md-tool-font" {
             super::add_font_tool_page(&self.window, &mut page_content);
+        } else if tool.get_icon_name() == "md-tool-pipette" {
+            super::add_pipette_tool_page(my_box,&mut page_content);
         }
-
+        
         let page_num = self.tool_notebook.append_page(&page_content, Option::<&gtk4::Widget>::None);
         let nb = &self.tool_notebook;
         button.connect_toggled(glib::clone!(@weak nb => move |_| {

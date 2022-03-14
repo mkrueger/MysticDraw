@@ -25,10 +25,10 @@ It's still in it's infant stages. I wouldn't call that 2.0. But I can start to l
    files that contain an extended char set - I couldn't find any)
  * Color Picker that doesn't suck
  * Switch for iCE/Blink (atm it's only in iCE Mode)
+ * TDF font tool needs UI - however it basically works
 
  * Tools
     * Brush & Shading need a configuration dialog
-    * Design: filled rect/ellipse as own tool?
     * Outline mode for rectangle/circle/line
     * Pipette tool needs better functionality and look
 
