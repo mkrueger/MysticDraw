@@ -76,16 +76,26 @@ where T: Default
 pub struct Rectangle
 {
     pub start: Position,
-    pub size: Size<usize>
+    pub size: Size<i32>
 }
 
 impl Rectangle 
 {
-    pub fn from(x: i32, y: i32, width: usize, height: usize) -> Self
+    pub fn from(x: i32, y: i32, width: i32, height: i32) -> Self
     {
         Rectangle {
             start: Position::from(x,y), 
             size: Size::from(width, height) 
+        }
+    }
+
+    pub fn from_coords(x1: i32, y1: i32, x2: i32, y2: i32) -> Self
+    {
+        assert!(x1 <= x2);
+        assert!(y1 <= y2);
+        Rectangle {
+            start: Position::from(x1,y1), 
+            size: Size::from((x2 - x1) + 1, (y2 - y1) + 1) 
         }
     }
 
@@ -95,7 +105,7 @@ impl Rectangle
 
         Rectangle {
             start, 
-            size: Size::from((p1.x - p2.x).abs() as usize, (p1.y - p2.y).abs() as usize) 
+            size: Size::from((p1.x - p2.x).abs() + 1, (p1.y - p2.y).abs() + 1) 
         }
     }
 

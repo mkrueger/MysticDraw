@@ -1,9 +1,8 @@
-use crate::model::{TextAttribute};
+use crate::model::{TextAttribute, Rectangle};
 
-use super::{Editor, Event, Position, Tool, DrawMode, Plottable, plot_point};
+use super::{Editor, Event, Position, Tool, DrawMode, Plottable, plot_point, ScanLines, line_imp::set_half_block};
 use std::{
     cell::{RefCell},
-    cmp::{max, min},
     rc::Rc,
 };
 
@@ -33,15 +32,38 @@ impl Tool for DrawRectangleTool {
     fn use_caret(&self) -> bool { false }
     fn use_selection(&self) -> bool { false }
 
-    fn handle_drag(&self, editor: Rc<RefCell<Editor>>, start: Position, cur: Position) -> Event {
+    fn handle_drag(&self, editor: Rc<RefCell<Editor>>,  mut start: Position, mut cur: Position) -> Event {
         if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
             layer.clear();
         }
-        
+
+        if self.draw_mode == DrawMode::Line {
+            start.y *= 2;
+            cur.y *= 2;
+        }
+
+        let mut lines = ScanLines::new(1);
+        lines.add_rectangle(Rectangle::from_pt(start, cur));
+
         if self.fill_mode {
-            fill_rectangle(&editor, self, start, cur);
+            let draw = move |rect: Rectangle| {
+                for y in 0..rect.size.height {
+                    for x in 0..rect.size.width {
+                        plot_point(&editor, self, Position::from(rect.start.x + x, rect.start.y + y));
+                    }
+                }
+            };
+            lines.fill(draw);
         } else {
-            plot_rectangle(&editor, self, start, cur);
+            let col = editor.borrow().cursor.get_attribute().get_foreground();
+            let draw = move |rect: Rectangle| {
+                for y in 0..rect.size.height {
+                    for x in 0..rect.size.width {
+                        set_half_block(&editor, Position::from(rect.start.x + x, rect.start.y + y ), col);
+                    }
+                }
+            };
+            lines.outline(draw);
         }
 
         Event::None
@@ -61,47 +83,4 @@ impl Tool for DrawRectangleTool {
         }
         Event::None
     }
-}
-
-
-
-pub fn plot_rectangle(
-    editor: &Rc<RefCell<Editor>>,
-    tool: &DrawRectangleTool,
-    pos0: Position,
-    pos1: Position,
-) {
-    let x1 = min(pos0.x, pos1.x);
-    let x2 = max(pos0.x, pos1.x);
-    let y1 = min(pos0.y, pos1.y);
-    let y2 = max(pos0.y, pos1.y);
-
-    for x in x1..=x2 {
-        plot_point(editor, tool, Position::from(x, y1));
-        plot_point(editor, tool, Position::from(x, y2));
-    }
-
-    for y in (y1 + 1)..y2 {
-        plot_point(editor, tool, Position::from(x1, y));
-        plot_point(editor, tool, Position::from(x2, y));
-    }
-}
-
-pub fn fill_rectangle(
-    editor: &Rc<RefCell<Editor>>,
-    tool: &DrawRectangleTool,
-    pos0: Position,
-    pos1: Position,
-) {
-    let x1 = min(pos0.x, pos1.x);
-    let x2 = max(pos0.x, pos1.x);
-    let y1 = min(pos0.y, pos1.y);
-    let y2 = max(pos0.y, pos1.y);
-
-    for y in (y1 + 1)..y2 {
-        for x in x1..=x2 {
-            plot_point(editor, tool, Position::from(x, y));
-        }
-    }
-
 }

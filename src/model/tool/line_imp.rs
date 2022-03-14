@@ -1,6 +1,6 @@
-use crate::model::{tool::handle_outline_insertion, TextAttribute};
+use crate::model::{tool::handle_outline_insertion, TextAttribute, DosChar, Rectangle};
 
-use super::{Editor, Event, MKey, MKeyCode, MModifiers, Position, Tool, DrawMode, Plottable, plot_point};
+use super::{Editor, Event, MKey, MKeyCode, MModifiers, Position, Tool, DrawMode, Plottable, plot_point, ScanLines};
 use std::{cell::RefCell, rc::Rc};
 
 pub struct LineTool {
@@ -272,7 +272,31 @@ impl Tool for LineTool {
         if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
             layer.clear();
         }
-        plot_line(&editor, self, start, cur);
+
+        let mut lines = ScanLines::new(1);
+        if self.draw_mode == DrawMode::Line {
+            lines.add_line(Position::from(start.x, start.y * 2), Position::from(cur.x, cur.y * 2));
+            let col = editor.borrow().cursor.get_attribute().get_foreground();
+            let draw = move |rect: Rectangle| {
+                for y in 0..rect.size.height {
+                    for x in 0..rect.size.width {
+                        set_half_block(&editor, Position::from(rect.start.x + x, rect.start.y + y ), col);
+                    }
+                }
+            };
+            lines.fill(draw);
+        } else {
+            lines.add_line(start, cur);
+            let draw = move |rect: Rectangle| {
+                for y in 0..rect.size.height {
+                    for x in 0..rect.size.width {
+                        plot_point(&editor, self, Position::from(rect.start.x + x, rect.start.y + y));
+                    }
+                }
+            };
+            lines.fill(draw);
+        }
+
         Event::None
     }
 
@@ -287,28 +311,144 @@ impl Tool for LineTool {
     }
 }
 
-// simple https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
-// maybe worth to explore https://en.wikipedia.org/wiki/Xiaolin_Wu%27s_line_algorithm
-pub fn plot_line(editor: &Rc<RefCell<Editor>>, tool: &LineTool, mut pos0: Position, pos1: Position) {
-    let dx = (pos1.x - pos0.x).abs();
-    let sx = if pos0.x < pos1.x { 1 } else { -1 };
-    let dy = -(pos1.y - pos0.y).abs();
-    let sy = if pos0.y < pos1.y { 1 } else { -1 };
-    let mut error = dx + dy;
-    
-    loop {
-        plot_point(editor, tool, pos0);
-        if pos0.x == pos1.x && pos0.y == pos1.y { break; }
-        let e2 = 2 * error;
-        if e2 >= dy {
-            if pos0.x == pos1.x { break; }
-            error += dy;
-            pos0.x += sx;
+fn get_half_block(editor: &Rc<RefCell<Editor>>, pos: Position) -> (Position, i32, bool, bool, u8, u8, u8 ,u8, bool, u8, u8)
+{
+    let text_y = pos.y / 2;
+    let is_top = pos.y % 2 == 0;
+    let block = editor.borrow_mut().get_char(Position::from(pos.x, text_y)).unwrap_or_default();
+
+    let mut upper_block_color = 0;
+    let mut lower_block_color = 0;
+    let mut left_block_color = 0;
+    let mut right_block_color = 0;
+    let mut is_blocky = false;
+    let mut is_vertically_blocky = false;
+    match block.char_code {
+        0 | 32 |255 => { upper_block_color = block.attribute.get_background(); lower_block_color = block.attribute.get_background(); is_blocky = true; }
+        220 => { upper_block_color = block.attribute.get_background(); lower_block_color = block.attribute.get_foreground(); is_blocky = true; }
+        223 => { upper_block_color = block.attribute.get_foreground(); lower_block_color = block.attribute.get_background(); is_blocky = true; }
+        219 => { upper_block_color = block.attribute.get_foreground(); lower_block_color = block.attribute.get_foreground(); is_blocky = true; }
+        221 => { left_block_color = block.attribute.get_foreground(); right_block_color = block.attribute.get_background(); is_vertically_blocky = true; }
+        222 => { left_block_color = block.attribute.get_background(); right_block_color = block.attribute.get_foreground(); is_vertically_blocky = true; }
+        _ => {
+            if block.attribute.get_foreground() == block.attribute.get_background() {
+                is_blocky = true;
+                upper_block_color = block.attribute.get_foreground();
+                lower_block_color = block.attribute.get_foreground();
+            } else {
+                is_blocky = false;
+            }
         }
-        if e2 <= dx {
-            if pos0.y == pos1.y { break; }
-            error += dx;
-            pos0.y += sy;
+    }
+    (
+        pos, 
+        text_y, 
+        is_blocky, 
+        is_vertically_blocky, 
+        upper_block_color, 
+        lower_block_color, 
+        left_block_color, 
+        right_block_color, 
+        is_top, 
+        block.attribute.get_foreground(), 
+        block.attribute.get_background()
+    )
+}
+
+pub fn set_half_block(editor: &Rc<RefCell<Editor>>, pos: Position, col: u8) {
+    let w = editor.borrow().buf.width as i32;
+    let h = editor.borrow().buf.height as i32;
+
+    if pos.x < 0 || pos.x >= w || pos.y < 0 || pos.y >= h * 2 { return }
+
+    let (_, text_y, is_blocky, _, 
+        upper_block_color, lower_block_color, _,  _, 
+        is_top, _, block_back) = get_half_block(editor, pos);
+    
+        let pos = Position::from(pos.x, text_y);
+        if is_blocky {
+        if (is_top && lower_block_color == col) || (!is_top && upper_block_color == col) {
+            if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+                layer.set_char(pos,Some(DosChar::from(219, TextAttribute::from_color(col, 0))));
+            }
+        } else if is_top {
+            if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+                layer.set_char(pos,Some(DosChar::from(223, TextAttribute::from_color(col, lower_block_color))));
+            }
+        } else if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+            layer.set_char(pos,Some(DosChar::from(220, TextAttribute::from_color(col, upper_block_color))));
+        }
+    } else if is_top {
+        if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+            layer.set_char(pos,Some(DosChar::from(223, TextAttribute::from_color(col, block_back))));
+        }
+    } else if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+        layer.set_char(pos,Some(DosChar::from(220, TextAttribute::from_color(col, block_back))));
+    }
+    optimize_block(editor ,Position::from(pos.x, text_y));
+}
+
+
+fn optimize_block(editor: &Rc<RefCell<Editor>>, pos: Position) {
+    let block = if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+        layer.get_char(pos).unwrap_or_default()
+    }  else {
+        DosChar::new()
+    };
+
+    if block.attribute.get_foreground() == 0 {
+        if block.attribute.get_background() == 0 || block.char_code == 219 {
+            if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+                layer.set_char(pos,Some(DosChar::new()));
+            }
+        } else {
+            match block.char_code {
+                220 => { 
+                    if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+                        layer.set_char(pos,Some(DosChar::from(223, TextAttribute::from_color(block.attribute.get_background(), block.attribute.get_foreground()))));
+                    }
+                }
+                223 => { 
+                    if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+                        layer.set_char(pos,Some(DosChar::from(220, TextAttribute::from_color(block.attribute.get_background(), block.attribute.get_foreground()))));
+                    }
+                }
+                _ => {}
+            }
+        }
+    } else if block.attribute.get_foreground() < 8 && block.attribute.get_background() >= 8 {
+        let (pos, _, is_blocky, is_vertically_blocky, 
+            _, _, _,  _, 
+            _, _, _) = get_half_block(editor, pos);
+
+        if is_blocky {
+            match block.char_code {
+                220 => { 
+                    if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+                        layer.set_char(pos,Some(DosChar::from(223, TextAttribute::from_color(block.attribute.get_background(), block.attribute.get_foreground()))));
+                    }
+                }
+                223 => { 
+                    if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+                        layer.set_char(pos,Some(DosChar::from(220, TextAttribute::from_color(block.attribute.get_background(), block.attribute.get_foreground()))));
+                    }
+                }
+                _ => {}
+            }
+        } else if is_vertically_blocky {
+            match block.char_code {
+                221 => { 
+                    if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+                        layer.set_char(pos,Some(DosChar::from(222, TextAttribute::from_color(block.attribute.get_background(), block.attribute.get_foreground()))));
+                    }
+                }
+                222 => { 
+                    if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
+                        layer.set_char(pos,Some(DosChar::from(221, TextAttribute::from_color(block.attribute.get_background(), block.attribute.get_foreground()))));
+                    }
+                }
+                _ => {}
+            }
         }
     }
 }

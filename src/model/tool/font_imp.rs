@@ -7,7 +7,7 @@ use walkdir::{DirEntry, WalkDir};
 pub struct FontTool {
     pub selected_font: i32,
     pub fonts: Vec<TheDrawFont>,
-    pub sizes: Vec<Size<usize>>
+    pub sizes: Vec<Size<i32>>
 }
 
 impl FontTool 
@@ -151,7 +151,7 @@ impl Tool for FontTool
                 if let Some(size) = opt_size  {
                     editor.set_cursor(c_pos.x + size.width as i32 + font.spaces, c_pos.y);
                     let new_pos = editor.get_cursor_position();
-                    self.sizes.push(Size { width: (new_pos.x - c_pos.x) as usize, height: size.height });
+                    self.sizes.push(Size { width: (new_pos.x - c_pos.x), height: size.height });
                 } else {
                     editor.type_key(ch);
                     self.sizes.push(Size::from(1, 1));

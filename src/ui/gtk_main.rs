@@ -36,7 +36,7 @@ pub struct MainWindow {
 #[derive(Clone, Debug)]
 pub struct ClipboardLayer {
     pub layer: crate::model::Layer,
-    pub size: crate::model::Size<usize>
+    pub size: crate::model::Size<i32>
 }
 
 impl MainWindow {

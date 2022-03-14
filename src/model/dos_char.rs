@@ -18,6 +18,13 @@ impl DosChar {
             char_code: b' ',
             attribute: super::TextAttribute::DEFAULT,
         }
+    }   
+    
+    pub fn from(char_code: u8, attribute: TextAttribute) -> Self {
+        DosChar {
+            char_code,
+            attribute
+        }
     }
 
     pub fn is_transparent(self) -> bool {

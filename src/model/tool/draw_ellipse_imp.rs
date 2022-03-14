@@ -1,9 +1,8 @@
-use crate::model::{TextAttribute};
+use crate::model::{Rectangle, TextAttribute};
 
-use super::{Editor, Event, Position, Tool, DrawMode, Plottable, plot_point};
+use super::{plot_point, DrawMode, Editor, Event, Plottable, Position, Tool, ScanLines, line_imp::set_half_block};
 use std::{
     cell::RefCell,
-    cmp::{max, min},
     rc::Rc,
 };
 
@@ -14,15 +13,22 @@ pub struct DrawEllipseTool {
     pub use_back: bool,
     pub fill_mode: bool,
     pub attr: TextAttribute,
-    pub char_code: u8
+    pub char_code: u8,
 }
 
 impl Plottable for DrawEllipseTool {
-    fn get_draw_mode(&self) -> DrawMode { self.draw_mode }
-
-    fn get_use_fore(&self) -> bool { self.use_fore }
-    fn get_use_back(&self) -> bool { self.use_back }
-    fn get_char_code(&self) -> u8 { self.char_code }
+    fn get_draw_mode(&self) -> DrawMode {
+        self.draw_mode
+    }
+    fn get_use_fore(&self) -> bool {
+        self.use_fore
+    }
+    fn get_use_back(&self) -> bool {
+        self.use_back
+    }
+    fn get_char_code(&self) -> u8 {
+        self.char_code
+    }
 }
 
 impl Tool for DrawEllipseTool {
@@ -30,18 +36,50 @@ impl Tool for DrawEllipseTool {
         "md-tool-circle"
     }
 
-    fn use_caret(&self) -> bool { false }
-    fn use_selection(&self) -> bool { false }
-    
-    fn handle_drag(&self, editor: Rc<RefCell<Editor>>, start: Position, cur: Position) -> Event {
+    fn use_caret(&self) -> bool {
+        false
+    }
+    fn use_selection(&self) -> bool {
+        false
+    }
+
+    fn handle_drag(&self, editor: Rc<RefCell<Editor>>, mut start: Position, mut cur: Position) -> Event {
         if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
             layer.clear();
         }
 
+        let mut lines = ScanLines::new(1);
+
+        if self.draw_mode == DrawMode::Line {
+            start.y *= 2;
+            cur.y *= 2;
+        }
+
         if start < cur {
-            plot_ellipse(&editor, self, start, cur);
+            lines.add_ellipse(Rectangle::from_pt( start, cur));
         } else {
-            plot_ellipse(&editor, self, cur, start);
+            lines.add_ellipse(Rectangle::from_pt(cur, start));
+        }
+
+        if self.fill_mode {
+            let draw = move |rect: Rectangle| {
+                for y in 0..rect.size.height {
+                    for x in 0..rect.size.width {
+                        plot_point(&editor, self, Position::from(rect.start.x + x, rect.start.y + y));
+                    }
+                }
+            };
+            lines.fill(draw);
+        } else {
+            let col = editor.borrow().cursor.get_attribute().get_foreground();
+            let draw = move |rect: Rectangle| {
+                for y in 0..rect.size.height {
+                    for x in 0..rect.size.width {
+                        set_half_block(&editor, Position::from(rect.start.x + x, rect.start.y + y ), col);
+                    }
+                }
+            };
+            lines.outline(draw);
         }
         Event::None
     }
@@ -59,70 +97,5 @@ impl Tool for DrawEllipseTool {
             editor.join_overlay();
         }
         Event::None
-    }
-}
-
-pub fn plot_ellipse(
-    editor: &Rc<RefCell<Editor>>,
-    tool: &DrawEllipseTool,
-    pos0: Position,
-    pos1: Position,
-) {
-    let x1 = min(pos0.x, pos1.x) as f64;
-    let x2 = max(pos0.x, pos1.x) as f64;
-    let y1 = min(pos0.y, pos1.y) as f64;
-    let y2 = max(pos0.y, pos1.y) as f64;
-
-    let rx = (x2 - x1) / 2.0;
-    let ry = (y2 - y1) / 2.0;
-    let xc = x1 + (x2 - x1) / 2.0;
-    let yc = y1 + (y2 - y1) / 2.0;
-
-    let mut x = 0.0;
-    let mut y = ry;
-
-    let mut d1 = (ry * ry) - (rx * rx * ry) + (0.25 * rx * rx);
-    let mut dx = 2.0 * ry * ry * x;
-    let mut dy = 2.0 * rx * rx * y;
-
-    while dx < dy {
-        plot_point(editor, tool, Position::from((x + xc) as i32, (y + yc) as i32));
-        plot_point(editor, tool, Position::from((-x + xc) as i32, (y + yc) as i32));
-        plot_point(editor, tool, Position::from((x + xc) as i32, (-y + yc) as i32));
-        plot_point(editor, tool, Position::from((-x + xc) as i32, (-y + yc) as i32));
-
-        if d1 < 0.0 {
-            x += 1.0;
-            dx += 2.0 * ry * ry;
-            d1 += dx + (ry * ry);
-        } else {
-            x += 1.0;
-            y -= 1.0;
-            dx += 2.0 * ry * ry;
-            dy -= 2.0 * rx * rx;
-            d1 += dx - dy + (ry * ry);
-        }
-    }
-
-    let mut d2 = ((ry * ry) * ((x + 0.5) * (x + 0.5))) + ((rx * rx) * ((y - 1.0) * (y - 1.0)))
-        - (rx * rx * ry * ry);
-
-    while y >= 0.0 {
-        plot_point(editor, tool, Position::from((x + xc) as i32, (y + yc) as i32));
-        plot_point(editor, tool, Position::from((-x + xc) as i32, (y + yc) as i32));
-        plot_point(editor, tool, Position::from((x + xc) as i32, (-y + yc) as i32));
-        plot_point(editor, tool, Position::from((-x + xc) as i32, (-y + yc) as i32));
-
-        if d2 > 0.0 {
-            y -= 1.0;
-            dy -= 2.0 * rx * rx;
-            d2 += (rx * rx) - dy;
-        } else {
-            y -= 1.0;
-            x += 2.0;
-            dx += 2.0 * ry * ry;
-            dy -= 2.0 * rx * rx;
-            d2 += dx - dy + (rx * rx);
-        }
     }
 }

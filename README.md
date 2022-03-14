@@ -30,7 +30,6 @@ It's still in it's infant stages. I wouldn't call that 2.0. But I can start to l
     * Brush & Shading need a configuration dialog
     * Design: filled rect/ellipse as own tool?
     * Outline mode for rectangle/circle/line
-    * Ellipse tool is garbage
     * Pipette tool needs better functionality and look
 
  * Settings
@@ -41,7 +40,6 @@ It's still in it's infant stages. I wouldn't call that 2.0. But I can start to l
     * .TDF font editor (1.6 had this featuree)
     * Effects tool (1.6 had some custom effects)
  * Moebius features missing
-    * Moebius has a cool line drawing approach with smaller chars
     * Mirror mode (super cool in my opinion)
 
 # Building

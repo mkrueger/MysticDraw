@@ -99,7 +99,7 @@ impl TheDrawFont
         self.font_data[1]
     }
     
-    pub fn render(&self, editor: &mut std::cell::RefMut<Editor>, pos: Position, color: TextAttribute, char_code: u8) -> Option<Size<usize>>
+    pub fn render(&self, editor: &mut std::cell::RefMut<Editor>, pos: Position, color: TextAttribute, char_code: u8) -> Option<Size<i32>>
     {
         let char_offset = (char_code as i32) - b' '  as i32 - 1;
         if char_offset < 0 || char_offset > self.char_table.len() as i32 {
@@ -142,7 +142,7 @@ impl TheDrawFont
             }
         }
 
-        Some(Size::from(max_x as usize, (cur.y - pos.y + 1) as usize))
+        Some(Size::from(max_x as i32, cur.y - pos.y + 1))
     }
 
     const OUTLINE_CHAR_SET : [[u8; 17]; 19] = [

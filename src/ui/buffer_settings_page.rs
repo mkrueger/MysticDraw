@@ -129,6 +129,7 @@ pub fn get_settings_page(main_window: Rc<MainWindow>, editor_ref: Rc<RefCell<Edi
     if editor.buf.font.font_type() == BitFontType::Custom {
         font_dropdown.set_selected(0);
     } else {
+        #[allow(clippy::needless_range_loop)]
         for i in 0..font_list.len() {
             if font_list[i] == editor.buf.font.name.to_string() {
                 font_dropdown.set_selected(i as u32);

@@ -174,6 +174,7 @@ impl<const LEN: usize, const EMPTY: u8> SauceString<LEN, EMPTY> {
                 break;
             }
             let mut found = false;
+            #[allow(clippy::needless_range_loop)]
             for i in 0..CP437_TO_UNICODE.len() {
                 if ch == CP437_TO_UNICODE[i] {
                     data.push(i as u8);

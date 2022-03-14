@@ -15,6 +15,9 @@ mod line_imp;
 mod flip_imp;
 mod move_layer_imp;
 
+pub use scan_lines::*;
+pub mod scan_lines;
+
 #[derive(Copy, Clone, Debug)]
  pub enum MKey {
     Character(u8),
@@ -316,7 +319,7 @@ fn handle_outline_insertion(editor: &mut RefMut<Editor>, modifier: MModifiers, o
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum DrawMode {
     Line,
     Char,
