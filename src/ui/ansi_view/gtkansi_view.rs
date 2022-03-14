@@ -29,6 +29,7 @@ impl GtkAnsiView {
 
         let editor = &self.editor.borrow();
         let editor = editor.borrow();
+        if editor.is_inactive { return (0.0, 0.0); }
         let buffer = &editor.buf;
 
         let font_dimensions = buffer.get_font_dimensions();
@@ -128,9 +129,9 @@ impl WidgetImpl for GtkAnsiView {
         let textures = self.textures.borrow();
         let full_width = buffer.width as f32 * font_dimensions.width as f32;
         let full_height = buffer.height as f32 * font_dimensions.height as f32;
-
-        let start_x = if full_width < widget.width() as f32 { ((widget.width() as f32 - full_width) / 2.0).floor() } else { 0.0 };
-        let start_y = if full_height < widget.height() as f32 { ((widget.height() as f32 - full_height) / 2.0).floor() } else { 0.0 };
+        
+        let start_x = if !editor.is_inactive && full_width < widget.width() as f32 { ((widget.width() as f32 - full_width) / 2.0).floor() } else { 0.0 };
+        let start_y = if !editor.is_inactive && full_height < widget.height() as f32 { ((widget.height() as f32 - full_height) / 2.0).floor() } else { 0.0 };
 
         let mut font_size = 256;
         if buffer.font.extended_font {

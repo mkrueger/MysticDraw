@@ -44,7 +44,6 @@ impl AnsiView {
 
     pub fn set_preview_rectangle(&self, rect: Option<crate::model::Rectangle>)
     {
-        println!("set rect to {:?}", rect);
         self.imp().set_preview_rectangle(rect);
         self.queue_draw();
     } 
