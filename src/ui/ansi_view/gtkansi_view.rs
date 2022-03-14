@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 use crate::WORKSPACE;
-use crate::model::{Editor, Position, Size, Selection};
+use crate::model::{Editor, Position, Size, Selection, SauceString};
 
 #[derive(Default)]
 pub struct GtkAnsiView {
@@ -17,6 +17,7 @@ pub struct GtkAnsiView {
     pub textures: RefCell<Vec<Texture>>,
     pub has_editor: RefCell<bool>,
     pub is_minimap: RefCell<bool>,
+    pub font_name: RefCell<SauceString<22, 0>>,
     pub preview_rectangle: RefCell<Option<crate::model::Rectangle>>,
     pub reference_image_file: RefCell<Option<PathBuf>>,
     pub reference_image: RefCell<Option<gtk4::gdk::Texture>>
@@ -52,29 +53,39 @@ impl GtkAnsiView {
         self.preview_rectangle.replace(rect);
     } 
 
-    pub fn set_editor_handle(&self, handle: Rc<RefCell<Editor>>) {
-        self.has_editor.replace(true);
+    fn update_font_textures(&self)
+    {
+        let b = self.editor.borrow();
+        let buffer = &b.borrow().buf;
+        if *self.font_name.borrow() == buffer.font.name {
+            return;
+        }
+
         let mut textures = Vec::new();
-        {   
-            let buffer = &handle.borrow().buf;
 
-            let mut font_size = 256;
+        let mut font_size = 256;
 
-            if buffer.font.extended_font {
-                font_size = 512;
-            }
+        if buffer.font.extended_font {
+            font_size = 512;
+        }
 
-            for col in 0..buffer.palette.colors.len() {
-                let fg = buffer.palette.colors[col as usize].get_rgb();
-                for u in 0..font_size {
-                    unsafe {
-                        textures.push(render_char(buffer, u, fg));
-                    }
+        self.font_name.replace(buffer.font.name.clone());
+
+        for col in 0..buffer.palette.colors.len() {
+            let fg = buffer.palette.colors[col as usize].get_rgb();
+            for u in 0..font_size {
+                unsafe {
+                    textures.push(render_char(buffer, u, fg));
                 }
             }
         }
         self.textures.replace(textures);
+    }
+
+    pub fn set_editor_handle(&self, handle: Rc<RefCell<Editor>>) {
+        self.has_editor.replace(true);
         self.editor.replace(handle);
+        self.update_font_textures();
     }
 }
 
@@ -99,6 +110,7 @@ impl WidgetImpl for GtkAnsiView {
     }
 
     fn snapshot(&self, widget: &Self::Type, snapshot: &gtk4::Snapshot) {
+        self.update_font_textures();
         snapshot.append_color(
             &gdk::RGBA::new(0.2, 0.2, 0.2, 1.0),
             &graphene::Rect::new(0.0, 0.0, widget.width() as f32, widget.height() as f32),
@@ -205,7 +217,10 @@ impl WidgetImpl for GtkAnsiView {
                     font_dimensions.height as f32
                 );
                 snapshot.append_color(&gdk::RGBA::new(bg.0 as f32, bg.1 as f32, bg.2 as f32, 1.0), &bounds);
-                snapshot.append_texture(&textures[fg * font_size + char_num], &bounds);
+                let idx = fg * font_size + char_num;
+                if idx < textures.len() {
+                    snapshot.append_texture(&textures[idx], &bounds);
+                }
             }
         }
 

@@ -139,7 +139,7 @@ impl<const LEN: usize, const EMPTY: u8> std::fmt::Display for SauceString<LEN, E
 impl<const LEN: usize, const EMPTY: u8> PartialEq for SauceString<LEN, EMPTY> {
     fn eq(&self, other: &Self) -> bool {
         let l1 = self.len();
-        let l2 = self.len();
+        let l2 = other.len();
 
         if l1 != l2 {
             return false;
