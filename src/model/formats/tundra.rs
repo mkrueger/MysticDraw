@@ -88,6 +88,19 @@ pub fn read_tnd(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
     result.set_height_for_pos(pos);
     result.palette.fill_to_16();
 
+    result.layers[0].title = "Editing".to_string();
+
+    let mut background = crate::model::Layer::new();
+    background.title = "Background".to_string();
+
+    for i in 0..result.height {
+        let mut line = crate::model::Line::new();
+        line.chars.resize(result.width as usize, Some(DosChar::new()));
+        background.lines.push(line);
+    }
+
+    result.layers.push(background);
+
     Ok(true)    
 }
 
