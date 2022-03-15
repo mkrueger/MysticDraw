@@ -10,6 +10,7 @@ Now I learn rust and as a medium sized UI project - why not ressurrect my 25 yea
 # Features
 
  * File formats: Ansi, Ascii, Artworx ADF, Avatar, BIN, XBIN, PCBoard, iCE, Tundra Draw
+   - Ansi files can be written to be used in modern terminals on linux or macOs
  * Own custom file format: .mdf
  * Layer model & transparent pixels
  * Support for 256 char fonts of various sizes - fonts can be exported and imported.

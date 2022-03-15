@@ -291,8 +291,8 @@ const C64_PETSCII_SHIFTED : &[u8] = include_bytes!("../../data/fonts/C64/C64 PET
 const C64_PETSCII_UNSHIFTED : &[u8] = include_bytes!("../../data/fonts/C64/C64 PETSCII unshifted.F08");
 const ATARI_ATASCII : &[u8] = include_bytes!("../../data/fonts/Atari/Atari ATASCII.F08");
 
-const DEFAULT_FONT_NAME: &str = "IBM VGA";
-const ALT_DEFAULT_FONT_NAME: &str = "IBM VGA 437";
+pub const DEFAULT_FONT_NAME: &str = "IBM VGA";
+pub const ALT_DEFAULT_FONT_NAME: &str = "IBM VGA 437";
 
 pub const SUPPORTED_FONTS: [&str;91] = [
     "IBM VGA",

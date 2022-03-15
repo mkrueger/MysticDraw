@@ -2,7 +2,7 @@ use std::io;
 
 use crate::model::{Buffer, Position, TextAttribute};
 
-use super::ParseStates;
+use super::{ParseStates, SaveOptions};
 
 fn conv_ch(ch: u8) -> u8 {
     if (b'0'..=b'9').contains(&ch) {
@@ -19,14 +19,18 @@ fn conv_ch(ch: u8) -> u8 {
 
 const HEX_TABLE: &[u8;16] = b"0123456789ABCDEF";
 
-pub fn convert_to_pcb(buf: &Buffer) -> io::Result<Vec<u8>>
+pub fn convert_to_pcb(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>>
 {
     let mut result = Vec::new();
     let mut last_attr = TextAttribute::DEFAULT;
     let mut pos = Position::new();
     let height = buf.height as i32;
     let mut first_char = true;
-    // @CLS@ or @HOME@
+
+    match options.screen_preparation {
+        super::ScreenPreperation::None | super::ScreenPreperation::Home => {}, // home not supported
+        super::ScreenPreperation::ClearScreen => { result.extend(b"@CLS@"); },
+    }
 
     while pos.y < height {
         let line_length = buf.get_line_length(pos.y);
@@ -55,11 +59,23 @@ pub fn convert_to_pcb(buf: &Buffer) -> io::Result<Vec<u8>>
         pos.x = 0;
         pos.y += 1;
     }
-    if buf.write_sauce || buf.width != 80 {
+    if options.save_sauce {
         buf.write_sauce_info(&crate::model::SauceFileType::PCBoard, &mut result)?;
     }
     Ok(result)
 }
+
+pub fn get_save_sauce_default_pcb(buf: &Buffer) -> (bool, String)
+{
+    if buf.width != 80 {
+        return (true, "width != 80".to_string() );
+    }
+
+    if buf.has_sauce_relevant_data() { return (true, String::new()); }
+
+    ( false, String::new() )
+}
+
 
 #[allow(non_snake_case)]
 pub fn display_PCBoard(data: &mut ParseStates, ch: u8) -> Option<u8> {

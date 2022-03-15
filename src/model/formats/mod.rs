@@ -83,15 +83,55 @@ impl ParseStates {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum ScreenPreperation {
+    None,
+    ClearScreen,
+    Home
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum CompressionLevel {
+    Off,
+    Medium,
+    High
+}
+
+#[derive(Clone, Debug)]
+pub struct SaveOptions {
+    pub screen_preparation: ScreenPreperation,
+    pub modern_terminal_output: bool,
+    pub save_sauce: bool,
+    pub compression_level: CompressionLevel
+}
+
+impl SaveOptions {
+    pub fn new() -> Self {
+        SaveOptions {
+            screen_preparation: ScreenPreperation::None,
+            modern_terminal_output: false,
+            save_sauce: false,
+            compression_level: CompressionLevel::High
+        }
+    }
+}
+
+impl Default for SaveOptions {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
-    use crate::model::{Buffer};
+    use crate::model::{Buffer, SaveOptions};
 
     fn test_ansi(data: &[u8])
     {
         let buf = Buffer::from_bytes(&PathBuf::from("test.ans"),data).unwrap();
-        let converted = super::convert_to_ans(&buf).unwrap();
+        let converted = super::convert_to_ans(&buf, &SaveOptions::new()).unwrap();
 
         // more gentle output.
         let b : Vec<u8> = converted.iter().map(|&x| if x == 27 { b'x' } else { x }).collect();

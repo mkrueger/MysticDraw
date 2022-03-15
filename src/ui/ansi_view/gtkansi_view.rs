@@ -57,7 +57,7 @@ impl GtkAnsiView {
     {
         let b = self.editor.borrow();
         let buffer = &b.borrow().buf;
-        if *self.font_name.borrow() == buffer.font.name {
+        if *self.font_name.borrow() == buffer.font.name && !self.textures.borrow().is_empty() {
             return;
         }
 
@@ -196,7 +196,7 @@ impl WidgetImpl for GtkAnsiView {
                         bg = 0;
                     }      
                 }
-                let mut char_num = ch.char_code as usize;
+                let char_num = ch.char_code as usize;
 
                 let bg = buffer.palette.colors[bg].get_rgb_f64();
                 let mut fg = ch.attribute.get_foreground() as usize;
@@ -205,10 +205,12 @@ impl WidgetImpl for GtkAnsiView {
                         fg = 7;
                     }      
                 }
-                if buffer.use_512_chars && (fg & 0b_1000) != 0 {
+             /* TODO: extended chars 
+             
+             if buffer.use_512_chars && (fg & 0b_1000) != 0 {
                     char_num += 256;
                     fg &= 0b_0111;
-                }
+                }*/
 
                 let bounds = graphene::Rect::new(
                     start_x + x as f32 * font_dimensions.width as f32,

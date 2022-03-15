@@ -1,7 +1,7 @@
 use std::io;
 
 use crate::model::{Buffer, DosChar};
-use super::{ Position, TextAttribute};
+use super::{ Position, TextAttribute, SaveOptions};
 
 pub fn read_binary(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Result<bool>
 {
@@ -30,7 +30,7 @@ pub fn read_binary(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::R
     }
 }
 
-pub fn convert_to_binary(buf: &Buffer) -> io::Result<Vec<u8>>
+pub fn convert_to_binary(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>>
 {
     let mut result = Vec::new();
 
@@ -41,8 +41,19 @@ pub fn convert_to_binary(buf: &Buffer) -> io::Result<Vec<u8>>
             result.push(ch.attribute.as_u8());
         }
     }
-    if buf.write_sauce || buf.width != 160 {
+    if options.save_sauce {
         buf.write_sauce_info(&crate::model::SauceFileType::Bin, &mut result)?;
     }
     Ok(result)
+}
+
+pub fn get_save_sauce_default_binary(buf: &Buffer) -> (bool, String)
+{
+    if buf.width != 160 {
+        return (true, "width != 160".to_string() );
+    }
+
+    if buf.has_sauce_relevant_data() { return (true, String::new()); }
+
+    ( false, String::new() )
 }

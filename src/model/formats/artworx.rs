@@ -1,7 +1,7 @@
 use std::io;
 
 use crate::model::{Buffer, DosChar, BitFont, Size, Palette};
-use super::{ Position, TextAttribute};
+use super::{ Position, TextAttribute, SaveOptions};
 
 // http://fileformats.archiveteam.org/wiki/ArtWorx_Data_Format
 
@@ -55,7 +55,7 @@ pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
     }
 }
 
-pub fn convert_to_adf(buf: &Buffer) -> io::Result<Vec<u8>>
+pub fn convert_to_adf(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>>
 {
     let mut result = vec![1]; // version
 
@@ -72,8 +72,20 @@ pub fn convert_to_adf(buf: &Buffer) -> io::Result<Vec<u8>>
             result.push(ch.attribute.as_u8());
         }
     }
-    if buf.write_sauce || buf.width != 80 {
+    if options.save_sauce {
         buf.write_sauce_info(&crate::model::SauceFileType::Ansi, &mut result)?;
     }
     Ok(result)
+}
+
+pub fn get_save_sauce_default_adf(buf: &Buffer) -> (bool, String)
+{
+    if buf.width != 80 {
+        return (true, "width != 80".to_string() );
+    }
+
+    if buf.has_sauce_relevant_data() { return (true, String::new()); }
+
+
+    ( false, String::new() )
 }

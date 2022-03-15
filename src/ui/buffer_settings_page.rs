@@ -17,7 +17,6 @@ pub struct BufferSettingsPage {
     comment_textview: gtk4::TextView,
 
     font_dropdown: Rc<gtk4::DropDown>,
-    save_sauce_switcher: gtk4::Switch,
 
     width_spin_button: SpinButton,
     height_spin_button: SpinButton,
@@ -42,7 +41,6 @@ impl BufferSettingsPage {
         for comment in comments {
             editor.buf.comments.push(SauceString::from(comment));
         }
-        editor.buf.write_sauce = self.save_sauce_switcher.is_active();
         editor.buf.width = self.width_spin_button.value() as u16;
         editor.buf.height = self.height_spin_button.value() as u16;
         let mut row  = self.font_dropdown.selected();
@@ -122,7 +120,7 @@ pub fn get_settings_page(main_window: Rc<MainWindow>, editor_ref: Rc<RefCell<Edi
         "string");
 
     let font_dropdown = gtk4::DropDown::new(Some(&list_model), Some(item_string_x));
-    font_dropdown.set_enable_search(true);
+        font_dropdown.set_enable_search(true);
     font_dropdown.set_valign(Align::Center);
     let font_list = BitFont::get_font_list();
 
@@ -159,17 +157,6 @@ pub fn get_settings_page(main_window: Rc<MainWindow>, editor_ref: Rc<RefCell<Edi
     }
     
     group.add(&row);
-
-    let save_sauce_switcher = gtk4::Switch::builder()
-    .active(editor.buf.write_sauce)
-    .valign(Align::Center)
-    .build();
-    let row = ActionRow::builder()
-        .title("Sauce settings")
-        .build();
-    row.add_suffix(&save_sauce_switcher);
-    group.add(&row);
-    content_area.append(&group);
 
     let group = PreferencesGroup::new();
     group.set_hexpand(false);
@@ -365,7 +352,6 @@ pub fn get_settings_page(main_window: Rc<MainWindow>, editor_ref: Rc<RefCell<Edi
         author_entry,
         comment_textview,
         font_dropdown,
-        save_sauce_switcher,
         width_spin_button,
         height_spin_button,
         custom_font,

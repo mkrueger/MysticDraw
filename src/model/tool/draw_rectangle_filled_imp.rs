@@ -31,7 +31,7 @@ impl Tool for DrawRectangleFilledTool {
     fn use_caret(&self) -> bool { false }
     fn use_selection(&self) -> bool { false }
 
-    fn handle_drag(&self, editor: Rc<RefCell<Editor>>,  mut start: Position, mut cur: Position) -> Event {
+    fn handle_drag(&self, editor: Rc<RefCell<Editor>>,  start: Position, cur: Position) -> Event {
         if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
             layer.clear();
         }

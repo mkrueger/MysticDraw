@@ -137,7 +137,7 @@ impl WidgetImpl for GtkMinimapAnsiView {
                         bg = 0;
                     }      
                 }
-                let mut char_num = ch.char_code as usize;
+                let char_num = ch.char_code as usize;
 
                 let bg = buffer.palette.colors[bg].get_rgb_f64();
                 let mut fg = ch.attribute.get_foreground() as usize;
@@ -146,10 +146,11 @@ impl WidgetImpl for GtkMinimapAnsiView {
                         fg = 7;
                     }      
                 }
+                /* TODO:
                 if buffer.use_512_chars && (fg & 0b_1000) != 0 {
                     char_num += 256;
                     fg &= 0b_0111;
-                }
+                } */
 
                 let bounds = graphene::Rect::new(
                     x as f32 * font_dimensions.width as f32,

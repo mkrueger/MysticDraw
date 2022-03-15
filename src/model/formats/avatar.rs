@@ -2,7 +2,7 @@ use std::{cmp::{max, min}, io};
 
 use crate::model::{Buffer, Position, TextAttribute};
 
-use super::ParseStates;
+use super::{ParseStates, SaveOptions};
 
 /// Starts Avatar command
 const AVT_CMD: u8 = 22;
@@ -138,13 +138,24 @@ pub fn display_avt(data: &mut ParseStates, ch: u8) -> io::Result<(Option<u8>, bo
     }
 }
 
-pub fn convert_to_avt(buf: &Buffer) -> io::Result<Vec<u8>>
+pub fn convert_to_avt(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>>
 {
     let mut result = Vec::new();
     let mut last_attr = TextAttribute::DEFAULT;
     let mut pos = Position::new();
     let height = buf.height as i32;
     let mut first_char = true;
+
+    match options.screen_preparation {
+        super::ScreenPreperation::None => {},
+        super::ScreenPreperation::ClearScreen => { result.push(AVT_CLR); },
+        super::ScreenPreperation::Home => { 
+            result.push(AVT_CMD); 
+            result.push(8);  // move cursor
+            result.push(1);  // x
+            result.push(1);  // y
+        },
+    }
 
     // TODO: implement repeat pattern compression (however even TheDraw never bothered to implement this cool RLE from fsc0037)
     while pos.y < height {
@@ -200,15 +211,27 @@ pub fn convert_to_avt(buf: &Buffer) -> io::Result<Vec<u8>>
         pos.x = 0;
         pos.y += 1;
     }
-    if buf.write_sauce || buf.width != 80 {
+    if options.save_sauce  {
         buf.write_sauce_info(&crate::model::SauceFileType::Avatar, &mut result)?;
     }
     Ok(result)
 }
 
+pub fn get_save_sauce_default_avt(buf: &Buffer) -> (bool, String)
+{
+    if buf.width != 80 {
+        return (true, "width != 80".to_string() );
+    }
+
+    if buf.has_sauce_relevant_data() { return (true, String::new()); }
+
+    ( false, String::new() )
+}
+
+
 #[cfg(test)]
 mod tests {
-    use crate::model::{Buffer, Position};
+    use crate::model::{Buffer, Position, SaveOptions};
 
     #[test]
     fn test_clear() {
@@ -286,7 +309,7 @@ mod tests {
     fn test_avt(data: &[u8])
     {
         let buf = Buffer::from_bytes(&std::path::PathBuf::from("test.avt"), data).unwrap();
-        let converted = super::convert_to_avt(&buf).unwrap();
+        let converted = super::convert_to_avt(&buf, &SaveOptions::new()).unwrap();
 
         // more gentle output.
         let b : Vec<u8> = output_avt(&converted);

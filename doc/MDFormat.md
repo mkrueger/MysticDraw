@@ -49,7 +49,7 @@ Field      Bytes  Meaning
 [Group]   20      CP 437 Chars - filled with b' ' SAUCE string
 [Width]    2      BE_U16
 [Height]   2      BE_U16
-[Flags]    2      BE_U16 [Bit 1: iCE] [Bit 2: Save sauce] [Bit 3: 512 Char mode]
+[Flags]    2      BE_U16 [Bit 1: iCE]
 ```
 
 I esp. love the checksum part. A binary format is not ment to be altered with hex editors.

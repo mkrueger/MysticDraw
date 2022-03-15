@@ -1,7 +1,7 @@
 use std::io;
 
 use crate::model::{Buffer, DosChar};
-use super::{ Position, TextAttribute};
+use super::{ Position, TextAttribute, SaveOptions};
 
 // http://fileformats.archiveteam.org/wiki/TUNDRA
 // ANSI code for 24 bit: ESC[(0|1);R;G;Bt
@@ -93,7 +93,7 @@ pub fn read_tnd(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
     let mut background = crate::model::Layer::new();
     background.title = "Background".to_string();
 
-    for i in 0..result.height {
+    for _ in 0..result.height {
         let mut line = crate::model::Line::new();
         line.chars.resize(result.width as usize, Some(DosChar::new()));
         background.lines.push(line);
@@ -123,7 +123,7 @@ fn to_u32(bytes: &[u8]) -> i32 {
 
 const TND_GOTO_BLOCK_LEN: i32 = 1 + 2 * 4;
 
-pub fn convert_to_tnd(buf: &Buffer) -> io::Result<Vec<u8>>
+pub fn convert_to_tnd(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>>
 {
     let mut result = vec![TUNDRA_VER]; // version
     result.extend(TUNDRA_HEADER);
@@ -200,8 +200,20 @@ pub fn convert_to_tnd(buf: &Buffer) -> io::Result<Vec<u8>>
         result.resize(result.len() + skip_len as usize, 0);
     }
 
-    if buf.write_sauce || buf.width != 80 {
+    if options.save_sauce {
         buf.write_sauce_info(&crate::model::SauceFileType::TundraDraw, &mut result)?;
     }
     Ok(result)
+}
+
+
+pub fn get_save_sauce_default_tnd(buf: &Buffer) -> (bool, String)
+{
+    if buf.width != 80 {
+        return (true, "width != 80".to_string() );
+    }
+
+    if buf.has_sauce_relevant_data() { return (true, String::new()); }
+
+    ( false, String::new() )
 }

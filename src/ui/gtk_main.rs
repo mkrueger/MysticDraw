@@ -7,10 +7,10 @@ use libadwaita as adw;
 
 use adw::{prelude::*, TabBar, TabPage, TabView};
 use adw::{ApplicationWindow, HeaderBar};
-use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, MessageType, ButtonsType, DialogFlags};
+use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, MessageType, ButtonsType, DialogFlags, FileFilter};
 
 use crate::WORKSPACE;
-use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, Layer};
+use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, Layer, SaveOptions};
 
 use super::{AnsiView, ColorPicker, layer_view, CharButton, minimap};
 
@@ -173,6 +173,17 @@ impl MainWindow {
         }
 
         {
+            //  let rc = rc.clone();
+            let open_action = SimpleAction::new("export", None);
+            open_action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    super::export_file_dialog::display_export_dialog(main_window.clone(), editor);
+                }
+            }));
+            app.add_action(&open_action);
+        }
+
+        {
             let open_action = SimpleAction::new("open", None);
             open_action.connect_activate(clone!(@strong main_window => move |_,_| {
 
@@ -221,18 +232,21 @@ impl MainWindow {
             open_action.connect_activate(clone!(@weak main_window => move |_,_| {
                 if let Some(editor) = main_window.get_current_editor() {
                     if let Some(file_name) = &editor.borrow().buf.file_name {
-                        main_window.handle_error(editor.borrow().save_content(file_name), move || format!("Error saving {}", file_name.as_os_str().to_string_lossy()));
+                        main_window.handle_error(editor.borrow().save_content(file_name, &SaveOptions::new()), move || format!("Error saving {}", file_name.as_os_str().to_string_lossy()));
                         return;
                     }
                 } else {
                     return;
                 }
+                let filter = FileFilter::new();
+                filter.add_suffix(".mdf");
 
                 let file_chooser = gtk4::FileChooserDialog::builder()
                     .title("Save file")
                     .action(FileChooserAction::Save)
                     .transient_for(&main_window.window)
                     .modal(true)
+                    .filter(&filter)
                     .width_request(640)
                     .height_request(480)
                     .build();
@@ -246,7 +260,7 @@ impl MainWindow {
                             let filename = file.path().expect("Couldn't get file path");
                             d.close();
                             page.get_editor().borrow_mut().buf.file_name = Some(filename.clone());
-                            main_window.handle_error(page.get_editor().borrow().save_content(&filename), move || format!("Error saving {}", filename.as_os_str().to_string_lossy()));
+                            main_window.handle_error(page.get_editor().borrow().save_content(&filename, &SaveOptions::new()), move || format!("Error saving {}", filename.as_os_str().to_string_lossy()));
                             (page.get_editor().borrow().buf.file_name_changed)()
                         } else {
                             eprintln!("can't find ansi view to save.");
@@ -263,10 +277,14 @@ impl MainWindow {
         {
             let open_action = SimpleAction::new("saveas", None);
             open_action.connect_activate(clone!(@strong main_window => move |_,_| {
+                let filter = FileFilter::new();
+                filter.add_pattern("*.mdf");
+                
                 let file_chooser = gtk4::FileChooserDialog::builder()
-                    .title("Save file")
+                    .title("Save (.mdf) file")
                     .action(FileChooserAction::Save)
                     .transient_for(&main_window.window)
+                    .filter(&filter)
                     .modal(true)
                     .width_request(640)
                     .height_request(480)
@@ -280,7 +298,7 @@ impl MainWindow {
                             let file = d.file().expect("Couldn't get file");
                             let filename = file.path().expect("Couldn't get file path");
                             page.get_editor().borrow_mut().buf.file_name = Some(filename.clone());
-                            main_window.handle_error(page.get_editor().borrow().save_content(&filename), move || format!("Error saving {}", filename.as_os_str().to_string_lossy()));
+                            main_window.handle_error(page.get_editor().borrow().save_content(&filename, &SaveOptions::new()), move || format!("Error saving {}", filename.as_os_str().to_string_lossy()));
                             (page.get_editor().borrow().buf.file_name_changed)()
                         } else {
                             eprintln!("can't find ansi view to save.");
@@ -771,6 +789,7 @@ impl MainWindow {
         hb.pack_start(&new_window_button);
 
         let menu = gtk4::gio::Menu::new();
+        menu.append(Some("Export"), Some("app.export"));
         menu.append(Some("Save as…"), Some("app.saveas"));
         menu.append(Some("Preferences"), Some("app.preferences"));
         menu.append(Some("Keyboard Map"), Some("app.keymap"));
@@ -1012,7 +1031,7 @@ impl MainWindow {
         
         let gesture = gtk4::GestureClick::new();
         gesture.set_button(1);
-        
+
         gesture.connect_pressed(glib::clone!(@strong self as this => move |_, _clicks, _, _| {
             if stack.visible_child() == stack.first_child() {
                 stack.set_visible_child(&stack.last_child().unwrap());

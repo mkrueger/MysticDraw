@@ -36,8 +36,6 @@ pub fn read_mdf(result: &mut Buffer, bytes: &[u8]) -> io::Result<bool>
     o += 2;
 
     result.use_ice = (flags & MDF_FLAG_ICE) == MDF_FLAG_ICE;
-    result.write_sauce = (flags & MDF_FLAG_WRITE_SAUCE) == MDF_FLAG_WRITE_SAUCE;
-    result.use_512_chars = (flags & MDF_FLAG_512_CHARS) == MDF_FLAG_512_CHARS;
     while o < bytes.len() {
         let block = bytes[o];
         o += 1;
@@ -270,8 +268,6 @@ fn decode_attribute(bytes: &[u8], o: &mut usize, attr_mode: u16) -> TextAttribut
     }
 }
 const MDF_FLAG_ICE: u16         = 0b0001;
-const MDF_FLAG_WRITE_SAUCE: u16 = 0b0010;
-const MDF_FLAG_512_CHARS: u16   = 0b0100;
 const CHECKSUM_OFFSET: usize = 4;
 
 const BLK_COMMENT:u8   = 1;
@@ -306,8 +302,6 @@ pub fn convert_to_mdf(buf: &Buffer) -> io::Result<Vec<u8>>
 
     let mut flags = 0;
     if buf.use_ice { flags |= MDF_FLAG_ICE; }
-    if buf.write_sauce { flags |= MDF_FLAG_WRITE_SAUCE; }
-    if buf.use_512_chars { flags |= MDF_FLAG_512_CHARS; }
     result.extend(u16::to_be_bytes(flags));
     
     if !buf.comments.is_empty() {

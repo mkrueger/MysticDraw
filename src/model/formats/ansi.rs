@@ -1,10 +1,10 @@
 use std::cmp::{max, min};
 use std::io;
 
-use crate::model::{Buffer, Position, DosChar};
+use crate::model::{Buffer, Position, DosChar, CP437_TO_UNICODE};
 use crate::model::TextAttribute;
 
-use super::ParseStates;
+use super::{ParseStates, SaveOptions};
 
 const ANSI_CSI: u8 = b'[';
 const ANSI_ESC: u8 = 27;
@@ -176,7 +176,7 @@ pub fn display_ans(buf: &mut Buffer, data: &mut ParseStates, ch: u8) -> io::Resu
     }
 }
 
-pub fn convert_to_ans(buf: &Buffer) -> io::Result<Vec<u8>>
+pub fn convert_to_ans(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>>
 {
     let mut result = Vec::new();
     let mut last_attr = TextAttribute::DEFAULT;
@@ -184,18 +184,27 @@ pub fn convert_to_ans(buf: &Buffer) -> io::Result<Vec<u8>>
     let height = buf.height as i32;
     let mut first_char = true;
 
+    match options.screen_preparation {
+        super::ScreenPreperation::None => {},
+        super::ScreenPreperation::ClearScreen => { result.extend_from_slice(b"\x1b[2J"); },
+        super::ScreenPreperation::Home => { result.extend_from_slice(b"\x1b[1;1H"); },
+    }
+
     while pos.y < height {
-        let line_length = buf.get_line_length(pos.y);
+        let line_length = if options.modern_terminal_output { buf.width as i32 } else { buf.get_line_length(pos.y) };
 
         while pos.x < line_length {
             let mut space_count = 0;
             let mut ch = buf.get_char(pos).unwrap_or_default();
             let mut cur_attr = ch.attribute;
-
-            while (ch.char_code == b' ' || ch.char_code == 0) && ch.attribute.get_background() == 0 && pos.x < line_length {
-                space_count += 1;
-                pos.x += 1;                     
-                ch = buf.get_char(pos).unwrap_or_default();
+            
+            // doesn't work well with unix terminal - background color needs to be painted.
+            if !options.modern_terminal_output { 
+                while (ch.char_code == b' ' || ch.char_code == 0) && ch.attribute.get_background() == 0 && pos.x < line_length {
+                    space_count += 1;
+                    pos.x += 1;                     
+                    ch = buf.get_char(pos).unwrap_or_default();
+                }
             }
 
             // optimize color output for empty space lines.
@@ -204,58 +213,86 @@ pub fn convert_to_ans(buf: &Buffer) -> io::Result<Vec<u8>>
             }
 
             if last_attr != cur_attr || first_char {
-                result.extend_from_slice(b"\x1b[");
-                let mut wrote_part = false;
 
-                // handle bold change
-                if (!last_attr.is_bold() || first_char) && cur_attr.is_bold() {
-                    // if blinking is turned off "0;" will be written which would reset the bold state here
-                    // bold state is set again after blink reset.
-                    if (!last_attr.is_blink() && !first_char) || cur_attr.is_blink() {
-                        result.push(b'1');
+                if options.modern_terminal_output {
+                    if last_attr.get_foreground() != cur_attr.get_foreground() || first_char {
+                        result.extend_from_slice(b"\x1b[38;2;");
+                        let color = buf.palette.colors[cur_attr.get_foreground() as usize];
+                        let (r, g, b) = color.get_rgb();
+                        result.extend_from_slice(r.to_string().as_bytes());
+                        result.push(b';');
+                        result.extend_from_slice(g.to_string().as_bytes());
+                        result.push(b';');
+                        result.extend_from_slice(b.to_string().as_bytes());
+                        result.push(b'm');
+                    }
+
+                    if last_attr.get_background() != cur_attr.get_background() || first_char {
+                        result.extend_from_slice(b"\x1b[48;2;");
+                        let color = buf.palette.colors[cur_attr.get_background() as usize];
+                        let (r, g, b) = color.get_rgb();
+                        result.extend_from_slice(r.to_string().as_bytes());
+                        result.push(b';');
+                        result.extend_from_slice(g.to_string().as_bytes());
+                        result.push(b';');
+                        result.extend_from_slice(b.to_string().as_bytes());
+                        result.push(b'm');
+                    }
+                } else {
+                    result.extend_from_slice(b"\x1b[");
+
+                    let mut wrote_part = false;
+
+                    // handle bold change
+                    if (!last_attr.is_bold() || first_char) && cur_attr.is_bold() {
+                        // if blinking is turned off "0;" will be written which would reset the bold state here
+                        // bold state is set again after blink reset.
+                        if (!last_attr.is_blink() && !first_char) || cur_attr.is_blink() {
+                            result.push(b'1');
+                            wrote_part = true;
+                        }
+                    } else if (last_attr.is_bold() || first_char) && !cur_attr.is_bold()  {
+                        result.push(b'0');
+                        last_attr = TextAttribute::DEFAULT;
+                        first_char = false; // attribute set.
                         wrote_part = true;
                     }
-                } else if (last_attr.is_bold() || first_char) && !cur_attr.is_bold()  {
-                    result.push(b'0');
-                    last_attr = TextAttribute::DEFAULT;
-                    first_char = false; // attribute set.
-                    wrote_part = true;
-                }
 
-                // handle blink change
-                if (!last_attr.is_blink() || first_char) && cur_attr.is_blink()  {
-                    if wrote_part {
-                        result.push(b';');
+                    // handle blink change
+                    if (!last_attr.is_blink() || first_char) && cur_attr.is_blink()  {
+                        if wrote_part {
+                            result.push(b';');
+                        }
+                        result.push(b'5');
+                        wrote_part = true;
+                    } else if (last_attr.is_blink() || first_char) && !cur_attr.is_blink()  {
+                        if wrote_part {
+                            result.push(b';');
+                        }
+                        result.push(b'0');
+                        if cur_attr.is_bold() || first_char {
+                            result.extend_from_slice(b";1");
+                        }
+                        last_attr = TextAttribute::DEFAULT;
+                        wrote_part = true;
                     }
-                    result.push(b'5');
-                    wrote_part = true;
-                } else if (last_attr.is_blink() || first_char) && !cur_attr.is_blink()  {
-                    if wrote_part {
-                        result.push(b';');
-                    }
-                    result.push(b'0');
-                    if cur_attr.is_bold() || first_char {
-                        result.extend_from_slice(b";1");
-                    }
-                    last_attr = TextAttribute::DEFAULT;
-                    wrote_part = true;
-                }
 
-                // color changes
-                if last_attr.get_foreground_without_bold() != cur_attr.get_foreground_without_bold() {
-                    if wrote_part {
-                        result.push(b';');
+                    // color changes
+                    if last_attr.get_foreground_without_bold() != cur_attr.get_foreground_without_bold() {
+                        if wrote_part {
+                            result.push(b';');
+                        }
+                        result.extend_from_slice(FG_TABLE[cur_attr.get_foreground_without_bold() as usize]);
+                        wrote_part = true;
                     }
-                    result.extend_from_slice(FG_TABLE[cur_attr.get_foreground_without_bold() as usize]);
-                    wrote_part = true;
-                }
-                if last_attr.get_background_low() != cur_attr.get_background_low() {
+                    if last_attr.get_background_low() != cur_attr.get_background_low() {
                     if wrote_part {
                         result.push(b';');
                     }
                     result.extend_from_slice(BG_TABLE[cur_attr.get_background_low() as usize]);
                 }
-                result.push(b'm');
+                    result.push(b'm');
+                }
                 last_attr = cur_attr;
             }
 
@@ -271,13 +308,24 @@ pub fn convert_to_ans(buf: &Buffer) -> io::Result<Vec<u8>>
                 }
                 continue;
             }
-            
-            result.push(if ch.char_code == 0 { b' ' } else { ch.char_code });
+            if options.modern_terminal_output {
+                if ch.char_code == 0 {
+                    result.push(b' ');
+                } else {
+                    let uni_ch = CP437_TO_UNICODE[ch.char_code as usize].to_string();
+                    result.extend(uni_ch.as_bytes());
+                }
+            } else {
+                result.push(if ch.char_code == 0 { b' ' } else { ch.char_code });
+            }
             pos.x += 1;
         }
-
-        // do not end with eol
-        if pos.x < buf.width as i32 && pos.y + 1 < height {
+        // do not end with eol except for terminal support.
+        if options.modern_terminal_output  {
+            result.extend_from_slice(b"\x1b[0m");
+            result.push(10);
+            first_char = true;
+        } else if pos.x < buf.width as i32 && pos.y + 1 < height {
             result.push(13);
             result.push(10);
         }
@@ -286,8 +334,7 @@ pub fn convert_to_ans(buf: &Buffer) -> io::Result<Vec<u8>>
         pos.y += 1;
     }
 
-
-    if buf.write_sauce || buf.width != 80 {
+    if options.save_sauce {
         buf.write_sauce_info(&crate::model::SauceFileType::Ansi, &mut result)?;
     }
     Ok(result)
@@ -298,10 +345,21 @@ fn push_int(result: &mut Vec<u8>, number: usize)
     result.extend_from_slice(number.to_string().as_bytes());
 }
 
+pub fn get_save_sauce_default_ans(buf: &Buffer) -> (bool, String)
+{
+    if buf.width != 80 {
+        return (true, "width != 80".to_string() );
+    }
+
+    if buf.has_sauce_relevant_data() { return (true, String::new()); }
+
+    ( false, String::new() )
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
-    use crate::model::{Buffer, Position};
+    use crate::model::{Buffer, Position, SaveOptions};
 
     #[test]
     fn test_ansi_sequence() {
@@ -424,7 +482,7 @@ mod tests {
     fn test_ansi(data: &[u8])
     {
         let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), data).unwrap();
-        let converted = super::convert_to_ans(&buf).unwrap();
+        let converted = super::convert_to_ans(&buf, &SaveOptions::new()).unwrap();
 
         // more gentle output.
         let b : Vec<u8> = converted.iter().map(|&x| if x == 27 { b'x' } else { x }).collect();
@@ -521,7 +579,7 @@ mod tests {
 
         let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), &vec).unwrap();
         assert_eq!(2, buf.height);
-        let vec2 = buf.to_bytes("ans").unwrap();
+        let vec2 = buf.to_bytes("ans", &SaveOptions::new()).unwrap();
         let buf2 = Buffer::from_bytes(&PathBuf::from("test.ans"), &vec2).unwrap();
         assert_eq!(2, buf2.height);
     }

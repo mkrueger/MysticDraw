@@ -2,7 +2,9 @@ use std::io;
 
 use crate::model::{Buffer, Position};
 
-pub fn convert_to_asc(buf: &Buffer) -> io::Result<Vec<u8>>
+use super::SaveOptions;
+
+pub fn convert_to_asc(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>>
 {
     let mut result = Vec::new();
     let mut pos = Position::new();
@@ -26,21 +28,33 @@ pub fn convert_to_asc(buf: &Buffer) -> io::Result<Vec<u8>>
         pos.y += 1;
     }
 
-    if buf.write_sauce || buf.width != 80 {
+    if options.save_sauce {
         buf.write_sauce_info(&crate::model::SauceFileType::Ascii, &mut result)?;
     }
     Ok(result)
 }
 
+pub fn get_save_sauce_default_asc(buf: &Buffer) -> (bool, String)
+{
+    if buf.width != 80 {
+        return (true, "width != 80".to_string() );
+    }
+
+    if buf.has_sauce_relevant_data() { return (true, String::new()); }
+
+
+    ( false, String::new() )
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
-    use crate::model::{Buffer};
+    use crate::model::{Buffer, SaveOptions};
 
     fn test_ascii(data: &[u8])
     {
         let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), data).unwrap();
-        let converted = super::convert_to_asc(&buf).unwrap();
+        let converted = super::convert_to_asc(&buf, &SaveOptions::new()).unwrap();
 
         // more gentle output.
         let b : Vec<u8> = converted.iter().map(|&x| if x == 27 { b'x' } else { x }).collect();
@@ -82,7 +96,7 @@ mod tests {
 
         let buf = Buffer::from_bytes(&PathBuf::from("test.asc"), &vec).unwrap();
         assert_eq!(2, buf.height);
-        let vec2 = buf.to_bytes("asc").unwrap();
+        let vec2 = buf.to_bytes("asc", &SaveOptions::new()).unwrap();
         let buf2 = Buffer::from_bytes(&PathBuf::from("test.asc"), &vec2).unwrap();
         assert_eq!(2, buf2.height);
     }

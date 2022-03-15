@@ -139,7 +139,7 @@ fn main() {
 #[cfg(test)]
 #[allow(dead_code)]
 mod tests {
-    use crate::model::{Buffer, self};
+    use crate::model::{Buffer, self, SaveOptions};
 
     fn is_hidden(entry: &walkdir::DirEntry) -> bool {
         entry.file_name()
@@ -207,7 +207,7 @@ mod tests {
                 model::read_mdf(&mut mdf_buffer, &mdf_bytes).unwrap();
                 comp(&buf, &mdf_buffer);
 
-                let adf_bytes = mdf_buffer.to_bytes(extension.as_str()).unwrap();
+                let adf_bytes = mdf_buffer.to_bytes(extension.as_str(), &SaveOptions::new()).unwrap();
                 let buf2 = Buffer::from_bytes(&std::path::PathBuf::from(path), &adf_bytes).unwrap();
                 comp(&buf, &buf2);
             }

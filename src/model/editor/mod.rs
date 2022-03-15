@@ -1,7 +1,7 @@
 use std::{cmp::{max, min}, path::{Path, PathBuf}, io::{Write, self}, fs::File, ffi::OsStr};
 use crate::model::{Buffer, Position, TextAttribute, Rectangle};
 
-use super::{DosChar, UndoSetChar, Layer, Size};
+use super::{DosChar, UndoSetChar, Layer, Size, SaveOptions};
 
 pub struct Cursor {
     pos: Position,
@@ -228,16 +228,16 @@ impl Editor
         (self.outline_changed)(self);
     }
 
-    pub fn save_content(&self, file_name: &Path) -> io::Result<bool>
+    pub fn save_content(&self, file_name: &Path, options: &SaveOptions) -> io::Result<bool>
     {
         let mut f = File::create(file_name)?;
 
         let content = 
         if let Some(ext) = file_name.extension() {
             let ext = OsStr::to_str(ext).unwrap().to_lowercase();
-                self.buf.to_bytes(ext.as_str())?
+                self.buf.to_bytes(ext.as_str(), options)?
             } else {
-                self.buf.to_bytes("mdf")?
+                self.buf.to_bytes("mdf", options)?
             };
         f.write_all(&content)?;
         Ok(true)

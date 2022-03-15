@@ -42,7 +42,7 @@ impl Tool for DrawEllipseFilledTool {
         false
     }
 
-    fn handle_drag(&self, editor: Rc<RefCell<Editor>>, mut start: Position, mut cur: Position) -> Event {
+    fn handle_drag(&self, editor: Rc<RefCell<Editor>>, start: Position, cur: Position) -> Event {
         if let Some(layer) = editor.borrow_mut().get_overlay_layer() {
             layer.clear();
         }

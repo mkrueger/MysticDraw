@@ -2,7 +2,7 @@ use std::{io, cmp::min};
 
 use crate::model::{Buffer, DosChar, BitFont, Palette, SauceString};
 
-use super::{ Position, TextAttribute };
+use super::{ Position, TextAttribute, SaveOptions, CompressionLevel };
 
 const XBIN_HEADER_SIZE:usize = 11;
 
@@ -48,15 +48,15 @@ pub fn read_xb(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resul
     let has_custom_font       = (flags & FLAG_FONT) == FLAG_FONT;
     let is_compressed         = (flags & FLAG_COMPRESS) == FLAG_COMPRESS;
     result.use_ice                 = (flags & FLAG_NON_BLINK_MODE) == FLAG_NON_BLINK_MODE;
-    result.use_512_chars           = (flags & FLAG_512CHAR_MODE) == FLAG_512CHAR_MODE;
+    let extended_char_mode    = (flags & FLAG_512CHAR_MODE) == FLAG_512CHAR_MODE;
     
     if has_custom_palette {
         result.palette = Palette::from(&bytes[o..(o + 48)]);
         o += 48;
     }
     if has_custom_font {
-        let font_length = font_size as usize * if result.use_512_chars { 512 } else { 256 };
-        result.font = BitFont::create_8(SauceString::new(), result.use_512_chars, 8, font_size, &bytes[o..(o+font_length)]);
+        let font_length = font_size as usize * if extended_char_mode { 512 } else { 256 };
+        result.font = BitFont::create_8(SauceString::new(), extended_char_mode, 8, font_size, &bytes[o..(o+font_length)]);
         o += font_length;
     }
 
@@ -192,7 +192,7 @@ fn read_data_uncompressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -
     Ok(true)
 }
 
-pub fn convert_to_xb(buf: &Buffer) -> io::Result<Vec<u8>>
+pub fn convert_to_xb(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>>
 {
     let mut result = Vec::new();
 
@@ -217,16 +217,18 @@ pub fn convert_to_xb(buf: &Buffer) -> io::Result<Vec<u8>>
     if !buf.palette.is_default() {
         flags |= FLAG_PALETTE;
     }
-    
-    flags |= FLAG_COMPRESS;
+    if options.compression_level != CompressionLevel::Off {
+        flags |= FLAG_COMPRESS;
+    }
 
     if buf.use_ice {
         flags |= FLAG_NON_BLINK_MODE;
     }
-
+/* TODO:
     if buf.use_512_chars {
         flags |= FLAG_512CHAR_MODE;
-    }
+    }*/
+    
     result.push(flags);
     
     if (flags & FLAG_PALETTE) == FLAG_PALETTE {
@@ -236,27 +238,26 @@ pub fn convert_to_xb(buf: &Buffer) -> io::Result<Vec<u8>>
     if flags & FLAG_FONT == FLAG_FONT {
         buf.font.push_u8_data(&mut result);
     }
-
-    if (flags & FLAG_COMPRESS) == FLAG_COMPRESS  {
-        compress_backtrack(&mut result, buf);
-    } else {
-        // store uncompressed
-        for y in 0..buf.height {
-            for x in 0..buf.width {
-                let ch = buf.get_char(Position::from(x as i32, y as i32)).unwrap_or_default();
-                result.push(ch.char_code);
-                result.push(ch.attribute.as_u8());
+    match options.compression_level {
+        CompressionLevel::Medium => compress_greedy(&mut result, buf),
+        CompressionLevel::High => compress_backtrack(&mut result, buf),
+        CompressionLevel::Off => {
+            for y in 0..buf.height {
+                for x in 0..buf.width {
+                    let ch = buf.get_char(Position::from(x as i32, y as i32)).unwrap_or_default();
+                    result.push(ch.char_code);
+                    result.push(ch.attribute.as_u8());
+                }
             }
         }
     }
-    if buf.write_sauce  {
+
+    if options.save_sauce  {
         buf.write_sauce_info(&crate::model::SauceFileType::XBin, &mut result)?;
     }
-
     Ok(result)
 }
 
-/* 
 fn compress_greedy(outputdata: &mut Vec<u8>, buffer: &Buffer)
 {
     let mut run_mode = Compression::Off;
@@ -377,7 +378,7 @@ fn compress_greedy(outputdata: &mut Vec<u8>, buffer: &Buffer)
         outputdata.push((run_mode as u8) | (run_count - 1));
         outputdata.extend(run_buf);
     }
-}*/
+}
 
 fn count_length(mut run_mode: Compression, mut run_ch: DosChar, mut end_run: Option<bool>, mut run_count: u8, buffer: &Buffer, mut x: i32) -> i32 {
     let len = min(x + 256, (buffer.height * buffer.width) as i32 - 1);
@@ -599,4 +600,11 @@ fn compress_backtrack(outputdata: &mut Vec<u8>, buffer: &Buffer)
         outputdata.push((run_mode as u8) | (run_count - 1));
         outputdata.extend(run_buf);
     }
+}
+
+pub fn get_save_sauce_default_xb(buf: &Buffer) -> (bool, String)
+{
+    if buf.has_sauce_relevant_data() { return (true, String::new()); }
+
+    ( false, String::new() )
 }

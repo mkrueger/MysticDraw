@@ -89,7 +89,7 @@ const SAUCE_FILE_TYPE_TUNDRA_DRAW: u8 = 8;
 #[derive(Clone, Default)]
 pub struct SauceString<const LEN: usize, const EMPTY: u8>(Vec<u8>);
 
-const CP437_TO_UNICODE: [char; 256] = [
+pub const CP437_TO_UNICODE: [char; 256] = [
     '\u{0000}', '\u{263a}', '\u{263b}', '\u{2665}', '\u{2666}', '\u{2663}', '\u{2660}', '\u{2022}',
     '\u{25d8}', '\u{25cb}', '\u{25d9}', '\u{2642}', '\u{2640}', '\u{266a}', '\u{266b}', '\u{263c}',
     '\u{25ba}', '\u{25c4}', '\u{2195}', '\u{203c}', '\u{00b6}', '\u{00a7}', '\u{25ac}', '\u{21a8}',
@@ -269,7 +269,6 @@ impl Buffer {
                 .as_str(),
             ));
         }
-        self.write_sauce = true;
         o += 2;
         o += self.title.read(&data[o..]);
         o += self.author.read(&data[o..]);

@@ -26,3 +26,5 @@ mod buffer_settings_page;
 pub use buffer_settings_page::*;
 
 pub mod minimap;
+
+pub mod export_file_dialog;

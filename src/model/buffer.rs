@@ -5,7 +5,7 @@ use std::{
 };
 use std::ffi::OsStr;
 
-use super::{Layer, read_xb, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size, UndoOperation, Palette, SauceString, Line, BitFont };
+use super::{Layer, read_xb, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size, UndoOperation, Palette, SauceString, Line, BitFont, SaveOptions };
 
 pub struct Buffer {
     pub file_name: Option<PathBuf>,
@@ -20,8 +20,6 @@ pub struct Buffer {
     pub height: u16,
 
     pub use_ice: bool,
-    pub use_512_chars: bool,
-    pub write_sauce: bool,
 
     pub palette: Palette,
     pub overlay_layer: Option<Layer>,
@@ -52,8 +50,6 @@ impl Buffer {
             comments: Vec::new(),
 
             use_ice: true,
-            use_512_chars: false,
-            write_sauce: false,
 
             palette: Palette::new(),
 
@@ -154,23 +150,46 @@ impl Buffer {
         }
     }
 
-    pub fn to_bytes(&self, extension: &str) -> io::Result<Vec<u8>>
+    pub fn to_bytes(&self, extension: &str, options: &SaveOptions) -> io::Result<Vec<u8>>
     {
         match extension {
             "mdf" => super::convert_to_mdf(self),
-            "bin" => super::convert_to_binary(self),
-            "xb" => super::convert_to_xb(self),
+            "bin" => super::convert_to_binary(self, options),
+            "xb" => super::convert_to_xb(self, options),
             "ice" |
-            "ans" => super::convert_to_ans(self),
-            "avt" => super::convert_to_avt(self),
-            "pcb" => super::convert_to_pcb(self),
-            "adf" => super::convert_to_adf(self),
-            "idf" => super::convert_to_idf(self),
-            "tnd" => super::convert_to_tnd(self),
-            _ => super::convert_to_asc(self)
+            "ans" => super::convert_to_ans(self, options),
+            "avt" => super::convert_to_avt(self, options),
+            "pcb" => super::convert_to_pcb(self, options),
+            "adf" => super::convert_to_adf(self, options),
+            "idf" => super::convert_to_idf(self, options),
+            "tnd" => super::convert_to_tnd(self, options),
+            _ => super::convert_to_asc(self, options)
         }
     }
 
+    pub fn get_save_sauce_default(&self,  extension: &str) -> (bool, String) {
+        match extension {
+            "bin" => super::get_save_sauce_default_binary(self),
+            "xb" => super::get_save_sauce_default_xb(self),
+            "ice" |
+            "ans" => super::get_save_sauce_default_ans(self),
+            "avt" => super::get_save_sauce_default_avt(self),
+            "pcb" => super::get_save_sauce_default_pcb(self),
+            "adf" => super::get_save_sauce_default_adf(self),
+            "idf" => super::get_save_sauce_default_idf(self),
+            "tnd" => super::get_save_sauce_default_tnd(self),
+            _ => super::get_save_sauce_default_asc(self)
+        }
+    }
+
+    pub fn has_sauce_relevant_data(&self) -> bool {
+        self.title.len() > 0 ||
+        self.group.len() > 0 ||
+        self.author.len() > 0 ||
+        !self.comments.is_empty() ||
+        self.font.name.to_string() != super::DEFAULT_FONT_NAME && self.font.name.to_string() != super::ALT_DEFAULT_FONT_NAME
+    }
+     
     pub fn from_bytes(file_name: &Path, bytes: &[u8]) -> io::Result<Buffer> {
         let mut result = Buffer::new();
         result.file_name = Some(file_name.to_path_buf());

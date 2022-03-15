@@ -1,7 +1,7 @@
 use std::io;
 
 use crate::model::{Buffer, DosChar, BitFont, Size, Palette};
-use super::{ Position, TextAttribute};
+use super::{ Position, TextAttribute, SaveOptions};
 
 // http://fileformats.archiveteam.org/wiki/ICEDraw
 
@@ -78,7 +78,7 @@ pub fn read_idf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
     Ok(true)
 }
 
-pub fn convert_to_idf(buf: &Buffer) -> io::Result<Vec<u8>>
+pub fn convert_to_idf(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>>
 {
     let mut result = IDF_V1_4_HEADER.to_vec();
     
@@ -132,11 +132,23 @@ pub fn convert_to_idf(buf: &Buffer) -> io::Result<Vec<u8>>
 
     // palette
     result.extend(buf.palette.to_16color_vec());
-    if buf.write_sauce || buf.width != 80 {
+    if options.save_sauce {
         buf.write_sauce_info(&crate::model::SauceFileType::Bin, &mut result)?;
     }
     Ok(result)
 }
+
+pub fn get_save_sauce_default_idf(buf: &Buffer) -> (bool, String)
+{
+    if buf.width != 80 {
+        return (true, "width != 80".to_string() );
+    }
+
+    if buf.has_sauce_relevant_data() { return (true, String::new()); }
+
+    ( false, String::new() )
+}
+
 
 fn advance_pos(x1: i32, x2: i32, pos: &mut Position) -> bool
 {
