@@ -420,18 +420,9 @@ impl MainWindow {
             app.add_action(&action);
 
             let action = SimpleAction::new("preferences", None);
-            action.connect_activate(clone!(@strong main_window => move |_,_| {
-                let dialog = super::display_settings_dialog(&main_window);
-                dialog.open_button.connect_clicked(clone!(@strong main_window => move |_| {
-                    dialog.dialog.close();
-                    unsafe {
-                        WORKSPACE.grid = std::mem::transmute(dialog.grid_dropdown.selected());
-                        WORKSPACE.guide = std::mem::transmute(dialog.guide_dropdown.selected());
-                    }
-                    main_window.update_layer_view();
-                    main_window.update_editor();
-                }));
-
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
+                super::display_settings_dialog(main_window);
+                
             }));
             app.add_action(&action);
 
@@ -965,7 +956,7 @@ impl MainWindow {
         } else if tool.get_icon_name() == "md-tool-erase" {
             super::add_erase_tool_page(&mut page_content);
         } else if tool.get_icon_name() == "md-tool-font" {
-            super::add_font_tool_page(&self.window, &mut page_content);
+            super::add_font_tool_page(my_box, &mut page_content);
         } else if tool.get_icon_name() == "md-tool-pipette" {
             super::add_pipette_tool_page(my_box,&mut page_content);
         }

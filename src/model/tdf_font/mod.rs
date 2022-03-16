@@ -1,5 +1,7 @@
 use std::{path::Path, fs::File, io::{Read}};
 
+use crate::WORKSPACE;
+
 use super::{ Position, TextAttribute, DosChar, Editor, Size};
 
 #[derive(Copy, Clone, Debug)]
@@ -42,13 +44,21 @@ impl TheDrawFont
         // skip data
         
         let mut o = 24;
-        let font_name_len = bytes[o] as usize;
+        let mut font_name_len = bytes[o] as usize;
         o += 1;
         if font_name_len > 16 {
             eprintln!("'{}' invalid ttf font - name length was: {}", file_name.as_os_str().to_string_lossy(), font_name_len,);
             return None;
         }
+        // May be 0 terminated and the font name len is wrong.
+        for i in 0..font_name_len {
+            if bytes[o + i] == 0 {
+                font_name_len = i;
+                break;
+            }
+        }
         let name = String::from_utf8_lossy(&bytes[o..(o + font_name_len)]).to_string();
+        
         o = 41;
         #[allow(clippy::match_on_vec_items)]
         let font_type = match bytes[o] {
@@ -84,11 +94,10 @@ impl TheDrawFont
         })
     }
     
-    fn transform_outline(ch: u8) -> u8
+    pub fn transform_outline(outline: usize, ch: u8) -> u8
     {
-//        let currentOutline = 0;
-        if ch - 64 > 0 && ch - 64 <= 17 {
-           TheDrawFont::OUTLINE_CHAR_SET[0][(ch - 65) as usize ]
+        if ch  > 64 && ch - 64 <= 17 {
+           TheDrawFont::OUTLINE_CHAR_SET[outline][(ch - 65) as usize ]
         } else {
             b' '
         }
@@ -98,7 +107,17 @@ impl TheDrawFont
     {
         self.font_data[1]
     }
-    
+
+    pub fn has_char(&self, char_code: u8) -> bool 
+    {
+        let char_offset = (char_code as i32) - b' '  as i32 - 1;
+        if char_offset < 0 || char_offset > self.char_table.len() as i32 {
+            return false;
+        }
+        let char_offset = self.char_table[char_offset as usize];
+        char_offset != 0xFFFF
+    }
+
     pub fn render(&self, editor: &mut std::cell::RefMut<Editor>, pos: Position, color: TextAttribute, char_code: u8) -> Option<Size<i32>>
     {
         let char_offset = (char_code as i32) - b' '  as i32 - 1;
@@ -124,7 +143,7 @@ impl TheDrawFont
             } else {
                 let dos_char = match self.font_type {
                     TheDrawFontType::Outline => {
-                        DosChar { char_code: TheDrawFont::transform_outline(ch), attribute: color }
+                        DosChar { char_code: TheDrawFont::transform_outline(unsafe {WORKSPACE.settings.outline_font_style}, ch), attribute: color }
                     }
                     TheDrawFontType::Block => {
                         DosChar { char_code: ch, attribute: color }
@@ -144,8 +163,8 @@ impl TheDrawFont
 
         Some(Size::from(max_x as i32, cur.y - pos.y + 1))
     }
-
-    const OUTLINE_CHAR_SET : [[u8; 17]; 19] = [
+    pub const OUTLINE_STYLES:usize = 19;
+    const OUTLINE_CHAR_SET : [[u8; 17]; TheDrawFont::OUTLINE_STYLES] = [
         [0xC4, 0xC4, 0xB3, 0xB3, 0xDA, 0xBF, 0xDA, 0xBF, 0xC0, 0xD9, 0xC0, 0xD9, 0xB4, 0xC3, 0x20, 0x20, 0x20],
         [0xCD, 0xC4, 0xB3, 0xB3, 0xD5, 0xB8, 0xDA, 0xBF, 0xD4, 0xBE, 0xC0, 0xD9, 0xB5, 0xC3, 0x20, 0x20, 0x20],
         [0xC4, 0xCD, 0xB3, 0xB3, 0xDA, 0xBF, 0xD5, 0xB8, 0xC0, 0xD9, 0xD4, 0xBE, 0xB4, 0xC6, 0x20, 0x20, 0x20],

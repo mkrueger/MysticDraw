@@ -36,7 +36,7 @@ pub fn create_settings_page(opt_ref: Rc<RefCell<SaveOptions>>, content_area: &gt
         .active(options.modern_terminal_output)
         .build();
     let row = ActionRow::builder()
-        .title("Modern terminal format")
+        .title("Modern terminal format (utf8)")
         .build();
     row.add_suffix(&save_unicode_switch);
     group.add(&row);

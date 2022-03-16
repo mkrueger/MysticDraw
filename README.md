@@ -26,7 +26,6 @@ It's still in it's infant stages. I wouldn't call that 2.0. But I can start to l
    files that contain an extended char set - I couldn't find any)
  * Color Picker that doesn't suck
  * Switch for iCE/Blink (atm it's only in iCE Mode)
- * TDF font tool needs UI - however it basically works
 
  * Tools
     * Brush & Shading need a configuration dialog
@@ -35,13 +34,26 @@ It's still in it's infant stages. I wouldn't call that 2.0. But I can start to l
 
  * Settings
     * Change F key sets - key sets should be able to be defined for font name.
-    * Set outline format for tdf outline fonts
     
  * 1.6 features missing
     * .TDF font editor (1.6 had this featuree)
     * Effects tool (1.6 had some custom effects)
  * Moebius features missing
     * Mirror mode (super cool in my opinion)
+
+# The Draw Fonts
+
+Just open the font path (there is a button in the font tool for it) and copy .tdf files in there. After a restart they'll get picked up.
+(Maybe I'll add an import button later but would require unzip, multiselection etc. to be useful)
+
+I'm not shipping any .tdf fonts because I'm not sure about the copyright issues involved with it. However in the 1.6 branch there are some 'historical' .tdf fonts mystic draw was shipped with.
+Searching with google I found Ta nice collection of 1094 TheDrawFonts:
+
+http://www.roysac.com/thedrawfonts-tdf.html
+
+Enjoy
+
+If I get enough users I'll may be in the mood to bring back a the draw font creation tool. However the one in the MysticDraw 1.6 should still work.
 
 # Building
 

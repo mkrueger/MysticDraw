@@ -14,7 +14,8 @@ pub mod ui;
 pub struct Settings {
     font_path: Option<std::path::PathBuf>,
     console_font_path: Option<std::path::PathBuf>,
-    tab_size: i32
+    tab_size: i32,
+    outline_font_style: usize
 }
 
 #[repr(u32)]
@@ -82,7 +83,7 @@ impl Workspace {
 }
 
 pub static mut WORKSPACE: Workspace = Workspace {
-    settings: Settings { tab_size: 8, font_path: None, console_font_path: None},
+    settings: Settings { tab_size: 8, font_path: None, console_font_path: None, outline_font_style: 0},
     selected_tool: 0,
     selected_attribute: TextAttribute::DEFAULT,
     show_fg_color: true,

@@ -120,7 +120,7 @@ pub fn get_settings_page(main_window: Rc<MainWindow>, editor_ref: Rc<RefCell<Edi
         "string");
 
     let font_dropdown = gtk4::DropDown::new(Some(&list_model), Some(item_string_x));
-        font_dropdown.set_enable_search(true);
+    font_dropdown.set_enable_search(true);
     font_dropdown.set_valign(Align::Center);
     let font_list = BitFont::get_font_list();
 
@@ -155,8 +155,8 @@ pub fn get_settings_page(main_window: Rc<MainWindow>, editor_ref: Rc<RefCell<Edi
     if editor.buf.font.font_type() == BitFontType::Custom {
         row.add_suffix(&export_font_button);
     }
-    
     group.add(&row);
+    content_area.append(&group);
 
     let group = PreferencesGroup::new();
     group.set_hexpand(false);

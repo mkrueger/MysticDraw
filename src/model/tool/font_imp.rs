@@ -12,6 +12,11 @@ pub struct FontTool {
 
 impl FontTool 
 {
+    
+    pub fn get_selected_font(&self) -> Option<&TheDrawFont> {
+        self.fonts.get(self.selected_font as usize)
+    }
+
     fn is_hidden(entry: &DirEntry) -> bool {
         entry.file_name()
              .to_str()

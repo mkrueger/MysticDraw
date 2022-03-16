@@ -28,3 +28,5 @@ pub use buffer_settings_page::*;
 pub mod minimap;
 
 pub mod export_file_dialog;
+
+pub mod font_manager_dialog;
