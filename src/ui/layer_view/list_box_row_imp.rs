@@ -69,8 +69,8 @@ impl ObjectImpl for ListBoxRow {
 
         let check_button = gtk4::CheckButton::new();
         item.bind_property("isvisible", &check_button, "active")
-            .flags(glib::BindingFlags::DEFAULT | glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::BIDIRECTIONAL)
-            .build();
+        .flags(glib::BindingFlags::DEFAULT | glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::BIDIRECTIONAL)
+        .build();
         hbox.append(&check_button);
 
         let label = gtk4::Label::new(None);

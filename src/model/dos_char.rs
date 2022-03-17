@@ -27,6 +27,13 @@ impl DosChar {
         }
     }
 
+    pub fn from_u8_char(char_code: u8) -> Self {
+        DosChar {
+            char_code: char_code as u16,
+            attribute: TextAttribute::DEFAULT
+        }
+    }
+
     pub fn is_transparent(self) -> bool {
         (self.char_code == 0 || self.char_code == b' ' as u16) && self.attribute.get_background() == 0
     }

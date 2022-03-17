@@ -117,7 +117,11 @@ impl ObjectImpl for GtkAnsiView {
         obj.set_can_focus(true);
         obj.set_focusable(true);
         obj.set_focus_on_click(true);
+        obj.connect_has_focus_notify(move |x| {
+            x.queue_draw();
+        });
     }
+
 }
 
 impl WidgetImpl for GtkAnsiView {
@@ -310,10 +314,11 @@ impl WidgetImpl for GtkAnsiView {
                         y += guide.height as u16;
                     }
                 }
-
-                if WORKSPACE.cur_tool().use_caret() {
+                
+                if WORKSPACE.cur_tool().use_caret() && widget.has_focus() {
                     draw_caret(start_x, start_y, editor.get_cursor_position(), snapshot, font_dimensions);
                 }
+
                 if WORKSPACE.cur_tool().use_selection() {
                     if let Some(cur_selection) = &editor.cur_selection{
                         draw_selection(start_x, start_y, cur_selection, snapshot, font_dimensions);
