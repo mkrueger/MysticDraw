@@ -29,3 +29,6 @@ pub use erase_tool::*;
 mod pipette_tool;
 pub use pipette_tool::*;
 
+mod click_tool;
+pub use click_tool::*;
+

@@ -22,7 +22,7 @@ pub mod scan_lines;
 
 #[derive(Copy, Clone, Debug)]
  pub enum MKey {
-    Character(u8),
+    Character(u16),
     Down,
     Up,
     Left,
@@ -334,7 +334,7 @@ trait Plottable {
 
     fn get_use_fore(&self) -> bool;
     fn get_use_back(&self) -> bool;
-    fn get_char_code(&self) -> u8;
+    fn get_char_code(&self) -> u16;
 }
 
 fn plot_point(editor: &Rc<RefCell<Editor>>, tool: &dyn Plottable, pos: Position)
@@ -408,7 +408,7 @@ fn plot_point(editor: &Rc<RefCell<Editor>>, tool: &dyn Plottable, pos: Position)
     }
 }
 
-pub static SHADE_GRADIENT: [u8;4] = [176, 177, 178, 219];
+pub static SHADE_GRADIENT: [u16;4] = [176, 177, 178, 219];
 
 pub static mut TOOLS: Vec<&mut dyn Tool> = Vec::new();
 

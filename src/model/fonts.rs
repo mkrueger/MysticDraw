@@ -18,7 +18,6 @@ pub enum BitFontType {
 #[allow(dead_code)]
 pub struct BitFont {
     pub name: SauceString<22, 0>,
-    pub extended_font: bool,
     pub size: Size<u8>,
     font_type: BitFontType,
     data_32: Option<Vec<u32>>,
@@ -95,11 +94,10 @@ impl BitFont {
         }
     }
 
-    pub fn create_32(name: SauceString<22, 0>, extended_font: bool, width: u8, height: u8, data: &[u32]) -> Self
+    pub fn create_32(name: SauceString<22, 0>, width: u8, height: u8, data: &[u32]) -> Self
     {
         BitFont {
             name, 
-            extended_font,
             size: Size::from(width, height),
             font_type: BitFontType::Custom,
             data_32: Some(data.to_vec()),
@@ -107,11 +105,10 @@ impl BitFont {
         }
     }
 
-    pub fn create_8(name: SauceString<22, 0>, extended_font: bool, width: u8, height: u8, data: &[u8]) -> Self
+    pub fn create_8(name: SauceString<22, 0>, width: u8, height: u8, data: &[u8]) -> Self
     {
         BitFont {
             name, 
-            extended_font,
             size: Size::from(width, height),
             font_type: BitFontType::Custom,
             data_32: None,
@@ -123,7 +120,6 @@ impl BitFont {
     {
         BitFont {
             name: SauceString::EMPTY, 
-            extended_font: false,
             size: Size::from(width, height),
             font_type: BitFontType::Custom,
             data_32: None,
@@ -136,7 +132,6 @@ impl BitFont {
         if let Some(data) = get_font_data(font_name) {
             Some(BitFont {
                 name: SauceString::from(font_name), 
-                extended_font: false,
                 size: len_to_size(data.len()),
                 font_type: BitFontType::BuiltIn,
                 data_32: None,
@@ -164,7 +159,6 @@ impl BitFont {
                         
                         return Some(BitFont {
                             name: SauceString::from(&prefix), 
-                            extended_font: false,
                             size: len_to_size(bytes.len()),
                             font_type: BitFontType::Library,
                             data_32: None,
@@ -177,7 +171,7 @@ impl BitFont {
         }
     }
 
-    pub fn get_scanline(&self, ch: u16, y: usize) -> u32
+    pub fn get_scanline(&self, ch: u8, y: usize) -> u32
     {
         if let Some(data_32) = &self.data_32 {
             data_32[ch as usize * self.size.height as usize + y]

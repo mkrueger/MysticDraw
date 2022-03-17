@@ -169,10 +169,7 @@ mod tests {
                 let ch2 = ch2.unwrap_or_default();
     
                 if ch1.is_transparent() && ch2.is_transparent() { continue; }
-                if (ch1.char_code == b' ' || ch1.char_code == 0) && (ch2.char_code== b' ' || ch2.char_code== 0) && ch2.attribute.get_background() == ch2.attribute.get_background() { continue; }
-                if ch1 != ch2 { 
-                    println!("mismatch at y {} x {}", y, x);
-                }
+                if (ch1.char_code == b' ' as u16 || ch1.char_code == 0) && (ch2.char_code== b' ' as u16 || ch2.char_code== 0) && ch2.attribute.get_background() == ch2.attribute.get_background() { continue; }
                 assert_eq!(ch1, ch2);
             }
         }

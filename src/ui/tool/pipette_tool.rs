@@ -75,7 +75,7 @@ fn render_char2(font: &BitFont, ch: u16, ptr: *mut u8, fg: (u8, u8, u8)) {
     let mut i = 0;
     unsafe {
         for y in 0..font_dimensions.height {
-            let line = font.get_scanline(ch, y as usize);
+            let line = font.get_scanline(ch as u8, y as usize);
             for x in 0..font_dimensions.width {
                 if (line & (128 >> x)) != 0 {
                     *ptr.add(i) = fg.2;

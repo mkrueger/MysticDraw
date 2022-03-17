@@ -25,6 +25,8 @@ pub struct Buffer {
     pub overlay_layer: Option<Layer>,
 
     pub font: BitFont,
+    pub extended_font: Option<BitFont>,
+    
     pub layers: Vec<Layer>,
 
     pub undo_stack: Vec<Box<dyn UndoOperation>>,
@@ -54,6 +56,7 @@ impl Buffer {
             palette: Palette::new(),
 
             font: BitFont::default(),
+            extended_font: None,
             overlay_layer: None,
             layers: vec!(Layer::new()),
             file_name_changed: Box::new(|| {}),
@@ -90,7 +93,7 @@ impl Buffer {
         std::mem::replace( &mut self.overlay_layer, None)
     }
 
-    pub fn get_font_scanline(&self, ch: u16, y: usize) -> u32
+    pub fn get_font_scanline(&self, ch: u8, y: usize) -> u32
     {
         self.font.get_scanline(ch, y)
     }
@@ -339,7 +342,7 @@ impl Buffer {
                         0,
                         data.cur_pos,
                         Some(DosChar {
-                            char_code: ch,
+                            char_code: ch as u16,
                             attribute: data.text_attr,
                         }),
                     );

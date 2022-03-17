@@ -208,7 +208,6 @@ impl<const LEN: usize, const EMPTY: u8> SauceString<LEN, EMPTY> {
 
     pub fn read(&mut self, data: &[u8]) -> usize {
         let mut last_non_empty = LEN;
-        println!("read:{:?}", data);
         #[allow(clippy::needless_range_loop)]
         for i in 0..LEN {
             if EMPTY == 0 && data[i] == 0 {
@@ -222,7 +221,6 @@ impl<const LEN: usize, const EMPTY: u8> SauceString<LEN, EMPTY> {
         if last_non_empty < LEN {
             self.0.truncate(last_non_empty);
         }
-        println!("got:{:?}", self.0);
         LEN
     }
 

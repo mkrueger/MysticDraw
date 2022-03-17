@@ -3,7 +3,7 @@
 Back in the 90' I made my own ANSI drawing tool which I used in my BBS for drawing stuff. It supported TheDrawFonts and was a bit more "cool" than TD at that time.
 I updated it from time to time - but nobody seemed to use it. Never got a single feedback on that.
 
-Doesn't matter - I know why: Because it was not written in rust :). First I used Turbo Pascal, moved to C 1996? (I think), reworked it in C++ (and introduced a lot of bugs, but with the lack of users it didn't matter).
+Doesn't matter - I know why: Because it was not written in rust :). First I used Turbo Pascal, moved to C 1996? (I think), reworked it in C++ (and introduced a lot of bugs, but with the lack of users it didn't matter). Last update was 2003. So ~20 years later it's time for a 2.0 version.
 
 Now I learn rust and as a medium sized UI project - why not ressurrect my 25 year old ANSI editor?
 
@@ -19,11 +19,9 @@ Now I learn rust and as a medium sized UI project - why not ressurrect my 25 yea
 
 # TODO
 
-It's still in it's infant stages. I wouldn't call that 2.0. But I can start to listen to input if you're keen enough to try it.
+It's shaping up but still not finished… 
 
  * ANSI & Minimap controls need a rework, they're only placeholders. Minimap crashes if file is too large.
- * Extended char set support (512 chars - everything is ready for it, would help to have some .xbin
-   files that contain an extended char set - I couldn't find any)
  * Color Picker that doesn't suck
  * Switch for iCE/Blink (atm it's only in iCE Mode)
 
@@ -57,8 +55,8 @@ If I get enough users I'll may be in the mood to bring back a the draw font crea
 
 # Building
 
-Todo. Short:
+* Get Linux - at least on mac the icons are not working. Even some GTK4 icons are missing.
+* Get rust+gtk4 environment. There is 0 chance I can hold that up to date
+  * Just go to https://gtk-rs.org/gtk4-rs/git/book/installation.html and follow that
 
-* get rust
-* get a gtk4 rust environment running
-* type "cargo run" and it just works.
+* After that everything is really easy: type "cargo run" and it just works.

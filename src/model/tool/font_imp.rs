@@ -140,10 +140,10 @@ impl Tool for FontTool
                             editor.set_char(Position::from(i, pos.y), next);
                         }
                         let last_pos = Position::from(editor.buf.width as i32 - (letter_size.width as i32), pos.y);
-                        editor.fill(Rectangle{ start: last_pos, size: letter_size }, Some(super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT }));
+                        editor.fill(Rectangle{ start: last_pos, size: letter_size }, Some(super::DosChar { char_code: b' ' as u16, attribute: TextAttribute::DEFAULT }));
                     } else {
                         let pos = editor.get_cursor_position();
-                        editor.fill(Rectangle{ start: pos, size: letter_size }, Some(super::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT }));
+                        editor.fill(Rectangle{ start: pos, size: letter_size }, Some(super::DosChar { char_code: b' ' as u16, attribute: TextAttribute::DEFAULT }));
                     } 
                 }
             }
@@ -152,7 +152,7 @@ impl Tool for FontTool
                 let c_pos = editor.get_cursor_position();
                 editor.begin_atomic_undo();
                 let attr = editor.cursor.get_attribute();
-                let opt_size = font.render(&mut editor, c_pos, attr, ch);
+                let opt_size = font.render(&mut editor, c_pos, attr, ch as u8);
                 if let Some(size) = opt_size  {
                     editor.set_cursor(c_pos.x + size.width as i32 + font.spaces, c_pos.y);
                     let new_pos = editor.get_cursor_position();

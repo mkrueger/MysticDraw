@@ -7,7 +7,7 @@ use crate::{model::{BRUSH_TOOL, brush_imp::BrushType}, ui::MainWindow};
 fn set_char(char_code: u16)
 {
     unsafe {
-        BRUSH_TOOL.char_code = char_code as u8;
+        BRUSH_TOOL.char_code = char_code;
     }
 }
 
@@ -78,7 +78,7 @@ pub fn add_brush_tool_page(main_window: std::rc::Rc<MainWindow>, content_box: &m
             .build();
         char_container.append(&char_checkbox);
 
-        let button = Rc::new(RefCell::new(crate::ui::create_char_button(main_window.clone(), BRUSH_TOOL.char_code as u16, Box::new(&set_char))));
+        let button = Rc::new(RefCell::new(crate::ui::create_char_button(main_window.clone(), BRUSH_TOOL.char_code, Box::new(&set_char))));
         char_container.append(&button.borrow().button);
         mode_box.append(&char_container);
         

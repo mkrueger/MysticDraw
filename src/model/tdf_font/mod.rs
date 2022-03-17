@@ -97,7 +97,7 @@ impl TheDrawFont
     pub fn transform_outline(outline: usize, ch: u8) -> u8
     {
         if ch  > 64 && ch - 64 <= 17 {
-           TheDrawFont::OUTLINE_CHAR_SET[outline][(ch - 65) as usize ]
+           TheDrawFont::OUTLINE_CHAR_SET[outline][(ch - 65) as usize]
         } else {
             b' '
         }
@@ -143,15 +143,15 @@ impl TheDrawFont
             } else {
                 let dos_char = match self.font_type {
                     TheDrawFontType::Outline => {
-                        DosChar { char_code: TheDrawFont::transform_outline(unsafe {WORKSPACE.settings.outline_font_style}, ch), attribute: color }
+                        DosChar { char_code: TheDrawFont::transform_outline(unsafe {WORKSPACE.settings.outline_font_style}, ch) as u16, attribute: color }
                     }
                     TheDrawFontType::Block => {
-                        DosChar { char_code: ch, attribute: color }
+                        DosChar { char_code: ch as u16, attribute: color }
                     }
                     TheDrawFontType::Color => {
                         let ch_attr = TextAttribute::from_u8(self.font_data[char_offset]);
                         char_offset += 1;
-                        DosChar { char_code: ch, attribute: ch_attr }
+                        DosChar { char_code: ch as u16, attribute: ch_attr }
                     }
                 };
                 if cur.x >= 0 && cur.y >= 0 && cur.x < editor.buf.width as i32 && cur.y < editor.buf.height as i32 {

@@ -2,7 +2,7 @@ use super::TextAttribute;
 
 #[derive(Clone, Copy, Debug)]
 pub struct DosChar {
-    pub char_code: u8,
+    pub char_code: u16,
     pub attribute: TextAttribute,
 }
 
@@ -15,12 +15,12 @@ impl Default for DosChar {
 impl DosChar {
     pub fn new() -> Self {
         DosChar {
-            char_code: b' ',
+            char_code: b' ' as u16,
             attribute: super::TextAttribute::DEFAULT,
         }
     }   
     
-    pub fn from(char_code: u8, attribute: TextAttribute) -> Self {
+    pub fn from(char_code: u16, attribute: TextAttribute) -> Self {
         DosChar {
             char_code,
             attribute
@@ -28,7 +28,7 @@ impl DosChar {
     }
 
     pub fn is_transparent(self) -> bool {
-        (self.char_code == 0 || self.char_code == b' ') && self.attribute.get_background() == 0
+        (self.char_code == 0 || self.char_code == b' ' as u16) && self.attribute.get_background() == 0
     }
 }
 

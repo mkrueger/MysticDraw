@@ -9,7 +9,7 @@ pub struct FillTool {
     pub use_back : bool,
 
     pub attr: TextAttribute,
-    pub char_code: u8
+    pub char_code: u16
 }
 
 // Fill with 

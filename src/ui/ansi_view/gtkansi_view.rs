@@ -9,15 +9,17 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 use crate::WORKSPACE;
-use crate::model::{Editor, Position, Size, Selection, SauceString};
+use crate::model::{Editor, Position, Size, Selection, SauceString, BitFont};
 
 #[derive(Default)]
 pub struct GtkAnsiView {
     pub editor: RefCell<Rc<RefCell<Editor>>>,
     pub textures: RefCell<Vec<Texture>>,
+    pub ext_font_textures: RefCell<Vec<Texture>>,
     pub has_editor: RefCell<bool>,
     pub is_minimap: RefCell<bool>,
     pub font_name: RefCell<SauceString<22, 0>>,
+    pub ext_font_name: RefCell<SauceString<22, 0>>,
     pub preview_rectangle: RefCell<Option<crate::model::Rectangle>>,
     pub reference_image_file: RefCell<Option<PathBuf>>,
     pub reference_image: RefCell<Option<gtk4::gdk::Texture>>
@@ -63,23 +65,37 @@ impl GtkAnsiView {
 
         let mut textures = Vec::new();
 
-        let mut font_size = 256;
-
-        if buffer.font.extended_font {
-            font_size = 512;
-        }
+        let font_size = 255;
 
         self.font_name.replace(buffer.font.name.clone());
 
         for col in 0..buffer.palette.colors.len() {
             let fg = buffer.palette.colors[col as usize].get_rgb();
-            for u in 0..font_size {
+            for u in 0..=font_size {
                 unsafe {
-                    textures.push(render_char(buffer, u, fg));
+                    textures.push(render_char(&buffer.font, u, fg));
                 }
             }
         }
         self.textures.replace(textures);
+
+        if let Some(ext_font) = &buffer.extended_font {
+            let mut ext_font_textures = Vec::new();
+
+            let font_size = 255;
+
+            self.ext_font_name.replace(buffer.font.name.clone());
+
+            for col in 0..buffer.palette.colors.len() {
+                let fg = buffer.palette.colors[col as usize].get_rgb();
+                for u in 0..=font_size {
+                    unsafe {
+                        ext_font_textures.push(render_char(ext_font, u, fg));
+                    }
+                }
+            }
+            self.ext_font_textures.replace(ext_font_textures);
+        }
     }
 
     pub fn set_editor_handle(&self, handle: Rc<RefCell<Editor>>) {
@@ -139,16 +155,14 @@ impl WidgetImpl for GtkAnsiView {
         let buffer = &editor.buf;
         let font_dimensions = buffer.get_font_dimensions();
         let textures = self.textures.borrow();
+        let ext_textures = self.ext_font_textures.borrow();
         let full_width = buffer.width as f32 * font_dimensions.width as f32;
         let full_height = buffer.height as f32 * font_dimensions.height as f32;
         
         let start_x = if !editor.is_inactive && full_width < widget.width() as f32 { ((widget.width() as f32 - full_width) / 2.0).floor() } else { 0.0 };
         let start_y = if !editor.is_inactive && full_height < widget.height() as f32 { ((widget.height() as f32 - full_height) / 2.0).floor() } else { 0.0 };
 
-        let mut font_size = 256;
-        if buffer.font.extended_font {
-            font_size = 512;
-        }
+        let font_size = 256;
 
         if is_minimap {
             let full_width = buffer.width as f32 * font_dimensions.width as f32;
@@ -219,10 +233,15 @@ impl WidgetImpl for GtkAnsiView {
                     font_dimensions.height as f32
                 );
                 snapshot.append_color(&gdk::RGBA::new(bg.0 as f32, bg.1 as f32, bg.2 as f32, 1.0), &bounds);
-                let idx = fg * font_size + char_num;
-                if idx < textures.len() {
+                let idx = fg * font_size + (char_num & 0xFF);
+                if char_num > 0xFF { 
+                    if idx < ext_textures.len() {
+                        snapshot.append_texture(&ext_textures[idx], &bounds);
+                    }
+                } else if idx < textures.len() {
                     snapshot.append_texture(&textures[idx], &bounds);
                 }
+                // TODO: display "error" ?
             }
         }
 
@@ -312,14 +331,14 @@ impl WidgetImpl for GtkAnsiView {
 
 impl DrawingAreaImpl for GtkAnsiView {}
 
-unsafe fn render_char(buffer: &crate::model::Buffer, ch: u16, fg: (u8, u8, u8)) -> Texture {
-    let font_dimensions = buffer.get_font_dimensions();
+unsafe fn render_char(font: &BitFont, ch: u8, fg: (u8, u8, u8)) -> Texture {
+    let font_dimensions = font.size;
     let pix_buf = Pixbuf::new(Colorspace::Rgb, true, 8, font_dimensions.width as i32, font_dimensions.height as i32).unwrap();
     let pixels = pix_buf.pixels();
 
     let mut i = 0;
     for y in 0..font_dimensions.height {
-        let line = buffer.get_font_scanline(ch, y as usize);
+        let line = font.get_scanline(ch, y as usize);
         for x in 0..font_dimensions.width {
             if (line & (128 >> x)) != 0 {
                 pixels[i] = fg.0;

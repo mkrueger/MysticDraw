@@ -45,7 +45,7 @@ pub fn convert_to_pcb(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>
                 last_attr = ch.attribute;
             }
 
-            result.push(if ch.char_code == 0 { b' ' } else { ch.char_code });
+            result.push(if ch.char_code == 0 { b' ' } else { ch.char_code as u8 });
             first_char = false;
             pos.x += 1;
         }

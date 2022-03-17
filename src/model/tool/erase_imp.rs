@@ -34,13 +34,13 @@ impl EraseTool {
 
                         let mut char_code = gradient[0];
                         let mut found = false;
-                        if ch.char_code == gradient[gradient.len() -1] {
+                        if ch.char_code as u8 == gradient[gradient.len() -1] {
                             char_code = gradient[gradient.len() -1];
                             attribute = TextAttribute::DEFAULT;
                             found = true;
                         } else {
                             for i in 0..gradient.len() - 1 {
-                                if ch.char_code == gradient[i] {
+                                if ch.char_code as u8 == gradient[i] {
                                     char_code = gradient[i + 1];
                                     found = true;
                                     break;
@@ -50,13 +50,13 @@ impl EraseTool {
 
                         if found {
                             editor.set_char(center + Position::from(x, y), Some(crate::model::DosChar { 
-                                char_code, 
+                                char_code: char_code as u16, 
                                 attribute
                             }));
                         }
                     },
                     EraseType::Solid => {
-                        editor.set_char(center + Position::from(x, y), Some(crate::model::DosChar { char_code: b' ', attribute: TextAttribute::DEFAULT }));
+                        editor.set_char(center + Position::from(x, y), Some(crate::model::DosChar { char_code: b' ' as u16, attribute: TextAttribute::DEFAULT }));
                     }
                 }
             }                

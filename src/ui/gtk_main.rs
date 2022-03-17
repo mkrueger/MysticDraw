@@ -939,7 +939,10 @@ impl MainWindow {
             .build();
         self.tool_container_box.insert(&button, -1);
         let mut page_content = Box::new(Orientation::Vertical, 0);
-        if tool.get_icon_name() == "md-tool-fill" {
+
+        if tool.get_icon_name() == "md-tool-click" {
+            super::add_click_tool_page(my_box, &mut page_content);
+        } else if tool.get_icon_name() == "md-tool-fill" {
             super::add_fill_tool_page(my_box, &mut page_content);
         } else if tool.get_icon_name() == "md-tool-rectangle" {
             super::add_rectangle_tool_page(my_box, &mut page_content);
@@ -1090,7 +1093,7 @@ impl MainWindow {
         out_buf.set_char(0,
             Position::from(x, 0),
             Some(DosChar {
-                char_code: b'S',
+                char_code: b'S' as u16,
                 attribute: TextAttribute::from_color(9, 0),
             }),
         );
@@ -1098,7 +1101,7 @@ impl MainWindow {
         out_buf.set_char(0,
             Position::from(x, 0),
             Some(DosChar {
-                char_code: b'e',
+                char_code: b'e' as u16,
                 attribute: TextAttribute::from_color(9, 0),
             }),
         );
@@ -1106,7 +1109,7 @@ impl MainWindow {
         out_buf.set_char(0,
             Position::from(x, 0),
             Some(DosChar {
-                char_code: b't',
+                char_code: b't' as u16,
                 attribute: TextAttribute::from_color(9, 0),
             }),
         );
@@ -1114,7 +1117,7 @@ impl MainWindow {
         out_buf.set_char(0,
             Position::from(x, 0),
             Some(DosChar {
-                char_code: b' ',
+                char_code: b' ' as u16,
                 attribute: TextAttribute::from_color(9, 0),
             }),
         );
@@ -1123,7 +1126,7 @@ impl MainWindow {
         out_buf.set_char(0,
             Position::from(x, 0),
             Some(DosChar {
-                char_code: if outline > 8 { b'1' } else { b' ' },
+                char_code: (if outline > 8 { b'1' } else { b' ' }) as u16,
                 attribute: TextAttribute::from_color(9, 0),
             }),
         );
@@ -1131,7 +1134,7 @@ impl MainWindow {
         out_buf.set_char(0,
             Position::from(x, 0),
             Some(DosChar {
-                char_code: b'0' + ((outline + 1) % 10) as u8,
+                char_code: b'0' as u16 + ((outline + 1) % 10) as u16,
                 attribute: TextAttribute::from_color(9, 0),
             }),
         );
@@ -1139,7 +1142,7 @@ impl MainWindow {
         out_buf.set_char(0,
             Position::from(x, 0),
             Some(DosChar {
-                char_code: b' ',
+                char_code: b' ' as u16,
                 attribute: TextAttribute::from_color(9, 0),
             }),
         );
@@ -1149,7 +1152,7 @@ impl MainWindow {
             out_buf.set_char(0,
                 Position::from(x, 0),
                 Some(DosChar {
-                    char_code: b' ',
+                    char_code: b' ' as u16,
                     attribute: TextAttribute::from_color(0, 4),
                 }),
             );
@@ -1159,7 +1162,7 @@ impl MainWindow {
                 out_buf.set_char(0,
                     Position::from(x, 0),
                     Some(DosChar {
-                        char_code: b'1',
+                        char_code: b'1' as u16,
                         attribute: TextAttribute::from_color(0, 4),
                     }),
                 );
@@ -1167,7 +1170,7 @@ impl MainWindow {
                 out_buf.set_char(0,
                     Position::from(x, 0),
                     Some(DosChar {
-                        char_code: b'0',
+                        char_code: b'0' as u16,
                         attribute: TextAttribute::from_color(0, 4),
                     }),
                 );
@@ -1176,7 +1179,7 @@ impl MainWindow {
                 out_buf.set_char(0,
                     Position::from(x, 0),
                     Some(DosChar {
-                        char_code: i + b'1',
+                        char_code: (i + b'1') as u16,
                         attribute: TextAttribute::from_color(0, 4),
                     }),
                 );
@@ -1185,7 +1188,7 @@ impl MainWindow {
             out_buf.set_char(0,
                 Position::from(x, 0),
                 Some(DosChar {
-                    char_code: b'=',
+                    char_code: b'=' as u16,
                     attribute: TextAttribute::from_color(0, 4),
                 }),
             );

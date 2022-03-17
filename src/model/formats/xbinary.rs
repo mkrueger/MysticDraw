@@ -55,15 +55,19 @@ pub fn read_xb(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resul
         o += 48;
     }
     if has_custom_font {
-        let font_length = font_size as usize * if extended_char_mode { 512 } else { 256 };
-        result.font = BitFont::create_8(SauceString::new(), extended_char_mode, 8, font_size, &bytes[o..(o+font_length)]);
+        let font_length = font_size as usize * 256 ;
+        result.font = BitFont::create_8(SauceString::new(), 8, font_size, &bytes[o..(o+font_length)]);
         o += font_length;
+        if extended_char_mode {
+            result.extended_font = Some(BitFont::create_8(SauceString::new(), 8, font_size, &bytes[o..(o+font_length)]));
+            o += font_length;
+        }
     }
 
     if is_compressed {
-        read_data_compressed(result, &bytes[o..], file_size - o)
+        read_data_compressed(result, &bytes[o..], file_size - o, extended_char_mode)
     } else {
-        read_data_uncompressed(result, &bytes[o..], file_size - o)
+        read_data_uncompressed(result, &bytes[o..], file_size - o, extended_char_mode)
     }
 }
 
@@ -77,7 +81,7 @@ fn advance_pos(result: &Buffer, pos: &mut Position) -> bool
     true
 }
 
-fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Result<bool>
+fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize, extended_font: bool) -> io::Result<bool>
 {
     let mut pos = Position::new();
     let mut o = 0;
@@ -99,7 +103,7 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
                         break;
                     }
                     result.set_char(0, pos, Some(DosChar { 
-                        char_code: bytes[o], 
+                        char_code: bytes[o] as u16, 
                         attribute: TextAttribute::from_u8(bytes[o + 1])
                     }));
                     o += 2;
@@ -116,10 +120,8 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
                         eprintln!("Invalid XBin. Read char compression block beyond EOF.");
                         break;
                     }
-                    result.set_char(0, pos, Some(DosChar { 
-                        char_code, 
-                        attribute: TextAttribute::from_u8(bytes[o])
-                    }));
+
+                    result.set_char(0, pos, decode_char(char_code, bytes[o], extended_font));
                     o += 1;
                     if !advance_pos(result, &mut pos) {
                         return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "data out of bounds"));
@@ -127,17 +129,14 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
                 }
             }
             Compression::Attr => {
-                let attribute = TextAttribute::from_u8(bytes[o]);
+                let attribute = bytes[o];
                 o += 1;
                 for _ in 0..repeat_counter {
                     if o + 1 > bytes.len() {
                         eprintln!("Invalid XBin. Read attribute compression block beyond EOF.");
                         break;
                     }
-                    result.set_char(0, pos, Some(DosChar { 
-                        char_code: bytes[o], 
-                        attribute
-                    }));
+                    result.set_char(0, pos, decode_char(bytes[o], attribute, extended_font));
                     o += 1;
                     if !advance_pos(result, &mut pos) {
                         return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "data out of bounds"));
@@ -151,12 +150,9 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
                     eprintln!("Invalid XBin. nRead compression block beyond EOF.");
                     break;
                 }
-                let attr = TextAttribute::from_u8(bytes[o]);
+                let attr = bytes[o];
                 o += 1;
-                let rep_ch = Some(DosChar { 
-                    char_code, 
-                    attribute: attr
-                });
+                let rep_ch = decode_char(char_code, attr, extended_font);
 
                 for _ in 0..repeat_counter {
                     result.set_char(0, pos, rep_ch);
@@ -171,7 +167,32 @@ fn read_data_compressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> 
     Ok(true)
 }
 
-fn read_data_uncompressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Result<bool>
+fn decode_char(char_code: u8, attr: u8, extended_font: bool) -> Option<DosChar> {
+    let mut attribute = TextAttribute::from_u8(attr);
+    Some(if extended_font && (attr & 0b_1000) != 0 {
+        attribute.set_foreground(attribute.get_foreground_without_bold());
+
+        DosChar { 
+            char_code: char_code as u16 | 1 << 9, 
+            attribute
+        }
+    } else {
+        DosChar { 
+            char_code: char_code as u16, 
+            attribute
+        }
+    })
+}
+
+fn encode_attr(char_code: u16, mut attr: TextAttribute, extended_font: bool) -> u8 {
+    if extended_font {
+        attr.set_bold(char_code > 255);
+    }
+    
+    attr.as_u8()
+}
+
+fn read_data_uncompressed(result: &mut Buffer, bytes: &[u8], file_size: usize, extended_font: bool) -> io::Result<bool>
 {
     let mut pos = Position::new();
     let mut o = 0;
@@ -179,10 +200,7 @@ fn read_data_uncompressed(result: &mut Buffer, bytes: &[u8], file_size: usize) -
         if o + 1 > file_size {
             return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Invalid XBin.\n Uncompressed data length needs to be % 2 == 0"));
         }
-        result.set_char(0, pos, Some(DosChar { 
-            char_code: bytes[o], 
-            attribute: TextAttribute::from_u8(bytes[o + 1])
-        }));
+        result.set_char(0, pos, decode_char(bytes[o], bytes[o + 1], extended_font));
         o += 2;
         if !advance_pos(result, &mut pos) {
             return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "data out of bounds"));
@@ -210,7 +228,7 @@ pub fn convert_to_xb(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>>
     }
 
     result.push(buf.font.size.height as u8);
-    if !buf.font.is_default() {
+    if !buf.font.is_default() || buf.extended_font.is_some() {
         flags |= FLAG_FONT;
     }
 
@@ -224,10 +242,10 @@ pub fn convert_to_xb(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>>
     if buf.use_ice {
         flags |= FLAG_NON_BLINK_MODE;
     }
-/* TODO:
-    if buf.use_512_chars {
+
+    if buf.extended_font.is_some() {
         flags |= FLAG_512CHAR_MODE;
-    }*/
+    }
     
     result.push(flags);
     
@@ -237,16 +255,20 @@ pub fn convert_to_xb(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>>
 
     if flags & FLAG_FONT == FLAG_FONT {
         buf.font.push_u8_data(&mut result);
+        if let Some(font) = &buf.extended_font {
+            font.push_u8_data(&mut result);
+        }
     }
     match options.compression_level {
-        CompressionLevel::Medium => compress_greedy(&mut result, buf),
-        CompressionLevel::High => compress_backtrack(&mut result, buf),
+        CompressionLevel::Medium => compress_greedy(&mut result, buf, buf.extended_font.is_some()),
+        CompressionLevel::High => compress_backtrack(&mut result, buf, buf.extended_font.is_some()),
         CompressionLevel::Off => {
             for y in 0..buf.height {
                 for x in 0..buf.width {
                     let ch = buf.get_char(Position::from(x as i32, y as i32)).unwrap_or_default();
-                    result.push(ch.char_code);
-                    result.push(ch.attribute.as_u8());
+
+                    result.push(ch.char_code as u8);
+                    result.push(encode_attr(ch.char_code, ch.attribute, buf.extended_font.is_some()));
                 }
             }
         }
@@ -258,7 +280,7 @@ pub fn convert_to_xb(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>>
     Ok(result)
 }
 
-fn compress_greedy(outputdata: &mut Vec<u8>, buffer: &Buffer)
+fn compress_greedy(outputdata: &mut Vec<u8>, buffer: &Buffer, extended_font: bool)
 {
     let mut run_mode = Compression::Off;
     let mut run_count = 0;
@@ -324,14 +346,14 @@ fn compress_greedy(outputdata: &mut Vec<u8>, buffer: &Buffer)
         if run_count > 0 {
             match run_mode {
                 Compression::Off => {
-                    run_buf.push(cur.char_code);
-                    run_buf.push(cur.attribute.as_u8());
+                    run_buf.push(cur.char_code as u8);
+                    run_buf.push(encode_attr(cur.char_code, cur.attribute, extended_font));
                 }
                 Compression::Char => {
-                    run_buf.push(cur.attribute.as_u8());
+                    run_buf.push(encode_attr(cur.char_code, cur.attribute, extended_font));
                 }
                 Compression::Attr => {
-                    run_buf.push(cur.char_code);
+                    run_buf.push(cur.char_code as u8);
                 }
                 Compression::Full => {
                     // nothing
@@ -360,13 +382,13 @@ fn compress_greedy(outputdata: &mut Vec<u8>, buffer: &Buffer)
             }
 
             if let Compression::Attr = run_mode { 
-                run_buf.push(cur.attribute.as_u8());
-                run_buf.push(cur.char_code);
+                run_buf.push(encode_attr(cur.char_code, cur.attribute, extended_font));
+                run_buf.push(cur.char_code as u8 );
             }
             else
             {
-                run_buf.push(cur.char_code);
-                run_buf.push(cur.attribute.as_u8());
+                run_buf.push(cur.char_code as u8);
+                run_buf.push(encode_attr(cur.char_code, cur.attribute, extended_font));
             }
 
             run_ch = cur;
@@ -477,7 +499,7 @@ fn count_length(mut run_mode: Compression, mut run_ch: DosChar, mut end_run: Opt
     count
 }
 
-fn compress_backtrack(outputdata: &mut Vec<u8>, buffer: &Buffer)
+fn compress_backtrack(outputdata: &mut Vec<u8>, buffer: &Buffer, extended_font: bool)
 {
     let mut run_mode = Compression::Off;
     let mut run_count = 0;
@@ -546,14 +568,14 @@ fn compress_backtrack(outputdata: &mut Vec<u8>, buffer: &Buffer)
         if run_count > 0 {
             match run_mode {
                 Compression::Off => {
-                    run_buf.push(cur.char_code);
-                    run_buf.push(cur.attribute.as_u8());
+                    run_buf.push(cur.char_code as u8);
+                    run_buf.push(encode_attr(cur.char_code, cur.attribute, extended_font));
                 }
                 Compression::Char => {
-                    run_buf.push(cur.attribute.as_u8());
+                    run_buf.push(encode_attr(cur.char_code, cur.attribute, extended_font));
                 }
                 Compression::Attr => {
-                    run_buf.push(cur.char_code);
+                    run_buf.push(cur.char_code as u8);
                 }
                 Compression::Full => {
                     // nothing
@@ -582,13 +604,13 @@ fn compress_backtrack(outputdata: &mut Vec<u8>, buffer: &Buffer)
             }
 
             if let Compression::Attr = run_mode { 
-                run_buf.push(cur.attribute.as_u8());
-                run_buf.push(cur.char_code);
+                run_buf.push(encode_attr(cur.char_code, cur.attribute, extended_font));
+                run_buf.push(cur.char_code as u8);
             }
             else
             {
-                run_buf.push(cur.char_code);
-                run_buf.push(cur.attribute.as_u8());
+                run_buf.push(cur.char_code as u8);
+                run_buf.push(encode_attr(cur.char_code, cur.attribute, extended_font));
             }
 
             run_ch = cur;

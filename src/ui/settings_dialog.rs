@@ -219,7 +219,7 @@ fn render_char2(font: &BitFont, char_x: usize, char_y: usize, ch: u16, ptr: *mut
     let screen_y = char_y * h;
     unsafe {
         for y in 0..h {
-            let line = font.get_scanline(ch, y as usize);
+            let line = font.get_scanline(ch as u8, y as usize);
             for x in 0..w {
                 let i = (screen_x + x) * 4 + (screen_y + y) * OUTLINE_WIDTH * w * 4;
                 if (line & (128 >> x)) != 0 {

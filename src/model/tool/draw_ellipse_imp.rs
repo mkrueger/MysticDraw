@@ -12,7 +12,7 @@ pub struct DrawEllipseTool {
     pub use_fore: bool,
     pub use_back: bool,
     pub attr: TextAttribute,
-    pub char_code: u8,
+    pub char_code: u16,
 }
 
 impl Plottable for DrawEllipseTool {
@@ -25,7 +25,7 @@ impl Plottable for DrawEllipseTool {
     fn get_use_back(&self) -> bool {
         self.use_back
     }
-    fn get_char_code(&self) -> u8 {
+    fn get_char_code(&self) -> u16 {
         self.char_code
     }
 }

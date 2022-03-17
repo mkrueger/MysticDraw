@@ -11,7 +11,7 @@ pub struct BrushTool {
     pub use_fore: bool,
     pub use_back: bool,
     pub size: i32,
-    pub char_code: u8,
+    pub char_code: u16,
 
     pub brush_type: BrushType
 }

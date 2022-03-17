@@ -99,7 +99,7 @@ let drawing_area2 = res.drawing_area.clone();
     res
 }
 
-fn render_char2(font: &BitFont, ch: u16, ptr: *mut u8, fg: (u8, u8, u8)) {
+fn render_char2(font: &BitFont, ch: u8, ptr: *mut u8, fg: (u8, u8, u8)) {
     let font_dimensions = font.size;
     let mut i = 0;
     unsafe {
@@ -132,8 +132,12 @@ fn render_char2(font: &BitFont, ch: u16, ptr: *mut u8, fg: (u8, u8, u8)) {
 
 fn render_char(main_window: Ref<Rc<MainWindow>>, ch: u16, ptr: *mut u8, fg: (u8, u8, u8)) {
     if let Some(editor) = main_window.get_current_editor() {
-        render_char2(&editor.borrow().buf.font, ch, ptr, fg);
+        if ch < 0xFF {
+            render_char2(&editor.borrow().buf.font, ch as u8, ptr, fg);
+        } else if let Some (ext_font) = &editor.borrow().buf.extended_font {
+            render_char2(ext_font, ch as u8, ptr, fg);
+        }
     } else {
-        render_char2(&BitFont::default(), ch, ptr, fg);
-    };
+        render_char2(&BitFont::default(), ch as u8, ptr, fg);
+    }
 }

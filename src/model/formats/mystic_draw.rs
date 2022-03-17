@@ -34,7 +34,7 @@ pub fn read_mdf(result: &mut Buffer, bytes: &[u8]) -> io::Result<bool>
 
     let flags = u16::from_be_bytes(bytes[o..(o + 2)].try_into().unwrap());
     o += 2;
-
+    let mut font_num = 0;
     result.use_ice = (flags & MDF_FLAG_ICE) == MDF_FLAG_ICE;
     while o < bytes.len() {
         let block = bytes[o];
@@ -75,8 +75,13 @@ pub fn read_mdf(result: &mut Buffer, bytes: &[u8]) -> io::Result<bool>
                 if font.is_none() {
                     eprintln!("Font {} can't be found. Falling back to default.", font_name);
                 }
+                if font_num == 0 {
+                    result.font = BitFont::from_name(&font_name.to_string()).unwrap_or_default();
+                } else {
+                    result.extended_font = Some(BitFont::from_name(&font_name.to_string()).unwrap_or_default());
+                }
 
-                result.font = BitFont::from_name(&font_name.to_string()).unwrap_or_default();
+                font_num += 1;
             }
             BLK_FONT => {
                 let mut font_name: SauceString<22, 0> = SauceString::new();
@@ -85,13 +90,11 @@ pub fn read_mdf(result: &mut Buffer, bytes: &[u8]) -> io::Result<bool>
                 o += 1;
                 let height = bytes[o];
                 o += 1;
-                let flags = bytes[o];
-                let extended_font =  (flags & 1) == 1;
+                // let flags = bytes[o];
                 o += 1;
                 let mut data = Vec::new();
 
-                let upper = if extended_font { 512 } else { 256 };
-                for _ in 0..upper {
+                for _ in 0..256 {
                     for _ in 0..height {
                         if width  < 9  {
                             data.push(bytes[o] as u32);
@@ -103,7 +106,13 @@ pub fn read_mdf(result: &mut Buffer, bytes: &[u8]) -> io::Result<bool>
                         }
                     }
                 }
-                result.font = BitFont::create_32(font_name, extended_font, width, height, &data);
+                if font_num == 0 {
+                    result.font = BitFont::create_32(font_name, width, height, &data);
+                } else {
+                    result.extended_font = Some(BitFont::create_32(font_name, width, height, &data));
+                }
+                font_num += 1;
+
             } 
             BLK_LAYER => {
                 let title_len = u16::from_be_bytes(bytes[o..(o + 2)].try_into().unwrap()) as usize;
@@ -143,12 +152,11 @@ pub fn read_mdf(result: &mut Buffer, bytes: &[u8]) -> io::Result<bool>
                         if is_empty { 
                             i += len as i32;
                         } else if flags & LAYER_COMPRESSED == LAYER_COMPRESSED {
-                            decompress(&mut layer, bytes, &mut o, i, len, width, attr_mode);
+                            decompress(&mut layer, bytes, &mut o, i, len, width, attr_mode, font_num > 1);
                             i += len as i32;
                         } else {
                             while len > 0 {
-                                let char_code = bytes[o];
-                                o += 1;
+                                let char_code = read_char(bytes, &mut o, font_num > 1);
                                 let attribute = decode_attribute(bytes, &mut o, attr_mode);
                                 let pos = Position { x: i % (width as i32) , y: i / (width as i32)};
                                 layer.set_char(pos, Some(DosChar {
@@ -175,7 +183,20 @@ pub fn read_mdf(result: &mut Buffer, bytes: &[u8]) -> io::Result<bool>
     Ok(true)
 }
 
-fn decompress(result: &mut Layer, bytes: &[u8], o: &mut usize, mut i: i32, len: u16, width: u16, attr_mode: u16)
+fn read_char(bytes: &[u8], o: &mut usize, extended_font: bool) -> u16
+{
+    let result;
+    if extended_font {
+         result = u16::from_be_bytes(bytes[*o..(*o + 2)].try_into().unwrap());
+         *o += 2;
+    } else {
+        result = bytes[*o] as u16;
+        *o += 1;
+    }
+    result
+}
+
+fn decompress(result: &mut Layer, bytes: &[u8], o: &mut usize, mut i: i32, len: u16, width: u16, attr_mode: u16, extended_font: bool)
 {
     let end = i + len as i32;
     while i < end {
@@ -188,8 +209,7 @@ fn decompress(result: &mut Layer, bytes: &[u8], o: &mut usize, mut i: i32, len: 
         match compression {
             Compression::Off => {
                 for _ in 0..repeat_counter {
-                    let char_code = bytes[*o];
-                    *o += 1;
+                    let char_code = read_char(bytes, o, extended_font);
                     let attribute = decode_attribute(bytes, o, attr_mode);
                     let pos = Position { x: i % (width as i32), y: i / (width as i32)};
                     result.set_char(pos, Some(DosChar { char_code, attribute }));
@@ -197,8 +217,7 @@ fn decompress(result: &mut Layer, bytes: &[u8], o: &mut usize, mut i: i32, len: 
                 }
             }
             Compression::Char => {
-                let char_code = bytes[*o];
-                *o += 1;
+                let char_code = read_char(bytes, o, extended_font);
                 for _ in 0..repeat_counter {
                     let attribute = decode_attribute(bytes, o, attr_mode);
                     let pos = Position { x: i % (width as i32), y: i / (width as i32)};
@@ -209,16 +228,14 @@ fn decompress(result: &mut Layer, bytes: &[u8], o: &mut usize, mut i: i32, len: 
             Compression::Attr => {
                 let attribute = decode_attribute(bytes, o, attr_mode);
                 for _ in 0..repeat_counter {
-                    let char_code = bytes[*o];
-                    *o += 1;
+                    let char_code = read_char(bytes, o, extended_font);
                     let pos = Position { x: i % (width as i32), y: i / (width as i32)};
                     result.set_char(pos, Some(DosChar { char_code, attribute }));
                     i += 1;
                 }
             }
             Compression::Full => {
-                let char_code = bytes[*o];
-                *o += 1;
+                let char_code = read_char(bytes, o, extended_font);
                 let attribute = decode_attribute(bytes, o, attr_mode);
                 
                 let rep_ch = Some(DosChar { 
@@ -326,16 +343,10 @@ pub fn convert_to_mdf(buf: &Buffer) -> io::Result<Vec<u8>>
         }
     }
 
-    if buf.font.font_type() == BitFontType::BuiltIn {
-        result.push(BLK_FONT_NAME);
-        buf.font.name.append_to(&mut result);
-    } else  {
-        result.push(BLK_FONT);
-        buf.font.name.append_to(&mut result);
-        result.push(buf.font.size.width as u8);
-        result.push(buf.font.size.height as u8);
-        result.push(if buf.font.extended_font { 1 } else { 0 });
-        buf.font.push_u8_data(&mut result);
+    push_font(&mut result, &buf.font);
+
+    if let Some(ext_font) = &buf.extended_font {
+        push_font(&mut result, ext_font);
     }
 
     for layer in &buf.layers {
@@ -392,12 +403,15 @@ pub fn convert_to_mdf(buf: &Buffer) -> io::Result<Vec<u8>>
         
                 if ch.is_some() {
                     if flags & LAYER_COMPRESSED == LAYER_COMPRESSED {
-                        compress_greedy(&mut result, layer, i, rle_count, width, attr_mode);
+                        compress_greedy(&mut result, layer, i, rle_count, width, attr_mode, buf.extended_font.is_some());
                         i += rle_count;
                     } else {
                         while rle_count > 0 {
                             let ch = layer.get_char(Position { x: i % (width as i32) , y: i / (width as i32)}).unwrap();
-                            result.push(ch.char_code);
+                            if buf.extended_font.is_some() {
+                                result.push((ch.char_code >> 8) as u8);
+                            }
+                            write_char(&mut result, ch.char_code, buf.extended_font.is_some());
                             encode_attribte(&mut result, ch, attr_mode);
                             i += 1;
                             rle_count -= 1;
@@ -415,6 +429,20 @@ pub fn convert_to_mdf(buf: &Buffer) -> io::Result<Vec<u8>>
     let crc = u32::to_be_bytes(crc32fast::hash(&result[8..]));
     result[CHECKSUM_OFFSET..(CHECKSUM_OFFSET + crc.len())].clone_from_slice(&crc[..]);
     Ok(result)
+}
+
+fn push_font(result: &mut Vec<u8>, font: &BitFont) {
+    if font.font_type() == BitFontType::BuiltIn {
+        result.push(BLK_FONT_NAME);
+        font.name.append_to(result);
+    } else  {
+        result.push(BLK_FONT);
+        font.name.append_to(result);
+        result.push(font.size.width as u8);
+        result.push(font.size.height as u8);
+        result.push(0);
+        font.push_u8_data(result);
+    }
 }
 
 fn encode_attribte(result: &mut Vec<u8>, ch: DosChar, attr_mode: u16) {
@@ -445,7 +473,16 @@ enum Compression {
     Full = 0b1100_0000,
 }
 
-fn compress_greedy(result: &mut Vec<u8>, layer: &Layer, i: i32, rle_count: i32, width: usize, attr_mode: u16) {
+fn write_char(result: &mut Vec<u8>, char_code: u16, extended_font: bool)
+{
+    if extended_font {
+        result.extend(char_code.to_be_bytes());
+    } else {
+        result.push(char_code as u8);
+    }
+}
+
+fn compress_greedy(result: &mut Vec<u8>, layer: &Layer, i: i32, rle_count: i32, width: usize, attr_mode: u16, extended_font: bool) {
     let mut run_mode = Compression::Off;
     let mut run_count = 0;
     let mut run_buf = Vec::new();
@@ -510,14 +547,14 @@ fn compress_greedy(result: &mut Vec<u8>, layer: &Layer, i: i32, rle_count: i32, 
         if run_count > 0 {
             match run_mode {
                 Compression::Off => {
-                    run_buf.push(cur.char_code);
+                    write_char( &mut run_buf, cur.char_code, extended_font);
                     encode_attribte(&mut run_buf, cur, attr_mode);
                 }
                 Compression::Char => {
                     encode_attribte(&mut run_buf, cur, attr_mode);
                 }
                 Compression::Attr => {
-                    run_buf.push(cur.char_code);
+                    write_char( &mut run_buf, cur.char_code, extended_font);
                 }
                 Compression::Full => {
                     // nothing
@@ -547,11 +584,11 @@ fn compress_greedy(result: &mut Vec<u8>, layer: &Layer, i: i32, rle_count: i32, 
 
             if let Compression::Attr = run_mode { 
                 encode_attribte(&mut run_buf, cur, attr_mode);
-                run_buf.push(cur.char_code);
+                write_char( &mut run_buf, cur.char_code, extended_font);
             }
             else
             {
-                run_buf.push(cur.char_code);
+                write_char( &mut run_buf, cur.char_code, extended_font);
                 encode_attribte(&mut run_buf, cur, attr_mode);
             }
 

@@ -61,7 +61,7 @@ pub fn read_idf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
         }
         while rle_count > 0 {
             result.set_char(0, pos, Some(DosChar {
-                char_code,
+                char_code: char_code as u16,
                 attribute: TextAttribute::from_u8(attr)
             }));
             advance_pos(x1, x2, &mut pos);
@@ -118,7 +118,7 @@ pub fn convert_to_idf(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>
         } else {
             rle_count = 1;
         }
-        result.push(ch.char_code);
+        result.push(ch.char_code as u8);
         result.push(ch.attribute.as_u8());
 
         x += rle_count;

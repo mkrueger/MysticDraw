@@ -243,7 +243,7 @@ impl Editor
         Ok(true)
     }
 
-    pub fn get_outline_char_code(&self, i: i32) -> Result<u8, &str>
+    pub fn get_outline_char_code(&self, i: i32) -> Result<u16, &str>
     {
         if self.cur_outline < 0 || self.cur_outline >= DEFAULT_OUTLINE_TABLE.len() as i32 {
             return Err("current outline out of range.");
@@ -252,10 +252,10 @@ impl Editor
             return Err("outline char# out of range.");
         }
         
-        Ok(DEFAULT_OUTLINE_TABLE[self.cur_outline as usize][i as usize])
+        Ok(DEFAULT_OUTLINE_TABLE[self.cur_outline as usize][i as usize] as u16)
     }
     
-    pub fn get_outline_char_code_from(outline:i32, i: i32) -> Result<u8, &'static str>
+    pub fn get_outline_char_code_from(outline:i32, i: i32) -> Result<u16, &'static str>
     {
         if outline < 0 || outline >= DEFAULT_OUTLINE_TABLE.len() as i32 {
             return Err("current outline out of range.");
@@ -263,7 +263,7 @@ impl Editor
         if !(0..=10).contains(&i) {
             return Err("outline char# out of range.");
         }
-        Ok(DEFAULT_OUTLINE_TABLE[outline as usize][i as usize])
+        Ok(DEFAULT_OUTLINE_TABLE[outline as usize][i as usize] as u16)
     }
     
     pub fn get_char(&self, pos: Position) -> Option<DosChar> {
@@ -341,7 +341,7 @@ impl Editor
         pos.y < self.buf.height as i32
     }
 
-    pub fn type_key(&mut self, char_code: u8) {
+    pub fn type_key(&mut self, char_code: u16) {
         let pos = self.cursor.pos;
         if self.cursor.insert_mode {
             for i in (self.buf.width as i32 - 1)..=pos.x {

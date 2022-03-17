@@ -9,7 +9,7 @@ pub struct LineTool {
     pub use_fore: bool,
     pub use_back: bool,
     pub attr: TextAttribute,
-    pub char_code: u8,
+    pub char_code: u16,
 
     pub old_pos: Position
 }
@@ -19,7 +19,7 @@ impl Plottable for LineTool {
 
     fn get_use_fore(&self) -> bool { self.use_fore }
     fn get_use_back(&self) -> bool { self.use_back }
-    fn get_char_code(&self) -> u8 { self.char_code }
+    fn get_char_code(&self) -> u16 { self.char_code }
 }
 
 const CORNER_UPPER_LEFT:i32 = 0;
@@ -38,7 +38,7 @@ const HORIZ_DOWN_CHAR:i32 = 9;
 
 impl LineTool {
 
-    pub fn get_new_horiz_char(editor: &std::cell::RefMut<Editor>, new_char: u8, to_left: bool) -> i32
+    pub fn get_new_horiz_char(editor: &std::cell::RefMut<Editor>, new_char: u16, to_left: bool) -> i32
     {
         if new_char == editor.get_outline_char_code(VERTICAL_CHAR).unwrap() {
             if to_left { 
@@ -55,7 +55,7 @@ impl LineTool {
         }
     }
 
-    pub fn get_old_horiz_char(&self, editor: &std::cell::RefMut<Editor>, old_char: u8, to_left: bool) -> Option<u8>
+    pub fn get_old_horiz_char(&self, editor: &std::cell::RefMut<Editor>, old_char: u16, to_left: bool) -> Option<u16>
     {
         let pos = editor.get_cursor_position();
         if old_char == editor.get_outline_char_code(VERTICAL_CHAR).unwrap() {
@@ -75,7 +75,7 @@ impl LineTool {
         }
     }
 
-    pub fn get_new_vert_char(editor: &std::cell::RefMut<Editor>, new_char: u8, to_left: bool) -> i32
+    pub fn get_new_vert_char(editor: &std::cell::RefMut<Editor>, new_char: u16, to_left: bool) -> i32
     {
         if new_char == editor.get_outline_char_code(HORIZONTAL_CHAR).unwrap() {
             if to_left { 
@@ -92,7 +92,7 @@ impl LineTool {
         }
     }
 
-    pub fn get_old_vert_char(&self, editor: &std::cell::RefMut<Editor>, old_char: u8, to_left: bool) -> Option<u8>
+    pub fn get_old_vert_char(&self, editor: &std::cell::RefMut<Editor>, old_char: u16, to_left: bool) -> Option<u16>
     {
         let pos = editor.get_cursor_position();
         if old_char == editor.get_outline_char_code(HORIZONTAL_CHAR).unwrap() {

@@ -181,10 +181,10 @@ pub fn convert_to_avt(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>
 
             if repeat_count > 1 {
                 if repeat_count < 4 && (ch.char_code != 22 && ch.char_code != 12 && ch.char_code != 25) {
-                    result.resize(result.len() + repeat_count, ch.char_code);
+                    result.resize(result.len() + repeat_count, ch.char_code as u8);
                 } else {
                     result.push(25);
-                    result.push(ch.char_code);
+                    result.push(ch.char_code as u8);
                     result.push(repeat_count as u8);
                 }
                 pos.x += 1;
@@ -195,10 +195,10 @@ pub fn convert_to_avt(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>
             // avt control codes need to be represented as repeat once.
             if ch.char_code == 22 || ch.char_code == 12 || ch.char_code == 25 {
                 result.push(25);
-                result.push(ch.char_code);
+                result.push(ch.char_code as u8);
                 result.push(1);
             } else {
-                result.push(if ch.char_code == 0 { b' ' } else { ch.char_code });
+                result.push(if ch.char_code == 0 { b' ' } else { ch.char_code as u8});
             }
             pos.x += 1;
         }
@@ -248,11 +248,11 @@ mod tests {
         &[b'X', 25, b'b', 3, b'X']).unwrap();
         assert_eq!(1, buf.height);
         assert_eq!(5, buf.width);
-        assert_eq!(b'X', buf.get_char(Position::from(0, 0)).unwrap_or_default().char_code);
-        assert_eq!(b'b', buf.get_char(Position::from(1, 0)).unwrap_or_default().char_code);
-        assert_eq!(b'b', buf.get_char(Position::from(2, 0)).unwrap_or_default().char_code);
-        assert_eq!(b'b', buf.get_char(Position::from(3, 0)).unwrap_or_default().char_code);
-        assert_eq!(b'X', buf.get_char(Position::from(4, 0)).unwrap_or_default().char_code);
+        assert_eq!(b'X', buf.get_char(Position::from(0, 0)).unwrap_or_default().char_code as u8);
+        assert_eq!(b'b', buf.get_char(Position::from(1, 0)).unwrap_or_default().char_code as u8);
+        assert_eq!(b'b', buf.get_char(Position::from(2, 0)).unwrap_or_default().char_code as u8);
+        assert_eq!(b'b', buf.get_char(Position::from(3, 0)).unwrap_or_default().char_code as u8);
+        assert_eq!(b'X', buf.get_char(Position::from(4, 0)).unwrap_or_default().char_code as u8);
     }
 
     #[test]

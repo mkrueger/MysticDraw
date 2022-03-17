@@ -7,7 +7,7 @@ use crate::{model::{FILL_TOOL, Buffer, Editor, DosChar, TextAttribute}, ui::{Ans
 fn set_char(char_code: u16)
 {
     unsafe {
-        FILL_TOOL.char_code = char_code as u8;
+        FILL_TOOL.char_code = char_code;
     }
 }
 

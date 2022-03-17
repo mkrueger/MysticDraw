@@ -17,11 +17,13 @@ pub struct BufferSettingsPage {
     comment_textview: gtk4::TextView,
 
     font_dropdown: Rc<gtk4::DropDown>,
-
+    extended_font_dropdown: Rc<gtk4::DropDown>,
+    
     width_spin_button: SpinButton,
     height_spin_button: SpinButton,
     custom_font: Option<BitFont>,
-
+    custom_extended_font: Option<BitFont>,
+    is_custom_extended_font: bool, // if true then the custom font is not in database
     editor:Rc<RefCell<Editor>>
 }
 
@@ -43,6 +45,19 @@ impl BufferSettingsPage {
         }
         editor.buf.width = self.width_spin_button.value() as u16;
         editor.buf.height = self.height_spin_button.value() as u16;
+
+
+        let row  = self.extended_font_dropdown.selected();
+        if row == 0 { 
+            editor.buf.extended_font = None;
+        } else if self.custom_extended_font.is_some() && row == 1 {
+            editor.buf.extended_font = self.custom_extended_font.clone();
+        } else if let Some(font) = BitFont::from_name( &BitFont::get_font_list()[row as usize -  if self.is_custom_extended_font { 2 } else { 1 }]) {
+            editor.buf.extended_font = Some(font);
+        } else {
+            eprintln!("error setting extended font.");
+        }
+
         let mut row  = self.font_dropdown.selected();
         if let Some(custom_font) = &self.custom_font {
             if row == 0 {
@@ -51,6 +66,7 @@ impl BufferSettingsPage {
             }
             row -= 1;
         }
+
         if let Some(font) = BitFont::from_name( &BitFont::get_font_list()[row as usize]) {
             editor.buf.font = font
         }
@@ -105,11 +121,12 @@ pub fn get_settings_page(main_window: Rc<MainWindow>, editor_ref: Rc<RefCell<Edi
         .build();
     row.add_suffix(&author_entry);
     group.add(&row);
+
+    // Start Font row
     let list_model = gtk4::StringList::new(&[]);
     if editor.buf.font.font_type() == BitFontType::Custom {
         list_model.append("(Custom)");
     }
-
     for font in BitFont::get_font_list() {
         list_model.append(font);
     }
@@ -156,6 +173,61 @@ pub fn get_settings_page(main_window: Rc<MainWindow>, editor_ref: Rc<RefCell<Edi
         row.add_suffix(&export_font_button);
     }
     group.add(&row);
+    // END Font row
+
+    // Start extended font row
+    let extended_font_list_model = gtk4::StringList::new(&[]);
+    extended_font_list_model.append("(None)");
+    let is_custom_extended_font =
+    if let Some(ext_font) = &editor.buf.extended_font {
+        if ext_font.font_type() == BitFontType::Custom {
+            extended_font_list_model.append("(Custom)");
+            true
+        } else { false}
+    } else { false };
+
+    for font in BitFont::get_font_list() {
+        extended_font_list_model.append(font);
+    }
+    // TODO: Filter with substring.
+    let item_string_x = PropertyExpression::new(
+        StringObject::static_type(), 
+        gtk4::Expression::NONE, 
+        "string");
+
+    let extended_font_dropdown = gtk4::DropDown::new(Some(&extended_font_list_model), Some(item_string_x));
+    extended_font_dropdown.set_enable_search(true);
+    extended_font_dropdown.set_valign(Align::Center);
+    let font_list = BitFont::get_font_list();
+
+    if is_custom_extended_font {
+        extended_font_dropdown.set_selected(1);
+    } else if let Some(ext_font) = &editor.buf.extended_font {
+        #[allow(clippy::needless_range_loop)]
+        for i in 0..font_list.len() {
+            if font_list[i] == ext_font.name.to_string() {
+                extended_font_dropdown.set_selected(i as u32 + 1);
+            }
+        }
+    }
+    let row = ActionRow::builder()
+        .title("Extended font")
+        .subtitle("Only for .xbin extended fonts. No one can read that.")
+        .build();
+    row.add_suffix(&extended_font_dropdown);
+    
+    let export_extended_font_button = gtk4::Button::builder()
+        .valign(Align::Center)
+        .icon_name("document-save-symbolic")
+        .build();
+    export_extended_font_button.style_context().add_class("flat");
+    
+    if is_custom_extended_font {
+        row.add_suffix(&export_extended_font_button);
+    }
+    group.add(&row);
+    // END extended font row
+    
     content_area.append(&group);
 
     let group = PreferencesGroup::new();
@@ -262,6 +334,7 @@ pub fn get_settings_page(main_window: Rc<MainWindow>, editor_ref: Rc<RefCell<Edi
         file_chooser.present();
     }));
     let font_dropdown = Rc::new(font_dropdown);
+    let extended_font_dropdown = Rc::new(extended_font_dropdown);
     let font_dropdown2 = font_dropdown.clone();
     import_font_button.connect_clicked(clone!(@strong dialog, @strong main_window, => move |_| {
         let file_chooser = gtk4::FileChooserDialog::builder()
@@ -338,6 +411,49 @@ pub fn get_settings_page(main_window: Rc<MainWindow>, editor_ref: Rc<RefCell<Edi
         file_chooser.present();
     }));
 
+    if is_custom_extended_font {
+        let custom_font = editor.buf.extended_font.as_ref().unwrap().clone();
+        export_extended_font_button.connect_clicked(clone!(@strong dialog, @strong main_window, => move |_| {
+            let file_chooser = gtk4::FileChooserDialog::builder()
+                .title("Export font")
+                .action(FileChooserAction::Save)
+                .transient_for(&dialog)
+                .modal(true)
+                .width_request(640)
+                .height_request(480)
+                .vexpand(false)
+                .hexpand(false)
+                .build();
+
+            file_chooser.add_button("Export", ResponseType::Ok);
+            file_chooser.add_button("Cancel", ResponseType::Cancel);
+            file_chooser.connect_response(clone!(@strong main_window, @strong custom_font =>move |d, response| {
+                if response == ResponseType::Ok {
+                    let file = d.file().expect("Couldn't get file");
+                    let file_name = file.path().expect("Couldn't get file path");
+                    d.close();
+
+                    let mut f = File::create(file_name).unwrap();
+                    let mut result = Vec::new();
+                    custom_font.push_u8_data(&mut result);
+                    f.write_all(&result).expect("can't write file");
+                
+                    /* 
+                    if font.is_err() {
+                        main_window.handle_error(font, || "Error while importing font…".to_string());
+                        return;
+                    }*/
+
+                } else {
+                    d.close();
+                }
+            }));
+            file_chooser.present();
+        }));
+    }
+
+
+
     let custom_font = if editor.buf.font.font_type() == BitFontType::Custom {
         Some(editor.buf.font.clone())
     } else {
@@ -352,9 +468,12 @@ pub fn get_settings_page(main_window: Rc<MainWindow>, editor_ref: Rc<RefCell<Edi
         author_entry,
         comment_textview,
         font_dropdown,
+        extended_font_dropdown,
         width_spin_button,
         height_spin_button,
         custom_font,
+        custom_extended_font: editor.buf.extended_font.clone(),
+        is_custom_extended_font,
         editor: editor_ref2,
     }
 }

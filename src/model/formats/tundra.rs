@@ -80,7 +80,7 @@ pub fn read_tnd(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
             cmd = ch;
         }
         result.set_char(0, pos, Some(DosChar { 
-            char_code: cmd, 
+            char_code: cmd as u16, 
             attribute: attr
         }));
         advance_pos(result, &mut pos);
@@ -160,7 +160,7 @@ pub fn convert_to_tnd(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>
                 if attr.get_background() != ch.attribute.get_background() { cmd |= TUNDRA_COLOR_BACKGROUND }
 
                 result.push(cmd);
-                result.push(ch.char_code);
+                result.push(ch.char_code as u8);
                 if attr.get_foreground() != ch.attribute.get_foreground() { 
                     let rgb = buf.palette.colors[ch.attribute.get_foreground() as usize].get_rgb();
                     result.push(0); 
@@ -181,7 +181,7 @@ pub fn convert_to_tnd(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>
             if ch.char_code >= 1 && ch.char_code <= 6 {
                 // fake color change
                 result.push(2);
-                result.push(ch.char_code);
+                result.push(ch.char_code as u8);
 
                 let rgb = buf.palette.colors[attr.get_foreground() as usize].get_rgb();
                 result.push(0); 
@@ -190,7 +190,7 @@ pub fn convert_to_tnd(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>
                 result.push(rgb.2); 
                 continue;
             }
-            result.push(ch.char_code);
+            result.push(ch.char_code as u8);
         }
     }
     if let Some(pos2) = skip_pos {

@@ -6,7 +6,7 @@ use crate::{model::{LINE_TOOL, DrawMode}, ui::MainWindow};
 fn set_char(char_code: u16)
 {
     unsafe {
-        LINE_TOOL.char_code = char_code as u8;
+        LINE_TOOL.char_code = char_code;
     }
 }
 pub fn add_line_tool_page(main_window: std::rc::Rc<MainWindow>, content_box: &mut gtk4::Box)
@@ -60,7 +60,7 @@ pub fn add_line_tool_page(main_window: std::rc::Rc<MainWindow>, content_box: &mu
             .build();
         char_container.append(&char_checkbox);
 
-        let button = Rc::new(RefCell::new(crate::ui::create_char_button(main_window.clone(), LINE_TOOL.char_code as u16, Box::new(&set_char))));
+        let button = Rc::new(RefCell::new(crate::ui::create_char_button(main_window.clone(), LINE_TOOL.char_code, Box::new(&set_char))));
         char_container.append(&button.borrow().button);
         main_window.char_buttons.borrow_mut().push(button);
         mode_box.append(&char_container);

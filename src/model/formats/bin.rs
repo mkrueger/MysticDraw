@@ -19,7 +19,7 @@ pub fn read_binary(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::R
             }
 
             result.set_char(0, pos, Some(DosChar {
-                char_code: bytes[o],
+                char_code: bytes[o] as u16,
                 attribute: TextAttribute::from_u8(bytes[o + 1])
             }));
             pos.x += 1;
@@ -37,7 +37,7 @@ pub fn convert_to_binary(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<
     for y in 0..buf.height {
         for x in 0..buf.width {
             let ch = buf.get_char(Position::from(x as i32, y as i32)).unwrap_or_default();
-            result.push(ch.char_code);
+            result.push(ch.char_code as u8);
             result.push(ch.attribute.as_u8());
         }
     }

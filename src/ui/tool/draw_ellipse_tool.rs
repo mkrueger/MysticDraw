@@ -6,7 +6,7 @@ use crate::{model::{ELLIPSE_TOOL, DrawMode}, ui::MainWindow};
 fn set_char(char_code: u16)
 {
     unsafe {
-        ELLIPSE_TOOL.char_code = char_code as u8;
+        ELLIPSE_TOOL.char_code = char_code;
     }
 }
 
@@ -61,7 +61,7 @@ pub fn add_ellipse_tool_page(main_window: std::rc::Rc<MainWindow>, content_box: 
             .build();
         char_container.append(&char_checkbox);
 
-        let button = Rc::new(RefCell::new(crate::ui::create_char_button(main_window.clone(), ELLIPSE_TOOL.char_code as u16, Box::new(&set_char))));
+        let button = Rc::new(RefCell::new(crate::ui::create_char_button(main_window.clone(), ELLIPSE_TOOL.char_code, Box::new(&set_char))));
         char_container.append(&button.borrow().button);
         main_window.char_buttons.borrow_mut().push(button);
         mode_box.append(&char_container);

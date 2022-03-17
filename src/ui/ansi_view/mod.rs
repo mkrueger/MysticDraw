@@ -106,7 +106,7 @@ impl AnsiView {
                     if key.len_utf8() == 1 {
                         let mut dst = [0];
                         key.encode_utf8(&mut dst);
-                        return Some(MKey::Character(dst[0]));
+                        return Some(MKey::Character(dst[0] as u16));
                     }
                 }
                 None

@@ -153,7 +153,9 @@ fn change_extension(file_entry: &gtk4::Entry, arg: usize)
     file_entry.set_text(filename.to_str().unwrap());
 }
 
-const TYPE_DESCRIPTIONS: [(&str, fn(Rc<RefCell<SaveOptions>>, &gtk4::Box), &str); 9] = [
+type CreateSettingsFunction = fn(Rc<RefCell<SaveOptions>>, &gtk4::Box);
+
+const TYPE_DESCRIPTIONS: [(&str, CreateSettingsFunction, &str); 9] = [
     ("Ansi (.ans)", ansi::create_settings_page, "ans"),
     ("Avatar (.avt)", avatar::create_settings_page, "avt"),
     ("PCBoard (.pcb)", pcboard::create_settings_page, "pcb"),

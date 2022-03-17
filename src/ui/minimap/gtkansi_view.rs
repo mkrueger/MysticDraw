@@ -34,11 +34,7 @@ impl GtkMinimapAnsiView {
         {   
             let buffer = &handle.borrow().buf;
 
-            let mut font_size = 256;
-
-            if buffer.font.extended_font {
-                font_size = 512;
-            }
+            let font_size = 256;
 
             for col in 0..buffer.palette.colors.len() {
                 let fg = buffer.palette.colors[col as usize].get_rgb();
@@ -87,11 +83,7 @@ impl WidgetImpl for GtkMinimapAnsiView {
         let font_dimensions = buffer.get_font_dimensions();
         let textures = self.textures.borrow();
 
-        let mut font_size = 256;
-        if buffer.font.extended_font {
-            font_size = 512;
-        }
-
+        let font_size = 256;
         let full_width = buffer.width as f32 * font_dimensions.width as f32;
         let full_height = buffer.height as f32 * font_dimensions.height as f32;
         let scale = widget.parent().unwrap().width() as f32 / full_width;
@@ -183,7 +175,7 @@ unsafe fn render_char(buffer: &crate::model::Buffer, ch: u16, fg: (u8, u8, u8)) 
 
     let mut i = 0;
     for y in 0..font_dimensions.height {
-        let line = buffer.get_font_scanline(ch, y as usize);
+        let line = buffer.get_font_scanline(ch as u8, y as usize);
         for x in 0..font_dimensions.width {
             if (line & (128 >> x)) != 0 {
                 pixels[i] = fg.0;

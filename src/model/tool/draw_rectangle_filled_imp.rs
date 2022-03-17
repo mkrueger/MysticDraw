@@ -12,7 +12,7 @@ pub struct DrawRectangleFilledTool {
     pub use_fore: bool,
     pub use_back: bool,
     pub attr: TextAttribute,
-    pub char_code: u8
+    pub char_code: u16
 }
 
 impl Plottable for DrawRectangleFilledTool {
@@ -20,7 +20,7 @@ impl Plottable for DrawRectangleFilledTool {
 
     fn get_use_fore(&self) -> bool { self.use_fore }
     fn get_use_back(&self) -> bool { self.use_back }
-    fn get_char_code(&self) -> u8 { self.char_code }
+    fn get_char_code(&self) -> u16 { self.char_code }
 }
 
 impl Tool for DrawRectangleFilledTool {
