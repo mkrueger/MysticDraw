@@ -1,7 +1,7 @@
 use std::{rc::Rc, str::FromStr, cell::RefCell};
 
-use glib::{ObjectExt, SignalHandlerId, StaticType};
-use gtk4::{ traits::{ WidgetExt, BoxExt, GtkWindowExt, ButtonExt, FlowBoxChildExt, EventControllerExt, GestureSingleExt, GridExt, DrawingAreaExt }, SpinButton, Orientation, Align, gdk, prelude::{DrawingAreaExtManual, GdkCairoContextExt}, SelectionMode, PropertyExpression, StringObject };
+use glib::{ObjectExt, StaticType};
+use gtk4::{ traits::{ WidgetExt, BoxExt, GtkWindowExt, ButtonExt, FlowBoxChildExt, GestureSingleExt, GridExt }, SpinButton, Orientation, Align, gdk, prelude::{DrawingAreaExtManual, GdkCairoContextExt}, SelectionMode, PropertyExpression, StringObject };
 use libadwaita::{ PreferencesGroup, ActionRow, traits::{PreferencesGroupExt, ActionRowExt}, HeaderBar, ViewSwitcherBar };
 
 use crate::{WORKSPACE, model::{TheDrawFont, BitFont, Buffer, Position, TextAttribute, DosChar, Editor, Rectangle}};
@@ -247,7 +247,7 @@ fn generated_function_key_page() -> gtk4::Box {
         .valign(Align::Center)
         .build());
 
-        selector_area.append(&font_dropdown);
+    selector_area.append(&font_dropdown);
     selector_area.append(&insert_button);
     selector_area.append(&delete_button);
 
