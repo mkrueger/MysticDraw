@@ -46,7 +46,7 @@ impl MainWindow {
         let main_window = Rc::new(MainWindow {
             window: ApplicationWindow::builder()
                 .application(app)
-                .default_width(1024)
+                .default_width(1224)
                 .default_height(568)
                 .content(&content)
                 .build(),
@@ -422,7 +422,6 @@ impl MainWindow {
             let action = SimpleAction::new("preferences", None);
             action.connect_activate(clone!(@weak main_window => move |_,_| {
                 super::display_settings_dialog(main_window);
-                
             }));
             app.add_action(&action);
 

@@ -5,8 +5,7 @@ use std::{
 
 use glib::subclass::types::ObjectSubclassIsExt;
 use gtk4::{
-    glib,
-    traits::{WidgetExt},
+    glib
 };
 
 use crate::{
@@ -30,12 +29,6 @@ impl MinimapAnsiView {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create a AnsiEditorArea")
     }
-
-    pub fn set_preview_rectangle(&self, rect: Option<crate::model::Rectangle>)
-    {
-        self.imp().set_preview_rectangle(rect);
-        self.queue_draw();
-    } 
 
     pub fn get_editor(&self) -> Rc<RefCell<Editor>> {
         self.imp().editor.borrow().clone()

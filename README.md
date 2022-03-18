@@ -21,7 +21,6 @@ Now I learn rust and as a medium sized UI project - why not ressurrect my 25 yea
 
 It's shaping up but still not finished… 
 
- * ANSI & Minimap controls need a rework, they're only placeholders. Minimap crashes if file is too large.
  * Color Picker that doesn't suck
  * Switch for iCE/Blink (atm it's only in iCE Mode)
 

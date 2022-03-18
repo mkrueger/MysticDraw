@@ -148,6 +148,11 @@ impl WidgetImpl for GtkAnsiView {
         self.parent_realize(widget);
     }
 
+    fn focus(&self, widget: &Self::Type, direction_type: gtk4::DirectionType) -> bool {
+        println!("focus {}" , direction_type);
+        self.parent_focus(widget, direction_type)
+    }
+
     fn snapshot(&self, widget: &Self::Type, snapshot: &gtk4::Snapshot) {
         self.update_font_textures();
         snapshot.append_color(

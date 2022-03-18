@@ -15,6 +15,15 @@ impl Color {
             self.g as f64 / 255_f64,
             self.b as f64 / 255_f64
         )
+
+    }
+    
+    pub fn get_rgb_f32(self) -> (f32, f32, f32) {
+        (
+            self.r as f32 / 255_f32,
+            self.g as f32 / 255_f32,
+            self.b as f32 / 255_f32
+        )
     }
     
     pub fn get_rgb(self) -> (u8, u8, u8) {

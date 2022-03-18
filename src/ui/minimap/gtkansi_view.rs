@@ -1,51 +1,58 @@
-use gtk4::gdk::Texture;
 use gtk4::gdk_pixbuf::{Pixbuf, Colorspace};
-use gtk4::prelude::TextureExt;
 use gtk4::subclass::prelude::*;
 use gtk4::traits::WidgetExt;
 use gtk4::{glib, gdk, graphene};
+
 use std::cell::RefCell;
-use std::path::PathBuf;
 use std::rc::Rc;
 
-use crate::WORKSPACE;
-use crate::model::{Editor, Position, Size};
+use crate::model::{Editor, Position};
 
 #[derive(Default)]
 
 pub struct GtkMinimapAnsiView {
     pub editor: RefCell<Rc<RefCell<Editor>>>,
-    pub textures: RefCell<Vec<Texture>>,
+
+    pub textures: RefCell<Vec<Vec<f32>>>,
     pub has_editor: RefCell<bool>,
-    pub preview_rectangle: RefCell<Option<crate::model::Rectangle>>,
-    pub reference_image_file: RefCell<Option<PathBuf>>,
-    pub reference_image: RefCell<Option<gtk4::gdk::Texture>>
+
+    pub pix_buf: RefCell<Option<Pixbuf>>,
+    pub minimap_image : RefCell<Option<gtk4::gdk::Texture>>,
 }
 
+
 impl GtkMinimapAnsiView {
-    pub fn set_preview_rectangle(&self, rect: Option<crate::model::Rectangle>)
-    {
-        self.preview_rectangle.replace(rect);
-    } 
 
     pub fn set_editor_handle(&self, handle: Rc<RefCell<Editor>>) {
         self.has_editor.replace(true);
-        let mut textures = Vec::new();
+        let mut new_textures = Vec::new();
         {   
             let buffer = &handle.borrow().buf;
 
-            let font_size = 256;
+            let block_size = if buffer.width >= 160 { 4 } else { 2 };
+            let font_size = 255;
+            let full_block = (block_size * block_size) as f32;
+            for u in 0..=font_size {
+                let mut fg = Vec::new();
+                for y in 0..(buffer.font.size.height / block_size) {
+                    for x in 0..(buffer.font.size.width / block_size) {
 
-            for col in 0..buffer.palette.colors.len() {
-                let fg = buffer.palette.colors[col as usize].get_rgb();
-                for u in 0..font_size {
-                    unsafe {
-                        textures.push(render_char(buffer, u, fg));
+                        let mut i = 0;
+                        for y2 in 0..block_size { 
+                            let line = buffer.font.get_scanline(u, (y * block_size + y2) as usize);
+                            for x2 in 0..block_size {
+                                if (line & (128 >> (x * block_size + x2))) != 0 {
+                                    i += 1;
+                                }
+                            }
+                        }
+                        fg.push(i as f32 / full_block);
                     }
                 }
+                new_textures.push(fg);
             }
         }
-        self.textures.replace(textures);
+        self.textures.replace(new_textures);
         self.editor.replace(handle);
     }
 }
@@ -80,142 +87,58 @@ impl WidgetImpl for GtkMinimapAnsiView {
         let editor = &self.editor.borrow();
         let editor = editor.borrow();
         let buffer = &editor.buf;
-        let font_dimensions = buffer.get_font_dimensions();
-        let textures = self.textures.borrow();
+        let block_size = if buffer.width >= 160 { 4 } else { 2 };
 
-        let font_size = 256;
-        let full_width = buffer.width as f32 * font_dimensions.width as f32;
-        let full_height = buffer.height as f32 * font_dimensions.height as f32;
-        let scale = widget.parent().unwrap().width() as f32 / full_width;
-        snapshot.scale(scale, scale);
-        widget.set_height_request( (full_height * scale) as i32);
+        let block_w = buffer.font.size.width as u16 / block_size as u16;
+        let block_h = buffer.font.size.height as u16 / block_size as u16;
 
-        if !self.reference_image_file.borrow().eq(&editor.reference_image) {
-            self.reference_image_file.replace(editor.reference_image.clone());
+        widget.set_width_request((buffer.width * block_w) as i32);
+        widget.set_height_request((buffer.height * block_h) as i32);
+        let t = self.textures.borrow();
+        
+        let mut new_pixbuf = self.pix_buf.borrow().is_none();
+        
+        if let Some(pb) = &*self.pix_buf.borrow() {
+            new_pixbuf |= pb.width() != buffer.width as i32 * block_w as i32 || pb.height() != buffer.height  as i32 * block_h as i32;
+        }
 
-            if let Some(file_name) = &editor.reference_image {
-                if let Ok(img) = Texture::from_filename(file_name) {
-                    self.reference_image.replace(Some(img));
-                } else {
-                    eprintln!("Error loading image");
+        if new_pixbuf  {
+            self.pix_buf.replace(Some(Pixbuf::new(Colorspace::Rgb, true, 8, buffer.width as i32 * block_w as i32, buffer.height as i32 * block_h as i32).unwrap()));
+        } 
+
+        if let Some(pix_buf) = &*self.pix_buf.borrow_mut() {
+            unsafe {
+                let pixels = pix_buf.pixels();
+                let mut i = 0;
+                for y in 0..(buffer.height * block_h) {
+                    for x in 0..(buffer.width * block_w) {
+
+                        let ch = buffer.get_char(Position::from((x / block_w)  as i32, (y / block_h) as i32)).unwrap_or_default();
+                        let bg = ch.attribute.get_background() as usize;
+                        let bg = buffer.palette.colors[bg].get_rgb_f32();
+                        let fg = ch.attribute.get_foreground() as usize;
+                        let fg = buffer.palette.colors[fg].get_rgb_f32();
+
+                        let f_fac = &t[(ch.char_code & 0xFF) as usize];
+                        let f_fac = f_fac[(x % block_w + (y % block_h) * block_w) as usize];
+                        let b_fac = 1.0 - f_fac;
+                        pixels[i] = ((fg.0 * f_fac + bg.0 * b_fac) * 255.0) as u8;
+                        i += 1;
+                        pixels[i] = ((fg.1 * f_fac + bg.1 * b_fac) * 255.0) as u8;
+                        i += 1;
+                        pixels[i] = ((fg.2 * f_fac + bg.2 * b_fac) * 255.0) as u8;
+                        i += 1;
+                        pixels[i] = 255;
+                        i += 1;
+
+                    }
                 }
-            } else {
-                self.reference_image.replace(None);
             }
-        }
 
-        let paint_texture = if let Some(texture) = &*self.reference_image.borrow() {
-            let full_width = buffer.width as f32 * font_dimensions.width as f32;
-            let scale =  full_width / texture.width() as f32 ;
-            let bounds = graphene::Rect::new(
-                0.0,
-                0.0,
-                full_width,
-                texture.height() as f32 * scale
-            );
-            snapshot.append_texture(texture, &bounds);
-            snapshot.push_opacity(0.7);
-            true 
-        } else { false };
-
-        for y in 0..buffer.height {
-            for x in 0..buffer.width {
-                let ch = buffer.get_char(Position::from(x as i32, y as i32));
-                if ch.is_none() { continue; }
-                let ch = ch.unwrap();
-                let mut bg = ch.attribute.get_background() as usize;
-                unsafe {
-                    if !WORKSPACE.show_bg_color {
-                        bg = 0;
-                    }      
-                }
-                let char_num = ch.char_code as usize;
-
-                let bg = buffer.palette.colors[bg].get_rgb_f64();
-                let mut fg = ch.attribute.get_foreground() as usize;
-                unsafe {
-                    if !WORKSPACE.show_fg_color {
-                        fg = 7;
-                    }      
-                }
-                /* TODO:
-                if buffer.use_512_chars && (fg & 0b_1000) != 0 {
-                    char_num += 256;
-                    fg &= 0b_0111;
-                } */
-
-                let bounds = graphene::Rect::new(
-                    x as f32 * font_dimensions.width as f32,
-                    y as f32 * font_dimensions.height as f32,
-                    font_dimensions.width as f32,
-                    font_dimensions.height as f32
-                );
-                snapshot.append_color(&gdk::RGBA::new(bg.0 as f32, bg.1 as f32, bg.2 as f32, 1.0), &bounds);
-                snapshot.append_texture(&textures[fg * font_size + char_num], &bounds);
-            }
-        }
-
-        if paint_texture {
-            snapshot.pop();
-        }
-
-        if self.preview_rectangle.borrow().is_some() {
-            let rect = self.preview_rectangle.borrow().unwrap();
-            draw_preview_rectangle(&rect, snapshot, font_dimensions);
+            let texture = gdk::Texture::for_pixbuf(pix_buf);
+            snapshot.append_texture(&texture, &graphene::Rect::new(0.0, 0.0, (buffer.width * block_w) as f32, (buffer.height * block_h) as f32));
         }
     }
 }
 
 impl DrawingAreaImpl for GtkMinimapAnsiView {}
-
-unsafe fn render_char(buffer: &crate::model::Buffer, ch: u16, fg: (u8, u8, u8)) -> Texture {
-    let font_dimensions = buffer.get_font_dimensions();
-    let pix_buf = Pixbuf::new(Colorspace::Rgb, true, 8, font_dimensions.width as i32, font_dimensions.height as i32).unwrap();
-    let pixels = pix_buf.pixels();
-
-    let mut i = 0;
-    for y in 0..font_dimensions.height {
-        let line = buffer.get_font_scanline(ch as u8, y as usize);
-        for x in 0..font_dimensions.width {
-            if (line & (128 >> x)) != 0 {
-                pixels[i] = fg.0;
-                i += 1;
-                pixels[i] = fg.1;
-                i += 1;
-                pixels[i] = fg.2;
-                i += 1;
-                pixels[i] = 255;
-                i += 1;
-            } else {
-                pixels[i] = 0;
-                i += 1;
-                pixels[i] = 0;
-                i += 1;
-                pixels[i] = 0;
-                i += 1;
-                pixels[i] = 0;
-                i += 1;
-            }
-        }
-    }
-
-    Texture::for_pixbuf(&pix_buf)
-}
-
-fn draw_preview_rectangle(rect: &crate::model::Rectangle, snapshot: &gtk4::Snapshot, font_dimensions: Size<u8>)
-{
-    let bounds = graphene::Rect::new(
-        rect.start.x as f32 * font_dimensions.width as f32,
-        rect.start.y as f32 * font_dimensions.height as f32,
-        rect.size.width as f32 * font_dimensions.width as f32,
-        rect.size.height as f32 * font_dimensions.height as f32
-    );
-    let cr = snapshot.append_cairo(&bounds);
-    cr.rectangle(bounds.x() as f64,
-                 bounds.y() as f64,
-              bounds.width() as f64,
-             bounds.height() as f64);
-    cr.set_source_rgb(2.0, 2.0, 6.0);
-    cr.set_line_width(3f64);
-    cr.stroke_preserve().expect("error while calling stroke.");
-}
