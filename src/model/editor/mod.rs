@@ -586,6 +586,14 @@ impl Editor
         self.buf.height = new_height;
         self.end_atomic_undo();
     }
+    pub fn switch_fg_bg_color(&mut self) 
+    {
+        let mut attr = self.cursor.get_attribute();
+        let bg = attr.get_background();
+        attr.set_background(attr.get_foreground());
+        attr.set_foreground(bg);
+        self.cursor.set_attribute(attr);
+    }
 }
 
 pub const DEFAULT_OUTLINE_TABLE: [[u8;10];15] = [

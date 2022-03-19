@@ -58,11 +58,7 @@ impl WidgetImpl for GtkAttributeSwitcher {
                     if ((x as f32) < s) && y as f32 > PICKER_HEIGHT - s {
                         editor.cursor.set_attribute(TextAttribute::DEFAULT);
                     } else if ((x as f32) > PICKER_WIDTH - s) && (y as f32) < s  {
-                        let mut attr = editor.cursor.get_attribute();
-                        let bg = attr.get_background();
-                        attr.set_background(attr.get_foreground());
-                        attr.set_foreground(bg);
-                        editor.cursor.set_attribute(attr);
+                        editor.switch_fg_bg_color();
                     }
                     this.queue_draw();
                 }

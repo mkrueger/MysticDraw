@@ -7,7 +7,7 @@ use libadwaita as adw;
 
 use adw::{prelude::*, TabBar, TabPage, TabView};
 use adw::{ApplicationWindow, HeaderBar};
-use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, MessageType, ButtonsType, DialogFlags, FileFilter};
+use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, MessageType, ButtonsType, DialogFlags, FileFilter, ShortcutType};
 
 use crate::WORKSPACE;
 use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, Layer, SaveOptions, BufferType};
@@ -159,8 +159,6 @@ impl MainWindow {
                 let hs = Rc::new(nfd.height_spin_button);
                 let type_dropdown = Rc::new(nfd.type_dropdown);
                 
-                
-        
                 nfd.open_button.connect_clicked(clone!(@strong main_window => move |_| {
                     let mut buffer = Buffer::create(ws.value() as u16, hs.value() as u16);
                     buffer.buffer_type = match type_dropdown.selected() {
@@ -565,6 +563,84 @@ impl MainWindow {
             }));
             app.add_action(&action);
 
+            let action = SimpleAction::new("prev_fg_color", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut attr = editor.borrow().cursor.get_attribute();
+                    let l = editor.borrow().buf.buffer_type.get_fg_colors();
+                    attr.set_foreground((attr.get_foreground() + l - 1) % l);
+                    editor.borrow_mut().cursor.set_attribute(attr);
+                }
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("next_fg_color", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut attr = editor.borrow().cursor.get_attribute();
+                    let l = editor.borrow().buf.buffer_type.get_fg_colors();
+                    attr.set_foreground((attr.get_foreground() + 1) % l);
+                    editor.borrow_mut().cursor.set_attribute(attr);
+                }
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("prev_bg_color", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut attr = editor.borrow().cursor.get_attribute();
+                    let l = editor.borrow().buf.buffer_type.get_bg_colors();
+                    attr.set_background((attr.get_background() + l - 1) % l);
+                    editor.borrow_mut().cursor.set_attribute(attr);
+                }
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("next_bg_color", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut attr = editor.borrow().cursor.get_attribute();
+                    let l = editor.borrow().buf.buffer_type.get_bg_colors();
+                    attr.set_background((attr.get_background() + 1) % l);
+                    editor.borrow_mut().cursor.set_attribute(attr);
+                }
+            }));
+            app.add_action(&action);
+            
+            let action = SimpleAction::new("pickup_attribute", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut editor = editor.borrow_mut();
+                    let l = editor.get_char_from_cur_layer(editor.get_cursor_position()).unwrap_or_default();
+                    editor.cursor.set_attribute(l.attribute);
+                }
+            }));
+            app.add_action(&action);
+            
+            let action = SimpleAction::new("default_attribute", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut editor = editor.borrow_mut();
+                    editor.cursor.set_attribute(TextAttribute::DEFAULT);
+                }
+            }));
+            app.add_action(&action);
+            
+            let action = SimpleAction::new("switch_colors", None);
+            action.connect_activate(clone!(@strong main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut editor = editor.borrow_mut();
+                    editor.switch_fg_bg_color();
+                }
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("keymap", None);
+            action.connect_activate(/*clone!(@strong main_window =>*/ move |_,_| {
+                super::shortcut_dialog::show_shortcut_dialog();
+            });
+            app.add_action(&action);
+
             app.set_accels_for_action("app.open", &["<primary>o"]);
             app.set_accels_for_action("app.preferences", &["<primary>comma"]);
             app.set_accels_for_action("app.cut", &["<primary>x"]);
@@ -573,6 +649,22 @@ impl MainWindow {
             app.set_accels_for_action("app.undo", &["<primary>z"]);
             app.set_accels_for_action("app.redo", &["<Primary><Shift>z"]);
             app.set_accels_for_action ("app.select_all", &["<primary>a"]);
+
+            app.set_accels_for_action("app.left_justify", &["<Alt>l"]);
+            app.set_accels_for_action("app.right_justify", &["<Alt>r"]);
+            app.set_accels_for_action("app.center_justify", &["<Alt>c"]);
+
+            app.set_accels_for_action("app.prev_fg_color", &["<primary>Up"]);
+            app.set_accels_for_action("app.next_fg_color", &["<primary>Down"]);
+            app.set_accels_for_action("app.prev_bg_color", &["<primary>Left"]);
+            app.set_accels_for_action("app.next_bg_color", &["<primary>Right"]);
+
+            app.set_accels_for_action("app.pickup_attribute", &["<Alt>u"]);
+            app.set_accels_for_action("app.default_attribute", &["<Primary>d"]);
+            app.set_accels_for_action("app.switch_colors", &["<Primary><Shift>x"]);
+
+            // Ctrl+0-7 - Change foreground color + Alt+0-7 - Change background color
+            
         }
     }
 

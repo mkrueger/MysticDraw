@@ -25,6 +25,26 @@ impl BufferType {
     pub fn use_extended_font(self) -> bool {
         self == BufferType::ExtFont || self == BufferType::ExtFontIce
     }
+
+    pub fn get_fg_colors(self) -> u8 {
+        match self {
+            BufferType::LegacyDos => 16,
+            BufferType::LegacyIce => 16,
+            BufferType::ExtFont => 8,
+            BufferType::ExtFontIce => 8,
+            BufferType::NoLimits => 16 // may change in the future
+        }
+    }
+
+    pub fn get_bg_colors(self) -> u8 {
+        match self {
+            BufferType::LegacyDos => 8,
+            BufferType::LegacyIce => 16,
+            BufferType::ExtFont => 8,
+            BufferType::ExtFontIce => 16,
+            BufferType::NoLimits => 16 // may change in the future
+        }
+    }
 }
 
 pub struct Buffer {
