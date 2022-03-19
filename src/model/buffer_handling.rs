@@ -7,6 +7,26 @@ use std::ffi::OsStr;
 
 use super::{Layer, read_xb, Position, DosChar,  ParseStates, read_binary, display_ans, display_PCBoard,  display_avt, TextAttribute, Size, UndoOperation, Palette, SauceString, Line, BitFont, SaveOptions };
 
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum BufferType {
+    LegacyDos  = 0b_0000,  // 0-15 fg, 0-7 bg, blink
+    LegacyIce  = 0b_0001,  // 0-15 fg, 0-15 bg
+    ExtFont    = 0b_0010,  // 0-7 fg, 0-7 bg, blink + extended font
+    ExtFontIce = 0b_0011,  // 0-7 fg, 0-15 bg + extended font
+    NoLimits   = 0b_0111   // free colors, blink + extended font 
+}
+
+impl BufferType {
+    pub fn use_ice_colors(self) -> bool {
+        self == BufferType::LegacyIce || self == BufferType::ExtFontIce
+    } 
+    
+    pub fn use_extended_font(self) -> bool {
+        self == BufferType::ExtFont || self == BufferType::ExtFontIce
+    }
+}
+
 pub struct Buffer {
     pub file_name: Option<PathBuf>,
     pub file_name_changed: Box<dyn Fn ()>,
@@ -19,7 +39,7 @@ pub struct Buffer {
     pub width: u16,
     pub height: u16,
 
-    pub use_ice: bool,
+    pub buffer_type: BufferType,
 
     pub palette: Palette,
     pub overlay_layer: Option<Layer>,
@@ -51,7 +71,7 @@ impl Buffer {
             group: SauceString::new(),
             comments: Vec::new(),
 
-            use_ice: true,
+            buffer_type: BufferType::LegacyDos,
 
             palette: Palette::new(),
 
@@ -264,7 +284,7 @@ impl Buffer {
                         return Ok(result);
                     }
                     "ans" => { parse_ansi = true; }
-                    "ice" => { parse_ansi = true; result.use_ice = true; }
+                    "ice" => { parse_ansi = true; result.buffer_type = BufferType::LegacyIce; }
                     "avt" => { parse_avt = true;  }
                     "pcb" => { parse_pcb = true; parse_ansi = true; }
                     _ => {}
@@ -288,18 +308,18 @@ impl Buffer {
             }
             if parse_pcb {
                 if let Some(c) = ch {
-                    ch = display_PCBoard(&mut data, c);
+                    ch = display_PCBoard(&result, &mut data, c);
                 }
             }
 
             if parse_avt {
                 if let Some(c) = ch { 
-                    let mut avt_result = display_avt(&mut data, c)?;
+                    let mut avt_result = display_avt(&result, &mut data, c)?;
                     let ch = avt_result.0;
                     if let Some(26) = ch { break; }
                     Buffer::output_char(&mut result, &mut data, ch);
                     while avt_result.1 {
-                        avt_result = display_avt(&mut data, 0)?;
+                        avt_result = display_avt(&result, &mut data, 0)?;
                         Buffer::output_char(&mut result, &mut data, avt_result.0);
                     }
                 }

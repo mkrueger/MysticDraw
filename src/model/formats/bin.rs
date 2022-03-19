@@ -20,7 +20,7 @@ pub fn read_binary(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::R
 
             result.set_char(0, pos, Some(DosChar {
                 char_code: bytes[o] as u16,
-                attribute: TextAttribute::from_u8(bytes[o + 1])
+                attribute: TextAttribute::from_u8(bytes[o + 1], result.buffer_type)
             }));
             pos.x += 1;
             o += 2;

@@ -32,12 +32,17 @@ pub fn display_ans(buf: &mut Buffer, data: &mut ParseStates, ch: u8) -> io::Resu
                 for n in &data.ans_numbers {
                     match n {
                         0 => data.text_attr = TextAttribute::DEFAULT, // Reset or normal 
-                        1 => data.text_attr.set_bold(true),      // Bold or increased intensity 
-                        5 => data.text_attr.set_blink(true),                                 // Slow blink 
+                        1 => data.text_attr.set_foreground_bold(true),    // Bold or increased intensity 
+                        5 => if buf.buffer_type.use_ice_colors() { 
+                            data.text_attr.set_background_bold(true);
+                        }  else  {
+                            data.text_attr.set_blink(true);  // Slow blink 
+                        }
+
                         // set foreaground color
                         30..=37 => data.text_attr.set_foreground_without_bold(COLOR_OFFSETS[*n as usize - 30]),
                         // set background color
-                        40..=47 => data.text_attr.set_background_without_blink(COLOR_OFFSETS[*n as usize - 40]),
+                        40..=47 => data.text_attr.set_background_without_bold(COLOR_OFFSETS[*n as usize - 40]),
                         _ => { 
                             return Err(io::Error::new(io::ErrorKind::InvalidData, format!("Unsupported ANSI graphic code {}", n)));
                         }

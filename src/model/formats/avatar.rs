@@ -23,7 +23,7 @@ pub enum AvtReadState {
 }
 
 // Advanced Video Attribute Terminal Assembler and Recreator
-pub fn display_avt(data: &mut ParseStates, ch: u8) -> io::Result<(Option<u8>, bool)>  {
+pub fn display_avt(result: &Buffer, data: &mut ParseStates, ch: u8) -> io::Result<(Option<u8>, bool)>  {
 
     match data.avt_state {
         AvtReadState::Chars => {
@@ -112,7 +112,7 @@ pub fn display_avt(data: &mut ParseStates, ch: u8) -> io::Result<(Option<u8>, bo
             }
         }
         AvtReadState::ReadColor => {
-            data.text_attr = TextAttribute::from_u8(ch);
+            data.text_attr = TextAttribute::from_u8(ch, result.buffer_type);
             data.avt_state = AvtReadState::Chars;
             Ok((None, false))
         }

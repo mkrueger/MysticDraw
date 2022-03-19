@@ -49,10 +49,17 @@ Field      Bytes  Meaning
 [Group]   20      CP 437 Chars - filled with b' ' SAUCE string
 [Width]    2      BE_U16
 [Height]   2      BE_U16
-[Flags]    2      BE_U16 [Bit 1: iCE]
+[Flags]    2      BE_U16 [Bit 0-3: Buffer type]
 ```
 
 I esp. love the checksum part. A binary format is not ment to be altered with hex editors.
+
+Buffer types:
+  LegacyDos  = 000  // 0-15 fg, 0-7 bg, blink
+  LegacyIce  = 001  // 0-15 fg, 0-15 bg
+  ExtFont    = 010  // 0-7 fg, 0-7 bg, blink + extended font
+  ExtFontIce = 011  // 0-7 fg, 0-15 bg + extended font
+  NoLimits   = 111  // extended palette, blink + extended font 
 
 ### Blocks
 

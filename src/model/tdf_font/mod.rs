@@ -2,7 +2,7 @@ use std::{path::Path, fs::File, io::{Read}};
 
 use crate::WORKSPACE;
 
-use super::{ Position, TextAttribute, DosChar, Editor, Size};
+use super::{ Position, TextAttribute, DosChar, Editor, Size, BufferType};
 
 #[derive(Copy, Clone, Debug)]
 pub enum TheDrawFontType {
@@ -149,7 +149,7 @@ impl TheDrawFont
                         DosChar { char_code: ch as u16, attribute: color }
                     }
                     TheDrawFontType::Color => {
-                        let ch_attr = TextAttribute::from_u8(self.font_data[char_offset]);
+                        let ch_attr = TextAttribute::from_u8(self.font_data[char_offset], BufferType::LegacyIce); // tdf fonts don't support ice mode by default
                         char_offset += 1;
                         DosChar { char_code: ch as u16, attribute: ch_attr }
                     }

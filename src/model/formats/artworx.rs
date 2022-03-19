@@ -1,6 +1,6 @@
 use std::io;
 
-use crate::model::{Buffer, DosChar, BitFont, Size, Palette};
+use crate::model::{Buffer, DosChar, BitFont, Size, Palette, BufferType};
 use super::{ Position, TextAttribute, SaveOptions};
 
 // http://fileformats.archiveteam.org/wiki/ArtWorx_Data_Format
@@ -16,6 +16,7 @@ use super::{ Position, TextAttribute, SaveOptions};
 pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Result<bool>
 {
     result.width = 80;
+    result.buffer_type = BufferType::LegacyIce;
     let mut o = 0;
     let mut pos = Position::new();
     if file_size <  1 + 3 * 64 + 4096 {
@@ -45,7 +46,7 @@ pub fn read_adf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
             }
             result.set_char(0, pos, Some(DosChar {
                 char_code: bytes[o] as u16,
-                attribute: TextAttribute::from_u8(bytes[o + 1])
+                attribute: TextAttribute::from_u8(bytes[o + 1], result.buffer_type)
             }));
             pos.x += 1;
             o += 2;

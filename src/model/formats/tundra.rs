@@ -1,6 +1,6 @@
 use std::io;
 
-use crate::model::{Buffer, DosChar};
+use crate::model::{Buffer, DosChar, BufferType};
 use super::{ Position, TextAttribute, SaveOptions};
 
 // http://fileformats.archiveteam.org/wiki/TUNDRA
@@ -31,9 +31,10 @@ pub fn read_tnd(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
 
     result.palette.clear();
     result.palette.get_color(0, 0, 0);
+    result.buffer_type = BufferType::NoLimits;
 
     let mut pos = Position::new();
-    let mut attr = TextAttribute::from_u8(0);
+    let mut attr = TextAttribute::from_u8(0, result.buffer_type);
 
     while o < file_size {
         let mut cmd = bytes[o];
@@ -127,7 +128,7 @@ pub fn convert_to_tnd(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>
 {
     let mut result = vec![TUNDRA_VER]; // version
     result.extend(TUNDRA_HEADER);
-    let mut attr = TextAttribute::from_u8(0);
+    let mut attr = TextAttribute::from_u8(0, buf.buffer_type);
     let mut skip_pos = None;
     for y in 0..buf.height {
         for x in 0..buf.width {

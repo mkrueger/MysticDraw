@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::model::BitFont;
+use crate::model::{BitFont, BufferType};
 use std::io;
 
 use super::Buffer;
@@ -305,7 +305,12 @@ impl Buffer {
             SauceDataType::BinaryText => {
                 self.width = (file_type as u16) << 1;
                 sauce_file_type = SauceFileType::Bin;
-                self.use_ice = (t_flags & ANSI_FLAG_NON_BLINK_MODE) == ANSI_FLAG_NON_BLINK_MODE;
+                let use_ice = (t_flags & ANSI_FLAG_NON_BLINK_MODE) == ANSI_FLAG_NON_BLINK_MODE;
+                if use_ice { 
+                    self.buffer_type = BufferType::LegacyIce;
+                } else { 
+                    self.buffer_type = BufferType::LegacyDos;
+                }
                 self.font = BitFont::from_name(&t_info_str.to_string()).unwrap_or_default();
             }
             SauceDataType::XBin => {
@@ -320,24 +325,36 @@ impl Buffer {
                         self.width = t_info1;
                         self.height = t_info2;
                         sauce_file_type = SauceFileType::Ascii;
-                        self.use_ice =
-                            (t_flags & ANSI_FLAG_NON_BLINK_MODE) == ANSI_FLAG_NON_BLINK_MODE;
+                        let use_ice = (t_flags & ANSI_FLAG_NON_BLINK_MODE) == ANSI_FLAG_NON_BLINK_MODE;
+                        if use_ice { 
+                            self.buffer_type = BufferType::LegacyIce;
+                        } else { 
+                            self.buffer_type = BufferType::LegacyDos;
+                        }
                         self.font = BitFont::from_name(&t_info_str.to_string()).unwrap_or_default();
                     }
                     SAUCE_FILE_TYPE_ANSI => {
                         self.width = t_info1;
                         self.height = t_info2;
                         sauce_file_type = SauceFileType::Ansi;
-                        self.use_ice =
-                            (t_flags & ANSI_FLAG_NON_BLINK_MODE) == ANSI_FLAG_NON_BLINK_MODE;
+                        let use_ice = (t_flags & ANSI_FLAG_NON_BLINK_MODE) == ANSI_FLAG_NON_BLINK_MODE;
+                        if use_ice { 
+                            self.buffer_type = BufferType::LegacyIce;
+                        } else { 
+                            self.buffer_type = BufferType::LegacyDos;
+                        }
                         self.font = BitFont::from_name(&t_info_str.to_string()).unwrap_or_default();
                     }
                     SAUCE_FILE_TYPE_ANSIMATION => {
                         self.width = t_info1;
                         self.height = t_info2;
                         sauce_file_type = SauceFileType::ANSiMation;
-                        self.use_ice =
-                            (t_flags & ANSI_FLAG_NON_BLINK_MODE) == ANSI_FLAG_NON_BLINK_MODE;
+                        let use_ice = (t_flags & ANSI_FLAG_NON_BLINK_MODE) == ANSI_FLAG_NON_BLINK_MODE;
+                        if use_ice { 
+                            self.buffer_type = BufferType::LegacyIce;
+                        } else { 
+                            self.buffer_type = BufferType::LegacyDos;
+                        }
                         self.font = BitFont::from_name(&t_info_str.to_string()).unwrap_or_default();
                     }
                     SAUCE_FILE_TYPE_PCBOARD => {
@@ -446,7 +463,8 @@ impl Buffer {
                 file_type = SAUCE_FILE_TYPE_ASCII;
                 t_info1 = self.width;
                 t_info2 = self.height;
-                if self.use_ice { t_flags |= ANSI_FLAG_NON_BLINK_MODE; }
+
+                if self.buffer_type.use_ice_colors() { t_flags |= ANSI_FLAG_NON_BLINK_MODE; }
             },
             SauceFileType::Undefined | // map everything else just to ANSI
             SauceFileType::Ansi => {
@@ -454,14 +472,14 @@ impl Buffer {
                 file_type = SAUCE_FILE_TYPE_ANSI;
                 t_info1 = self.width;
                 t_info2 = self.height;
-                if self.use_ice { t_flags |= ANSI_FLAG_NON_BLINK_MODE; }
+                if self.buffer_type.use_ice_colors() { t_flags |= ANSI_FLAG_NON_BLINK_MODE; }
             },
             SauceFileType::ANSiMation => {
                 data_type = SauceDataType::Character;
                 file_type = SAUCE_FILE_TYPE_ANSIMATION;
                 t_info1 = self.width;
                 t_info2 = self.height;
-                if self.use_ice { t_flags |= ANSI_FLAG_NON_BLINK_MODE; }
+                if self.buffer_type.use_ice_colors() { t_flags |= ANSI_FLAG_NON_BLINK_MODE; }
             },
             SauceFileType::PCBoard => {
                 data_type = SauceDataType::Character;
@@ -493,7 +511,7 @@ impl Buffer {
                     return Err(io::Error::new(io::ErrorKind::InvalidData, "BIN files can only be saved up to 510 width."));
                 }
                 file_type = w as u8;
-                if self.use_ice { t_flags |= ANSI_FLAG_NON_BLINK_MODE; }
+                if self.buffer_type.use_ice_colors() { t_flags |= ANSI_FLAG_NON_BLINK_MODE; }
             },
             SauceFileType::XBin => {
                 data_type = SauceDataType::XBin;

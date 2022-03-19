@@ -78,7 +78,7 @@ pub fn get_save_sauce_default_pcb(buf: &Buffer) -> (bool, String)
 
 
 #[allow(non_snake_case)]
-pub fn display_PCBoard(data: &mut ParseStates, ch: u8) -> Option<u8> {
+pub fn display_PCBoard(buf: &Buffer, data: &mut ParseStates, ch: u8) -> Option<u8> {
     if data.pcb_color {
         data.pcb_pos += 1;
         if data.pcb_pos < 3 {
@@ -89,7 +89,7 @@ pub fn display_PCBoard(data: &mut ParseStates, ch: u8) -> Option<u8> {
                 }
                 2 => {
                     data.pcb_value = (data.pcb_value << 4) + conv_ch(ch);
-                    data.text_attr = TextAttribute::from_u8(data.pcb_value);
+                    data.text_attr = TextAttribute::from_u8(data.pcb_value, buf.buffer_type);
                 }
                 _ => {}
             }

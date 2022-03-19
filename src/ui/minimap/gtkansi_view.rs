@@ -9,7 +9,6 @@ use std::rc::Rc;
 use crate::model::{Editor, Position};
 
 #[derive(Default)]
-
 pub struct GtkMinimapAnsiView {
     pub editor: RefCell<Rc<RefCell<Editor>>>,
 
@@ -130,7 +129,6 @@ impl WidgetImpl for GtkMinimapAnsiView {
                         i += 1;
                         pixels[i] = 255;
                         i += 1;
-
                     }
                 }
             }

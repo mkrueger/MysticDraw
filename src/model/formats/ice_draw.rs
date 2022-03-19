@@ -1,6 +1,6 @@
 use std::io;
 
-use crate::model::{Buffer, DosChar, BitFont, Size, Palette};
+use crate::model::{Buffer, DosChar, BitFont, Size, Palette, BufferType};
 use super::{ Position, TextAttribute, SaveOptions};
 
 // http://fileformats.archiveteam.org/wiki/ICEDraw
@@ -39,6 +39,7 @@ pub fn read_idf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
     }
 
     result.width  = (x2 + 1) as u16;
+    result.buffer_type = BufferType::LegacyIce;
     let data_size = file_size - FONT_SIZE - PALETTE_SIZE;
     let mut pos = Position::from(x1, y1);
 
@@ -62,7 +63,7 @@ pub fn read_idf(result: &mut Buffer, bytes: &[u8], file_size: usize) -> io::Resu
         while rle_count > 0 {
             result.set_char(0, pos, Some(DosChar {
                 char_code: char_code as u16,
-                attribute: TextAttribute::from_u8(attr)
+                attribute: TextAttribute::from_u8(attr, result.buffer_type)
             }));
             advance_pos(x1, x2, &mut pos);
             rle_count -= 1;

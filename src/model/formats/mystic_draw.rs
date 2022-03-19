@@ -1,6 +1,6 @@
 use std::io;
 
-use crate::model::{Buffer, Position, SauceString, Color, BitFont, Layer, DosChar, TextAttribute, BitFontType};
+use crate::model::{Buffer, Position, SauceString, Color, BitFont, Layer, DosChar, TextAttribute, BitFontType, BufferType};
 const MDF_HEADER: &[u8] = b"MDf";
 const MDF_VERSION: u16 = 0;
 const ID_SIZE: usize = 4;
@@ -35,7 +35,16 @@ pub fn read_mdf(result: &mut Buffer, bytes: &[u8]) -> io::Result<bool>
     let flags = u16::from_be_bytes(bytes[o..(o + 2)].try_into().unwrap());
     o += 2;
     let mut font_num = 0;
-    result.use_ice = (flags & MDF_FLAG_ICE) == MDF_FLAG_ICE;
+
+    match flags & 0b_0111 {
+        0b_0000 => { result.buffer_type = BufferType::LegacyDos },
+        0b_0001 => { result.buffer_type = BufferType::LegacyIce },
+        0b_0010 => { result.buffer_type = BufferType::ExtFont },
+        0b_0011 => { result.buffer_type = BufferType::ExtFontIce },
+        0b_0111 => { result.buffer_type = BufferType::NoLimits },
+        _ => {  return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid MDF.\nInvalid buffer type")); }
+    }
+
     while o < bytes.len() {
         let block = bytes[o];
         o += 1;
@@ -152,12 +161,12 @@ pub fn read_mdf(result: &mut Buffer, bytes: &[u8]) -> io::Result<bool>
                         if is_empty { 
                             i += len as i32;
                         } else if flags & LAYER_COMPRESSED == LAYER_COMPRESSED {
-                            decompress(&mut layer, bytes, &mut o, i, len, width, attr_mode, font_num > 1);
+                            decompress(&mut layer, bytes, &mut o, i, len, width, attr_mode, result.buffer_type);
                             i += len as i32;
                         } else {
                             while len > 0 {
-                                let char_code = read_char(bytes, &mut o, font_num > 1);
-                                let attribute = decode_attribute(bytes, &mut o, attr_mode);
+                                let char_code = read_char(bytes, &mut o, result.buffer_type.use_extended_font());
+                                let attribute = decode_attribute(bytes, &mut o, attr_mode, result.buffer_type);
                                 let pos = Position { x: i % (width as i32) , y: i / (width as i32)};
                                 layer.set_char(pos, Some(DosChar {
                                     char_code,
@@ -196,7 +205,8 @@ fn read_char(bytes: &[u8], o: &mut usize, extended_font: bool) -> u16
     result
 }
 
-fn decompress(result: &mut Layer, bytes: &[u8], o: &mut usize, mut i: i32, len: u16, width: u16, attr_mode: u16, extended_font: bool)
+#[allow(clippy::too_many_arguments)]
+fn decompress(result: &mut Layer, bytes: &[u8], o: &mut usize, mut i: i32, len: u16, width: u16, attr_mode: u16, buffer_type: BufferType)
 {
     let end = i + len as i32;
     while i < end {
@@ -209,34 +219,34 @@ fn decompress(result: &mut Layer, bytes: &[u8], o: &mut usize, mut i: i32, len: 
         match compression {
             Compression::Off => {
                 for _ in 0..repeat_counter {
-                    let char_code = read_char(bytes, o, extended_font);
-                    let attribute = decode_attribute(bytes, o, attr_mode);
+                    let char_code = read_char(bytes, o, buffer_type.use_extended_font());
+                    let attribute = decode_attribute(bytes, o, attr_mode, buffer_type);
                     let pos = Position { x: i % (width as i32), y: i / (width as i32)};
                     result.set_char(pos, Some(DosChar { char_code, attribute }));
                     i += 1;
                 }
             }
             Compression::Char => {
-                let char_code = read_char(bytes, o, extended_font);
+                let char_code = read_char(bytes, o, buffer_type.use_extended_font());
                 for _ in 0..repeat_counter {
-                    let attribute = decode_attribute(bytes, o, attr_mode);
+                    let attribute = decode_attribute(bytes, o, attr_mode, buffer_type);
                     let pos = Position { x: i % (width as i32), y: i / (width as i32)};
                     result.set_char(pos, Some(DosChar { char_code, attribute }));
                     i += 1;
                 }
             }
             Compression::Attr => {
-                let attribute = decode_attribute(bytes, o, attr_mode);
+                let attribute = decode_attribute(bytes, o, attr_mode, buffer_type);
                 for _ in 0..repeat_counter {
-                    let char_code = read_char(bytes, o, extended_font);
+                    let char_code = read_char(bytes, o, buffer_type.use_extended_font());
                     let pos = Position { x: i % (width as i32), y: i / (width as i32)};
                     result.set_char(pos, Some(DosChar { char_code, attribute }));
                     i += 1;
                 }
             }
             Compression::Full => {
-                let char_code = read_char(bytes, o, extended_font);
-                let attribute = decode_attribute(bytes, o, attr_mode);
+                let char_code = read_char(bytes, o, buffer_type.use_extended_font());
+                let attribute = decode_attribute(bytes, o, attr_mode, buffer_type);
                 
                 let rep_ch = Some(DosChar { 
                     char_code, 
@@ -253,12 +263,12 @@ fn decompress(result: &mut Layer, bytes: &[u8], o: &mut usize, mut i: i32, len: 
     }
 }
 
-fn decode_attribute(bytes: &[u8], o: &mut usize, attr_mode: u16) -> TextAttribute {
+fn decode_attribute(bytes: &[u8], o: &mut usize, attr_mode: u16, buffer_type: BufferType) -> TextAttribute {
     match attr_mode { 
         ATTR_MODE_U8 => { 
             let attr = bytes[*o];
             *o += 1;
-            TextAttribute::from_u8(attr)
+            TextAttribute::from_u8(attr, buffer_type)
         }
         ATTR_MODE_255 => {
             let fg = bytes[*o];
@@ -284,7 +294,6 @@ fn decode_attribute(bytes: &[u8], o: &mut usize, attr_mode: u16) -> TextAttribut
         _ => { panic!("unsupported attr_mode."); }
     }
 }
-const MDF_FLAG_ICE: u16         = 0b0001;
 const CHECKSUM_OFFSET: usize = 4;
 
 const BLK_COMMENT:u8   = 1;
@@ -317,8 +326,7 @@ pub fn convert_to_mdf(buf: &Buffer) -> io::Result<Vec<u8>>
     result.extend(u16::to_be_bytes(buf.width));
     result.extend(u16::to_be_bytes(buf.height));
 
-    let mut flags = 0;
-    if buf.use_ice { flags |= MDF_FLAG_ICE; }
+    let flags = buf.buffer_type as u16;
     result.extend(u16::to_be_bytes(flags));
     
     if !buf.comments.is_empty() {

@@ -15,8 +15,8 @@ pub use layer::*;
 mod position;
 pub use position::*;
 
-mod buffer;
-pub use  buffer::*;
+mod buffer_handling;
+pub use  buffer_handling::*;
 
 mod formats;
 pub use formats::*;

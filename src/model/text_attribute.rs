@@ -1,9 +1,13 @@
+use super::BufferType;
+
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct TextAttribute {
     foreground_color: u8,
-    background_color: u8
+    background_color: u8,
+    blink: bool
 }
+
 impl std::fmt::Display for TextAttribute {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "(Attr: {:X}, fg {}, bg {}, blink {})", self.as_u8(), self.get_foreground(), self.get_background(), self.is_blink())
@@ -12,16 +16,34 @@ impl std::fmt::Display for TextAttribute {
 
 impl TextAttribute
 {
-    pub const DEFAULT : TextAttribute = TextAttribute{ foreground_color: 7, background_color: 0 };
+    pub const DEFAULT : TextAttribute = TextAttribute{ foreground_color: 7, background_color: 0, blink: false };
 
-    pub fn from_u8(attr: u8) -> Self
+    pub fn from_u8(attr: u8, buffer_type: BufferType) -> Self
     {
-        TextAttribute { foreground_color: attr & 0b0000_1111, background_color: attr >> 4 }
+        let mut blink = false;
+        let background_color = if buffer_type.use_ice_colors() {
+            attr >> 4
+        } else {
+            blink = attr & 0b1000_0000 != 0;
+            (attr >> 4) & 0b0111
+        };
+
+        let foreground_color = if buffer_type.use_extended_font() {
+            attr & 0b0111
+        } else {
+            attr & 0b1111
+        };
+
+        TextAttribute {
+            foreground_color,
+            background_color,
+            blink
+        }
     }
 
     pub fn from_color(fg: u8, bg: u8) -> Self
     {
-        TextAttribute { foreground_color: fg, background_color: bg }
+        TextAttribute { foreground_color: fg, background_color: bg, blink: false }
     }
 
     pub fn as_u8(self) -> u8
@@ -34,7 +56,7 @@ impl TextAttribute
         self.foreground_color < 16 && (self.foreground_color & 0b1000) != 0
     }
 
-    pub fn set_bold(&mut self, is_bold: bool)
+    pub fn set_foreground_bold(&mut self, is_bold: bool)
     {
         if self.foreground_color < 16  {
             if is_bold {
@@ -45,24 +67,25 @@ impl TextAttribute
         }
     }
 
+    pub fn set_background_bold(&mut self, is_bold: bool)
+    {
+        if self.background_color < 16  {
+            if is_bold {
+                self.background_color |= 0b0000_1000;
+            } else {
+                self.background_color &= 0b1111_0111;
+            }
+        }
+    }
+
     pub fn is_blink(self) -> bool
     {
-        if self.background_color < 16 { 
-            self.background_color & 0b1000 != 0
-        } else {
-            false
-        }
+        self.blink
     }
 
     pub fn set_blink(&mut self, is_blink: bool)
     {
-        if self.background_color < 16 { 
-            if is_blink {
-                self.background_color |= 0b1000;
-            } else {
-                self.background_color &= 0b0111;
-            }
-        }
+        self.blink = is_blink;
     }
 
     pub fn get_foreground(self) -> u8
@@ -88,6 +111,14 @@ impl TextAttribute
         }
     }
 
+    pub fn set_background_without_bold(&mut self, color: u8) 
+    {
+        assert!(color < 0b1000);
+        if self.background_color < 16  {
+            self.background_color = (0b1000 & self.background_color) | color;
+        }
+    }
+
     pub fn get_background(self) -> u8
     {
         self.background_color
@@ -101,14 +132,6 @@ impl TextAttribute
     pub fn set_background(&mut self, color: u8) 
     {
         self.background_color = color;
-    }
-
-    pub fn set_background_without_blink(&mut self, color: u8) 
-    {
-        assert!(color < 0b1000);
-        if self.background_color < 16  {
-            self.background_color = (0b1000 & self.background_color) | color;
-        }
     }
 }
 
