@@ -28,20 +28,22 @@ impl BufferType {
 
     pub fn get_fg_colors(self) -> u8 {
         match self {
-            BufferType::LegacyDos => 16,
-            BufferType::LegacyIce => 16,
-            BufferType::ExtFont => 8,
+            BufferType::LegacyDos |
+            BufferType::LegacyIce |
+            BufferType::NoLimits => 16, // may change in the future
+
+            BufferType::ExtFont |
             BufferType::ExtFontIce => 8,
-            BufferType::NoLimits => 16 // may change in the future
         }
     }
 
     pub fn get_bg_colors(self) -> u8 {
         match self {
-            BufferType::LegacyDos => 8,
-            BufferType::LegacyIce => 16,
+            BufferType::LegacyDos |
             BufferType::ExtFont => 8,
-            BufferType::ExtFontIce => 16,
+            
+            BufferType::LegacyIce |
+            BufferType::ExtFontIce |
             BufferType::NoLimits => 16 // may change in the future
         }
     }

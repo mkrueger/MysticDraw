@@ -91,8 +91,8 @@ impl WidgetImpl for GtkMinimapAnsiView {
         let block_w = buffer.font.size.width as u16 / block_size as u16;
         let block_h = buffer.font.size.height as u16 / block_size as u16;
 
-        widget.set_width_request((buffer.width * block_w) as i32);
-        widget.set_height_request((buffer.height * block_h) as i32);
+        widget.set_width_request(buffer.width as i32 * block_w as i32);
+        widget.set_height_request(buffer.height as i32 * block_h as i32);
         let t = self.textures.borrow();
         
         let mut new_pixbuf = self.pix_buf.borrow().is_none();
@@ -109,17 +109,19 @@ impl WidgetImpl for GtkMinimapAnsiView {
             unsafe {
                 let pixels = pix_buf.pixels();
                 let mut i = 0;
-                for y in 0..(buffer.height * block_h) {
-                    for x in 0..(buffer.width * block_w) {
+                let height = buffer.height as usize * block_h as usize;
+                let width = buffer.width as usize * block_w as usize;
+                for y in 0..height {
+                    for x in 0..width {
 
-                        let ch = buffer.get_char(Position::from((x / block_w)  as i32, (y / block_h) as i32)).unwrap_or_default();
+                        let ch = buffer.get_char(Position::from(x as i32 / block_w  as i32, y  as i32 / block_h as i32)).unwrap_or_default();
                         let bg = ch.attribute.get_background() as usize;
                         let bg = buffer.palette.colors[bg].get_rgb_f32();
                         let fg = ch.attribute.get_foreground() as usize;
                         let fg = buffer.palette.colors[fg].get_rgb_f32();
 
                         let f_fac = &t[(ch.char_code & 0xFF) as usize];
-                        let f_fac = f_fac[(x % block_w + (y % block_h) * block_w) as usize];
+                        let f_fac = f_fac[x % block_w as usize + (y % block_h as usize) * block_w as usize];
                         let b_fac = 1.0 - f_fac;
                         pixels[i] = ((fg.0 * f_fac + bg.0 * b_fac) * 255.0) as u8;
                         i += 1;
@@ -134,7 +136,7 @@ impl WidgetImpl for GtkMinimapAnsiView {
             }
 
             let texture = gdk::Texture::for_pixbuf(pix_buf);
-            snapshot.append_texture(&texture, &graphene::Rect::new(0.0, 0.0, (buffer.width * block_w) as f32, (buffer.height * block_h) as f32));
+            snapshot.append_texture(&texture, &graphene::Rect::new(0.0, 0.0, buffer.width as f32 * block_w as f32, buffer.height as f32 * block_h as f32));
         }
     }
 }

@@ -7,7 +7,7 @@ use libadwaita as adw;
 
 use adw::{prelude::*, TabBar, TabPage, TabView};
 use adw::{ApplicationWindow, HeaderBar};
-use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, MessageType, ButtonsType, DialogFlags, FileFilter, ShortcutType};
+use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, MessageType, ButtonsType, DialogFlags, FileFilter };
 
 use crate::WORKSPACE;
 use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, Layer, SaveOptions, BufferType};
@@ -618,7 +618,7 @@ impl MainWindow {
             app.add_action(&action);
             
             let action = SimpleAction::new("default_attribute", None);
-            action.connect_activate(clone!(@strong main_window => move |_,_| {
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
                 if let Some(editor) = main_window.get_current_editor() {
                     let mut editor = editor.borrow_mut();
                     editor.cursor.set_attribute(TextAttribute::DEFAULT);
@@ -627,7 +627,7 @@ impl MainWindow {
             app.add_action(&action);
             
             let action = SimpleAction::new("switch_colors", None);
-            action.connect_activate(clone!(@strong main_window => move |_,_| {
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
                 if let Some(editor) = main_window.get_current_editor() {
                     let mut editor = editor.borrow_mut();
                     editor.switch_fg_bg_color();
@@ -636,9 +636,126 @@ impl MainWindow {
             app.add_action(&action);
 
             let action = SimpleAction::new("keymap", None);
-            action.connect_activate(/*clone!(@strong main_window =>*/ move |_,_| {
-                super::shortcut_dialog::show_shortcut_dialog();
-            });
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
+                super::shortcut_dialog::show_shortcut_dialog(&main_window);
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("erase_line", None);
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut editor = editor.borrow_mut();
+                    editor.erase_line();
+                }
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("erase_line_to_start", None);
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut editor = editor.borrow_mut();
+                    editor.erase_line_to_start();
+                }
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("erase_line_to_end", None);
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut editor = editor.borrow_mut();
+                    editor.erase_line_to_end();
+                }
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("erase_column", None);
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut editor = editor.borrow_mut();
+                    editor.erase_column();
+                }
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("erase_column_to_start", None);
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut editor = editor.borrow_mut();
+                    editor.erase_column_to_start();
+                }
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("erase_column_to_end", None);
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut editor = editor.borrow_mut();
+                    editor.erase_column_to_end();
+                }
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("delete_row", None);
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut editor = editor.borrow_mut();
+                    editor.delete_row();
+                }
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("insert_row", None);
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut editor = editor.borrow_mut();
+                    editor.insert_row();
+                }
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("delete_column", None);
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut editor = editor.borrow_mut();
+                    editor.delete_column();
+                }
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("insert_column", None);
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut editor = editor.borrow_mut();
+                    editor.insert_column();
+                }
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("default_key_set", None);
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut editor = editor.borrow_mut();
+                    // TODO
+                }
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("cycle_function_keys", None);
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut editor = editor.borrow_mut();
+                    // TODO
+                }
+            }));
+            app.add_action(&action);
+
+            let action = SimpleAction::new("cycle_function_keys_back", None);
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
+                if let Some(editor) = main_window.get_current_editor() {
+                    let mut editor = editor.borrow_mut();
+                    // TODO
+                }
+            }));
             app.add_action(&action);
 
             app.set_accels_for_action("app.open", &["<primary>o"]);
@@ -653,6 +770,7 @@ impl MainWindow {
             app.set_accels_for_action("app.left_justify", &["<Alt>l"]);
             app.set_accels_for_action("app.right_justify", &["<Alt>r"]);
             app.set_accels_for_action("app.center_justify", &["<Alt>c"]);
+            app.set_accels_for_action("app.flip_x", &["<Alt>x"]);
 
             app.set_accels_for_action("app.prev_fg_color", &["<primary>Up"]);
             app.set_accels_for_action("app.next_fg_color", &["<primary>Down"]);
@@ -663,8 +781,21 @@ impl MainWindow {
             app.set_accels_for_action("app.default_attribute", &["<Primary>d"]);
             app.set_accels_for_action("app.switch_colors", &["<Primary><Shift>x"]);
 
-            // Ctrl+0-7 - Change foreground color + Alt+0-7 - Change background color
-            
+            app.set_accels_for_action("app.erase_line", &["<Primary>e"]);
+            app.set_accels_for_action("app.erase_line_to_start", &["<Alt>Home"]);
+            app.set_accels_for_action("app.erase_line_to_end", &["<Alt>End"]);
+            app.set_accels_for_action("app.erase_column", &["<Primary><shift>e"]);
+            app.set_accels_for_action("app.erase_column_to_start", &["<Alt>Page_Up"]);
+            app.set_accels_for_action("app.erase_column_to_end", &["<Alt>Page_Down"]);
+
+            app.set_accels_for_action("app.delete_row", &["<Alt>Up"]);
+            app.set_accels_for_action("app.insert_row", &["<Alt>Down"]);
+            app.set_accels_for_action("app.delete_column", &["<Alt>Left"]);
+            app.set_accels_for_action("app.insert_column", &["<Alt>Right"]);
+
+            app.set_accels_for_action("app.default_key_set", &["<Primary>slash"]);
+            app.set_accels_for_action("app.cycle_function_keys", &["<Primary>plus"]);
+            app.set_accels_for_action("app.cycle_function_keys_back", &["<Primary>period"]);
         }
     }
 

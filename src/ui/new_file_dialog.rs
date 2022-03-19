@@ -26,8 +26,8 @@ pub fn display_newfile_dialog(main_window: &MainWindow) -> NewFileDialog
         .resizable(false)
         .content(&main_area)
         .build();
-    dialog.set_transient_for(Some(&main_window.window));
-    let hb = HeaderBar::builder()
+        dialog.set_transient_for(Some(&main_window.window));
+        let hb = HeaderBar::builder()
         .title_widget(&libadwaita::WindowTitle::builder().title("New file").build())
         .show_end_title_buttons(true)
         .build();

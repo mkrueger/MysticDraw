@@ -20,10 +20,6 @@ Now I learn rust and as a medium sized UI project - why not ressurrect my 25 yea
 # TODO
 
 It's shaping up but still not finished… 
-
- * Color Picker that doesn't suck
- * Switch for iCE/Blink (atm it's only in iCE Mode)
-
  * Tools
     * Brush & Shading need a configuration dialog
     * Outline mode for rectangle/circle/line
@@ -35,6 +31,7 @@ It's shaping up but still not finished…
  * 1.6 features missing
     * .TDF font editor (1.6 had this featuree)
     * Effects tool (1.6 had some custom effects)
+    * Screen Font editor - no idea what I've thought at that time but that's out of scope. But Mystic Draw had that…
  * Moebius features missing
     * Mirror mode (super cool in my opinion)
 

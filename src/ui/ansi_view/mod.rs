@@ -231,7 +231,6 @@ impl AnsiView {
             menu_model.append(Some("Center"), Some("app.center_justify"));
             menu_model.append(Some("Right justify"), Some("app.right_justify"));
 
-            menu_model.append(Some("Rotate"), Some("app.right_justify"));
             menu_model.append(Some("Flip X"), Some("app.flip_x"));
             menu_model.append(Some("Flip Y"), Some("app.flip_y"));
             menu_model.append(Some("Crop"), Some("app.crop"));

@@ -594,6 +594,76 @@ impl Editor
         attr.set_foreground(bg);
         self.cursor.set_attribute(attr);
     }
+
+    pub fn erase_line(&mut self) 
+    {
+        self.begin_atomic_undo();
+        // TODO
+        self.end_atomic_undo();
+    }
+
+    pub fn erase_line_to_start(&mut self) 
+    {
+        self.begin_atomic_undo();
+        // TODO
+        self.end_atomic_undo();
+    }
+
+    pub fn erase_line_to_end(&mut self) 
+    {
+        self.begin_atomic_undo();
+        // TODO
+        self.end_atomic_undo();
+    }
+
+    pub fn erase_column(&mut self) 
+    {
+        self.begin_atomic_undo();
+        // TODO
+        self.end_atomic_undo();
+    }
+
+    pub fn erase_column_to_start(&mut self) 
+    {
+        self.begin_atomic_undo();
+        // TODO
+        self.end_atomic_undo();
+    }
+
+    pub fn erase_column_to_end(&mut self) 
+    {
+        self.begin_atomic_undo();
+        // TODO
+        self.end_atomic_undo();
+    }
+
+    pub fn delete_row(&mut self) 
+    {
+        self.begin_atomic_undo();
+        // TODO
+        self.end_atomic_undo();
+    }
+
+    pub fn insert_row(&mut self) 
+    {
+        self.begin_atomic_undo();
+        // TODO
+        self.end_atomic_undo();
+    }
+
+    pub fn delete_column(&mut self) 
+    {
+        self.begin_atomic_undo();
+        // TODO
+        self.end_atomic_undo();
+    }
+    
+    pub fn insert_column(&mut self) 
+    {
+        self.begin_atomic_undo();
+        // TODO
+        self.end_atomic_undo();
+    }
 }
 
 pub const DEFAULT_OUTLINE_TABLE: [[u8;10];15] = [
