@@ -12,12 +12,13 @@ use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, Messa
 use crate::WORKSPACE;
 use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, Layer, SaveOptions};
 
-use super::{AnsiView, ColorPicker, layer_view, CharButton, minimap};
+use super::{AnsiView, ColorPicker, layer_view, CharButton, minimap, AttributeSwitcher};
 
 pub struct MainWindow {
     pub window: ApplicationWindow,
     tab_view: TabView,
     color_picker: ColorPicker,
+    attribute_switcher: AttributeSwitcher,
     tab_to_view: RefCell<HashMap<Rc<TabPage>, Rc<AnsiView>>>,
     title: adw::WindowTitle,
 
@@ -52,6 +53,7 @@ impl MainWindow {
                 .build(),
             tab_view: TabView::builder().vexpand(true).build(),
             color_picker: ColorPicker::new(),
+            attribute_switcher: AttributeSwitcher::new(),
             tab_to_view: Default::default(),
             title,
             layer_listbox_model: layer_view::Model::new(),
@@ -684,6 +686,7 @@ impl MainWindow {
         if let Some(view) = cur {
             let editor = view.get_editor();
             self.color_picker.set_editor(&editor);
+            self.attribute_switcher.set_editor(&editor);
             let fn_opt = &(editor.borrow().buf.file_name);
             if fn_opt.is_none() {
                 self.title.set_title("Untitled");
@@ -804,6 +807,7 @@ impl MainWindow {
         let result = Box::new(Orientation::Vertical, 0);
         result.set_hexpand(false);
         result.set_width_request(200);
+        result.append(&self.attribute_switcher);
         result.append(&self.color_picker);
         unsafe {
             let first = self.add_tool(my_box.clone(), TOOLS[0]);
@@ -982,6 +986,12 @@ impl MainWindow {
             .child(&child2)
             .build();
         let handle = Rc::new(RefCell::new(Editor::new(0, buf)));
+
+        let my_box2 = my_box.clone();
+        handle.borrow_mut().cursor.attr_changed = std::boxed::Box::new(move |_| {
+            my_box2.color_picker.queue_draw();
+            my_box2.attribute_switcher.queue_draw();
+        });
 
         let page_box = gtk4::Box::builder()
             .orientation(Orientation::Vertical)

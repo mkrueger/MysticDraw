@@ -42,7 +42,13 @@ impl std::fmt::Debug for Cursor {
 
 impl Default for Cursor {
     fn default() -> Self {
-        Self { pos: Position::default(), attr: TextAttribute::default(), insert_mode: Default::default(), pos_changed: Box::new(|_, _| {}), attr_changed: Box::new(|_| {}) }
+        Self {
+            pos: Position::default(),
+            attr: TextAttribute::DEFAULT,
+            insert_mode: Default::default(),
+            pos_changed: Box::new(|_, _| {}),
+            attr_changed: Box::new(|_| {}) 
+        }
     }
 }
 

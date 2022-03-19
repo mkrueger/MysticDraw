@@ -20,5 +20,7 @@
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-layer-down.svg</file>
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-layer-up.svg</file>
     <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-layer-copy.svg</file>
+
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-switch-color.svg</file>
   </gresource>
 </gresources>

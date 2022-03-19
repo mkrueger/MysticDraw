@@ -4,6 +4,9 @@ pub use layer_view::*;
 mod color_picker;
 pub use color_picker::*;
 
+mod attribute_switcher;
+pub use attribute_switcher::*;
+
 mod ansi_view;
 pub use ansi_view::*;
 

@@ -275,7 +275,11 @@ impl WidgetImpl for GtkAnsiView {
                 if should_draw_caret && y as i32 == caret_pos.y && x as i32 == caret_pos.x {
                     snapshot.pop();
                     let fg = buffer.palette.colors[fg].get_rgb_f64();
-                    let fg_rgb = gdk::RGBA::new(fg.0 as f32, fg.1 as f32, fg.2 as f32, 1.0);
+                    let fg_rgb = if fg.0 + fg.1 + fg.2 == 0.0 { 
+                        gdk::RGBA::new(1.0, 1.0, 1.0, 1.0)
+                    } else {
+                        gdk::RGBA::new(fg.0 as f32, fg.1 as f32, fg.2 as f32, 1.0)
+                    };
                     draw_caret(start_x, start_y, caret_pos, snapshot, font_dimensions, editor.cursor.insert_mode, &fg_rgb);
                     snapshot.pop();
                 }

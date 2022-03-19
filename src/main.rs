@@ -5,7 +5,7 @@ use libadwaita as adw;
 use directories::{ ProjectDirs};
 use adw::{prelude::*};
 use gtk4::{Application};
-use model::{init_tools, Editor, TextAttribute, Tool, TOOLS, Size};
+use model::{init_tools, Tool, TOOLS, Size};
 use ui::MainWindow;
 
 mod model;
@@ -43,7 +43,6 @@ pub enum Guide {
 pub struct Workspace {
     pub settings: Settings,
     selected_tool: usize,
-    selected_attribute: TextAttribute,
 
     pub show_fg_color: bool,
     pub show_bg_color: bool,
@@ -85,21 +84,11 @@ impl Workspace {
 pub static mut WORKSPACE: Workspace = Workspace {
     settings: Settings { tab_size: 8, font_path: None, console_font_path: None, outline_font_style: 0},
     selected_tool: 0,
-    selected_attribute: TextAttribute::DEFAULT,
     show_fg_color: true,
     show_bg_color: true,
     grid: Grid::Off,
     guide: Guide::Off
 };
-
-pub fn sync_workbench_state(editor: &mut Editor) {
-    // quite lame but unfortunately I don't see a sane way to really work
-    // with the same state accross everything I'm not able to get any mutable data strucutures out of Gtk
-    // and working with weird RefCell/Cell/Rc makes things worse than doing a manualy sync.
-    unsafe {
-        editor.cursor.set_attribute(WORKSPACE.selected_attribute);
-    }
-}
 
 const RESOURCES_BYTES:&[u8] = include_bytes!("../data/resources.gresource");
 
@@ -211,5 +200,4 @@ mod tests {
             }
         }
     }
-
 }

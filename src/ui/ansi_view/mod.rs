@@ -12,7 +12,6 @@ use gtk4::{
 
 use crate::{
     model::{Editor, MKey, MKeyCode, MModifiers, Position},
-    sync_workbench_state,
 };
 
 use self::gtkansi_view::GtkAnsiView;
@@ -149,7 +148,6 @@ impl AnsiView {
             let drag = gtk4::GestureDrag::new();
             let handle1 = handle.clone();
             drag.connect_begin(glib::clone!(@strong self as this => move |gst_drag, _| {
-                sync_workbench_state(&mut handle1.borrow_mut());
                 let start = gst_drag.start_point();
                 let cur   = gst_drag.offset();
                 if start.is_none() || cur.is_none() {
@@ -167,7 +165,6 @@ impl AnsiView {
 
             let handle1 = handle.clone();
             drag.connect_end(glib::clone!(@strong self as this => move |gst_drag, _| {
-                sync_workbench_state(&mut handle1.borrow_mut());
                 let start = gst_drag.start_point();
                 let cur   = gst_drag.offset();
                 if start.is_none() || cur.is_none() {
@@ -187,7 +184,6 @@ impl AnsiView {
 
             let handle1 = handle.clone();
             drag.connect_update(glib::clone!(@strong self as this => move |gst_drag, _| {
-                sync_workbench_state(&mut handle1.borrow_mut());
                 let start = gst_drag.start_point();
                 let cur   = gst_drag.offset();
                 if start.is_none() || cur.is_none() {
@@ -213,7 +209,6 @@ impl AnsiView {
             let handle1 = handle.clone();
             gesture.set_button(1);
             gesture.connect_pressed(glib::clone!(@strong self as this => move |e, _clicks, x, y| {
-                sync_workbench_state(&mut handle1.borrow_mut());
                 let pos = this.calc_xy(&handle1, (x, y));
                 unsafe {
                     TOOLS[WORKSPACE.selected_tool].handle_click(handle1.clone(), e.button(), pos);
@@ -253,7 +248,6 @@ impl AnsiView {
             let handle1 = handle.clone();
             let key = gtk4::EventControllerKey::new();
             key.connect_key_pressed(glib::clone!(@strong self as this => move |_, key, key_code, modifier| {
-                sync_workbench_state(&mut handle1.borrow_mut());
                 {
                     if let Some(key)= AnsiView::translate_key(key) {
                         unsafe {

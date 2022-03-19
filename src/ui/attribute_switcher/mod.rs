@@ -5,21 +5,21 @@ use gtk4::traits::WidgetExt;
 
 use crate::model::Editor;
 
-use self::gtkcolor_picker::GtkColorPicker;
+use self::gtkattribute_switcher::GtkAttributeSwitcher;
 
-mod gtkcolor_picker;
+mod gtkattribute_switcher;
 
 glib::wrapper! {
-    pub struct ColorPicker(ObjectSubclass<GtkColorPicker>) @extends gtk4::Widget, gtk4::DrawingArea;
+    pub struct AttributeSwitcher(ObjectSubclass<GtkAttributeSwitcher>) @extends gtk4::Widget, gtk4::DrawingArea;
 }
 
-impl Default for ColorPicker {
+impl Default for AttributeSwitcher {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl ColorPicker {
+impl AttributeSwitcher {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create a AnsiEditorArea")
     }
