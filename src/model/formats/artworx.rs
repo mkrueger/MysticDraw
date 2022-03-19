@@ -70,7 +70,7 @@ pub fn convert_to_adf(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>
         for x in 0..buf.width {
             let ch = buf.get_char(Position::from(x as i32, y as i32)).unwrap_or_default();
             result.push(ch.char_code as u8);
-            result.push(ch.attribute.as_u8());
+            result.push(ch.attribute.as_u8(BufferType::LegacyIce));
         }
     }
     if options.save_sauce {

@@ -364,7 +364,7 @@ pub fn get_save_sauce_default_ans(buf: &Buffer) -> (bool, String)
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
-    use crate::model::{Buffer, Position, SaveOptions};
+    use crate::model::{Buffer, Position, SaveOptions, BufferType};
 
     #[test]
     fn test_ansi_sequence() {
@@ -372,31 +372,31 @@ mod tests {
        
       let ch = buf.get_char(Position::from(0, 0)).unwrap_or_default();
       assert_eq!(b'F', ch.char_code as u8);
-       assert_eq!(7, ch.attribute.as_u8());
+       assert_eq!(7, ch.attribute.as_u8(BufferType::LegacyDos));
 
        let ch = buf.get_char(Position::from(1, 0)).unwrap_or_default();
        assert_eq!(b'o', ch.char_code as u8);
-       assert_eq!(7, ch.attribute.as_u8());
+       assert_eq!(7, ch.attribute.as_u8(BufferType::LegacyDos));
 
        let ch = buf.get_char(Position::from(2, 0)).unwrap_or_default();
        assert_eq!(b'o', ch.char_code as u8);
-       assert_eq!(7, ch.attribute.as_u8());
+       assert_eq!(7, ch.attribute.as_u8(BufferType::LegacyDos));
 
        let ch = buf.get_char(Position::from(3, 0)).unwrap_or_default();
        assert_eq!(b'-', ch.char_code as u8);
-       assert_eq!(7, ch.attribute.as_u8());
+       assert_eq!(7, ch.attribute.as_u8(BufferType::LegacyDos));
 
        let ch = buf.get_char(Position::from(4, 0)).unwrap_or_default();
        assert_eq!(b'B', ch.char_code as u8);
-       assert_eq!(15, ch.attribute.as_u8());
+       assert_eq!(15, ch.attribute.as_u8(BufferType::LegacyDos));
 
        let ch = buf.get_char(Position::from(5, 0)).unwrap_or_default();
        assert_eq!(b'a', ch.char_code as u8);
-       assert_eq!(7, ch.attribute.as_u8());
+       assert_eq!(7, ch.attribute.as_u8(BufferType::LegacyDos));
 
        let ch = buf.get_char(Position::from(6, 0)).unwrap_or_default();
        assert_eq!(b'r', ch.char_code as u8);
-       assert_eq!(5, ch.attribute.as_u8());
+       assert_eq!(5, ch.attribute.as_u8(BufferType::LegacyDos));
     }
 
     #[test]
@@ -404,13 +404,13 @@ mod tests {
        let buf = Buffer::from_bytes(&PathBuf::from("test.ans"),  b"\x1B[1;35mA\x1B[30mB\x1B[0mC").unwrap();
        let ch = buf.get_char(Position::from(0, 0)).unwrap_or_default();
        assert_eq!(b'A', ch.char_code as u8);
-       assert_eq!(13, ch.attribute.as_u8());
+       assert_eq!(13, ch.attribute.as_u8(BufferType::LegacyDos));
        let ch = buf.get_char(Position::from(1, 0)).unwrap_or_default();
        assert_eq!(b'B', ch.char_code as u8);
-       assert_eq!(8, ch.attribute.as_u8());
+       assert_eq!(8, ch.attribute.as_u8(BufferType::LegacyDos));
        let ch = buf.get_char(Position::from(2, 0)).unwrap_or_default();
        assert_eq!(b'C', ch.char_code as u8);
-       assert_eq!(7, ch.attribute.as_u8());
+       assert_eq!(7, ch.attribute.as_u8(BufferType::LegacyDos));
     }
 
     #[test]
@@ -419,25 +419,25 @@ mod tests {
        
         let ch = buf.get_char(Position::from(0, 0)).unwrap_or_default();
        assert_eq!(b'1', ch.char_code as u8);
-       assert_eq!(8, ch.attribute.as_u8());
+       assert_eq!(8, ch.attribute.as_u8(BufferType::LegacyDos));
        let ch = buf.get_char(Position::from(1, 0)).unwrap_or_default();
        assert_eq!(b'2', ch.char_code as u8);
-       assert_eq!(1, ch.attribute.as_u8());
+       assert_eq!(1, ch.attribute.as_u8(BufferType::LegacyDos));
        let ch = buf.get_char(Position::from(2, 0)).unwrap_or_default();
        assert_eq!(b'3', ch.char_code as u8);
-       assert_eq!(6, ch.attribute.as_u8());
+       assert_eq!(6, ch.attribute.as_u8(BufferType::LegacyDos));
        let ch = buf.get_char(Position::from(3, 0)).unwrap_or_default();
        assert_eq!(b'4', ch.char_code as u8);
-       assert_eq!(14 + (4 << 4), ch.attribute.as_u8());
+       assert_eq!(14 + (4 << 4), ch.attribute.as_u8(BufferType::LegacyDos));
        let ch = buf.get_char(Position::from(4, 0)).unwrap_or_default();
        assert_eq!(b'5', ch.char_code as u8);
-       assert_eq!(14, ch.attribute.as_u8());
+       assert_eq!(14, ch.attribute.as_u8(BufferType::LegacyDos));
        let ch = buf.get_char(Position::from(5, 0)).unwrap_or_default();
        assert_eq!(b'6', ch.char_code as u8);
-       assert_eq!(14 + (6 << 4), ch.attribute.as_u8());
+       assert_eq!(14 + (6 << 4), ch.attribute.as_u8(BufferType::LegacyDos));
        let ch = buf.get_char(Position::from(6, 0)).unwrap_or_default();
        assert_eq!(b'7', ch.char_code as u8);
-       assert_eq!(14, ch.attribute.as_u8());
+       assert_eq!(14, ch.attribute.as_u8(BufferType::LegacyDos));
     }
 
     #[test]
@@ -453,13 +453,13 @@ mod tests {
        
         let ch = buf.get_char(Position::from(0, 0)).unwrap_or_default();
         assert_eq!(b'A', ch.char_code as u8);
-        assert_eq!(13, ch.attribute.as_u8());
+        assert_eq!(13, ch.attribute.as_u8(BufferType::LegacyDos));
         let ch = buf.get_char(Position::from(1, 0)).unwrap_or_default();
         assert_eq!(b'B', ch.char_code as u8);
-        assert_eq!(8, ch.attribute.as_u8());
+        assert_eq!(8, ch.attribute.as_u8(BufferType::LegacyDos));
         let ch = buf.get_char(Position::from(2, 0)).unwrap_or_default();
         assert_eq!(b'C', ch.char_code as u8);
-        assert_eq!(7, ch.attribute.as_u8());
+        assert_eq!(7, ch.attribute.as_u8(BufferType::LegacyDos));
     }
 
     #[test]

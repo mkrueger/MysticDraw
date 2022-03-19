@@ -120,7 +120,7 @@ pub fn convert_to_idf(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>
             rle_count = 1;
         }
         result.push(ch.char_code as u8);
-        result.push(ch.attribute.as_u8());
+        result.push(ch.attribute.as_u8(BufferType::LegacyIce));
 
         x += rle_count;
     }

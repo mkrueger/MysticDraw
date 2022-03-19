@@ -411,7 +411,7 @@ pub fn convert_to_mdf(buf: &Buffer) -> io::Result<Vec<u8>>
         
                 if ch.is_some() {
                     if flags & LAYER_COMPRESSED == LAYER_COMPRESSED {
-                        compress_greedy(&mut result, layer, i, rle_count, width, attr_mode, buf.extended_font.is_some());
+                        compress_greedy(&mut result, layer, i, rle_count, width, attr_mode, buf.buffer_type);
                         i += rle_count;
                     } else {
                         while rle_count > 0 {
@@ -419,8 +419,8 @@ pub fn convert_to_mdf(buf: &Buffer) -> io::Result<Vec<u8>>
                             if buf.extended_font.is_some() {
                                 result.push((ch.char_code >> 8) as u8);
                             }
-                            write_char(&mut result, ch.char_code, buf.extended_font.is_some());
-                            encode_attribte(&mut result, ch, attr_mode);
+                            write_char(&mut result, ch.char_code, buf.buffer_type);
+                            encode_attribte(&mut result, ch, attr_mode, buf.buffer_type);
                             i += 1;
                             rle_count -= 1;
                         }
@@ -453,9 +453,9 @@ fn push_font(result: &mut Vec<u8>, font: &BitFont) {
     }
 }
 
-fn encode_attribte(result: &mut Vec<u8>, ch: DosChar, attr_mode: u16) {
+fn encode_attribte(result: &mut Vec<u8>, ch: DosChar, attr_mode: u16, buffer_type: BufferType) {
     match attr_mode { 
-        ATTR_MODE_U8 => { result.push(ch.attribute.as_u8()); }
+        ATTR_MODE_U8 => { result.push(ch.attribute.as_u8(buffer_type)); }
         ATTR_MODE_255 => {
             result.push(ch.attribute.get_foreground());
             result.push(ch.attribute.get_background());
@@ -481,16 +481,16 @@ enum Compression {
     Full = 0b1100_0000,
 }
 
-fn write_char(result: &mut Vec<u8>, char_code: u16, extended_font: bool)
+fn write_char(result: &mut Vec<u8>, char_code: u16, buffer_type: BufferType)
 {
-    if extended_font {
+    if buffer_type.use_extended_font() {
         result.extend(char_code.to_be_bytes());
     } else {
         result.push(char_code as u8);
     }
 }
 
-fn compress_greedy(result: &mut Vec<u8>, layer: &Layer, i: i32, rle_count: i32, width: usize, attr_mode: u16, extended_font: bool) {
+fn compress_greedy(result: &mut Vec<u8>, layer: &Layer, i: i32, rle_count: i32, width: usize, attr_mode: u16, buffer_type: BufferType) {
     let mut run_mode = Compression::Off;
     let mut run_count = 0;
     let mut run_buf = Vec::new();
@@ -555,14 +555,14 @@ fn compress_greedy(result: &mut Vec<u8>, layer: &Layer, i: i32, rle_count: i32, 
         if run_count > 0 {
             match run_mode {
                 Compression::Off => {
-                    write_char( &mut run_buf, cur.char_code, extended_font);
-                    encode_attribte(&mut run_buf, cur, attr_mode);
+                    write_char( &mut run_buf, cur.char_code, buffer_type);
+                    encode_attribte(&mut run_buf, cur, attr_mode, buffer_type);
                 }
                 Compression::Char => {
-                    encode_attribte(&mut run_buf, cur, attr_mode);
+                    encode_attribte(&mut run_buf, cur, attr_mode,  buffer_type);
                 }
                 Compression::Attr => {
-                    write_char( &mut run_buf, cur.char_code, extended_font);
+                    write_char( &mut run_buf, cur.char_code, buffer_type);
                 }
                 Compression::Full => {
                     // nothing
@@ -591,13 +591,13 @@ fn compress_greedy(result: &mut Vec<u8>, layer: &Layer, i: i32, rle_count: i32, 
             }
 
             if let Compression::Attr = run_mode { 
-                encode_attribte(&mut run_buf, cur, attr_mode);
-                write_char( &mut run_buf, cur.char_code, extended_font);
+                encode_attribte(&mut run_buf, cur, attr_mode, buffer_type);
+                write_char( &mut run_buf, cur.char_code, buffer_type);
             }
             else
             {
-                write_char( &mut run_buf, cur.char_code, extended_font);
-                encode_attribte(&mut run_buf, cur, attr_mode);
+                write_char( &mut run_buf, cur.char_code, buffer_type);
+                encode_attribte(&mut run_buf, cur, attr_mode, buffer_type);
             }
 
             run_ch = cur;

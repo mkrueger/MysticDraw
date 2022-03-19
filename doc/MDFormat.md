@@ -118,6 +118,7 @@ Note either ID = 2 or ID = 3 is valid. If no font data is availabe fallback to 8
 
 Layer order is important first one is the highest layer lowest layer is the last one (background)
 Due to the support of 'dead' char/attribute pairs I needed a solution for that. Basically I chose XBIN as compression format - I really like it.
+Layers have the option to save some space by using a lower attribute and char length than theoretically need by buffer type.
 
 ```
 Field      Bytes  Meaning
@@ -128,7 +129,7 @@ Field      Bytes  Meaning
 [Flags]    2      BE_U16
                   [Bit 1   : Compression on/off]
                   [Bit 2-3 : Attribute Length 00 - U8, 01 - 2xU8 (FORE/BACK), - 10 - 2xU16(FORE/BACK), - 11 2xU32(FORE/BACK)]
-                  [Bit 4   : Char Length - 0 - U8 1 - U16]
+                  [Bit 4   : Unused]
                   [Bit 5   : Unused]
                   [Bit 6   : is_visible]
                   [Bit 7   : edit_locked]
@@ -145,7 +146,7 @@ Data block:
 Field      Bytes  Meaning
 [Len]      2      BE_U16 n = 15 Bit - length, BIT 16 == 1 - append n empty chars, 00 == DONE
 [Data]     *      Uncompressed:
-                  [CHAR] : 1/2 Depending on flags
+                [CHAR] : 1/2 Depending on extended mode buffer type.
                   [ATTR] : U8, 2xU8, 3xU8, 4xU8 Depending on flags
                   Compression - See XBin
 ```

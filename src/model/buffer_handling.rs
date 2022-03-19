@@ -20,6 +20,10 @@ pub enum BufferType {
 impl BufferType {
     pub fn use_ice_colors(self) -> bool {
         self == BufferType::LegacyIce || self == BufferType::ExtFontIce
+    }
+
+    pub fn use_blink(self) -> bool {
+        self == BufferType::LegacyDos || self == BufferType::ExtFont || self == BufferType::NoLimits
     } 
     
     pub fn use_extended_font(self) -> bool {

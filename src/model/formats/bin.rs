@@ -38,7 +38,7 @@ pub fn convert_to_binary(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<
         for x in 0..buf.width {
             let ch = buf.get_char(Position::from(x as i32, y as i32)).unwrap_or_default();
             result.push(ch.char_code as u8);
-            result.push(ch.attribute.as_u8());
+            result.push(ch.attribute.as_u8(buf.buffer_type));
         }
     }
     if options.save_sauce {

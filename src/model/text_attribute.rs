@@ -10,7 +10,7 @@ pub struct TextAttribute {
 
 impl std::fmt::Display for TextAttribute {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "(Attr: {:X}, fg {}, bg {}, blink {})", self.as_u8(), self.get_foreground(), self.get_background(), self.is_blink())
+        write!(f, "(Attr: {:X}, fg {}, bg {}, blink {})", self.as_u8(BufferType::LegacyDos), self.get_foreground(), self.get_background(), self.is_blink())
     }
 }
 
@@ -46,9 +46,21 @@ impl TextAttribute
         TextAttribute { foreground_color: fg, background_color: bg, blink: false }
     }
 
-    pub fn as_u8(self) -> u8
+    pub fn as_u8(self, buffer_type: BufferType) -> u8
     {
-        self.foreground_color & 0xF | ((self.background_color & 0xF) << 4)
+        let fg = if buffer_type.use_extended_font() {
+            self.foreground_color & 0b_0111
+        } else {
+            self.foreground_color & 0b_1111
+        };
+
+        let bg = if buffer_type.use_blink() {
+            self.background_color & 0b_0111 | if self.is_blink() { 0b_1000 } else { 0 }
+        } else {
+            self.background_color & 0b_0111
+        };
+
+        fg | bg << 4
     }
 
     pub fn is_bold(self) -> bool
