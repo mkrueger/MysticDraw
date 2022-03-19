@@ -29,7 +29,7 @@ impl ColorPicker {
     }
     
     pub fn set_editor(&self, handle: &Rc<RefCell<Editor>>) {
-        self.imp().set_editor(handle);
+        self.imp().set_editor(self, handle);
         self.queue_draw();
     }
 }

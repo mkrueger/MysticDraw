@@ -10,7 +10,7 @@ use adw::{ApplicationWindow, HeaderBar};
 use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, MessageType, ButtonsType, DialogFlags, FileFilter};
 
 use crate::WORKSPACE;
-use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, Layer, SaveOptions};
+use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, Layer, SaveOptions, BufferType};
 
 use super::{AnsiView, ColorPicker, layer_view, CharButton, minimap, AttributeSwitcher};
 
@@ -147,6 +147,7 @@ impl MainWindow {
                 }));
             }
         }));
+        
 
         {
             //  let rc = rc.clone();
@@ -156,9 +157,21 @@ impl MainWindow {
                 let nfd = crate::ui::new_file_dialog::display_newfile_dialog(&main_window);
                 let ws = Rc::new(nfd.width_spin_button);
                 let hs = Rc::new(nfd.height_spin_button);
+                let type_dropdown = Rc::new(nfd.type_dropdown);
                 
+                
+        
                 nfd.open_button.connect_clicked(clone!(@strong main_window => move |_| {
                     let mut buffer = Buffer::create(ws.value() as u16, hs.value() as u16);
+                    buffer.buffer_type = match type_dropdown.selected() {
+                        0 => BufferType::LegacyDos,
+                        1 => BufferType::LegacyIce,
+                        2 => BufferType::ExtFont,
+                        3 => BufferType::ExtFontIce,
+                        4 => BufferType::NoLimits,
+                        _ => { panic!("should never happen!"); }
+                    };
+
                     buffer.file_name = None;
                     let editor = main_window.load_page(main_window.clone(), buffer);
                     editor.borrow_mut().request_refresh = std::boxed::Box::new(clone!(@strong main_window => move || {

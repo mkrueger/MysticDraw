@@ -5,7 +5,7 @@ use gtk4::{glib, graphene, gdk};
 use gtk4::subclass::prelude::*;
 use gtk4::traits::{GestureSingleExt, WidgetExt};
 
-use crate::model::{Editor};
+use crate::model::{Editor, BufferType};
 
 #[derive(Default)]
 
@@ -15,8 +15,27 @@ pub struct GtkColorPicker {
 
 impl GtkColorPicker {
 
-    pub fn set_editor(&self, handle: &Rc<RefCell<Editor>>) {
+    pub fn set_editor(&self, obj: &super::ColorPicker, handle: &Rc<RefCell<Editor>>) {
         self.editor.replace(Some(handle.clone()));
+
+
+        match handle.borrow().buf.buffer_type {
+            BufferType::LegacyDos => {
+                obj.set_size_request(200, 50);
+            }
+            crate::model::BufferType::LegacyIce => {
+                obj.set_size_request(200, 50);
+            }
+            crate::model::BufferType::ExtFont => {
+                obj.set_size_request(200, 25);
+            }
+            crate::model::BufferType::ExtFontIce => {
+                obj.set_size_request(200, 50);
+            }
+            crate::model::BufferType::NoLimits => {
+                obj.set_size_request(200, 50);
+            }
+        }
     }
 }
 
@@ -32,7 +51,6 @@ impl ObjectImpl for GtkColorPicker {
         obj.set_can_focus(true);
         obj.set_focusable(true);
         obj.set_focus_on_click(true);
-        obj.set_size_request(200, 50);
     }
 }
 
@@ -55,12 +73,17 @@ impl WidgetImpl for GtkColorPicker {
                     eprintln!("invalid size for the color picker.");
                     return;
                 }
-                let col = x / (width / 8);
-                let row = y / (height / 2);
-                let color = (col + row * 8) as u8;
-
                 if let Some(editor) = widget.get_editor() {
                     let mut editor = editor.borrow_mut();
+
+                    let col = x / (width / 8);
+                    let row =  if editor.buf.buffer_type == BufferType::ExtFont {
+                        0
+                    } else {
+                        y / (height / 2)
+                    };
+                    let color = (col + row * 8) as u8;
+    
                     let mut attr = editor.cursor.get_attribute();
                     attr.set_foreground(color);
                     editor.cursor.set_attribute(attr);
@@ -106,18 +129,37 @@ impl WidgetImpl for GtkColorPicker {
 
             let width = widget.width();
             let height = widget.height();
-            for y in 0..2 {
-                for x in 0..8 {
-                    let color = editor.buf.palette.colors[(x + y * 8) as usize].get_rgb_f32();
-                    let bounds = graphene::Rect::new(
-                        (x * (width / 8)) as f32,
-                        (y * height / 2) as f32,
-                        (width / 8) as f32,
-                        (height / 2) as f32
-                    );
-                    snapshot.append_color(&gdk::RGBA::new(color.0, color.1, color.2, 1.0), &bounds);
+
+            match editor.buf.buffer_type {
+
+                crate::model::BufferType::ExtFont => {
+                    for x in 0..8 {
+                        let color = editor.buf.palette.colors[x as usize].get_rgb_f32();
+                        let bounds = graphene::Rect::new(
+                            (x * (width / 8)) as f32,
+                            0.0,
+                            (width / 8) as f32,
+                            height as f32
+                        );
+                        snapshot.append_color(&gdk::RGBA::new(color.0, color.1, color.2, 1.0), &bounds);
+                    }
                 }
-            }
+
+                _ => {
+                    for y in 0..2 {
+                        for x in 0..8 {
+                            let color = editor.buf.palette.colors[(x + y * 8) as usize].get_rgb_f32();
+                            let bounds = graphene::Rect::new(
+                                (x * (width / 8)) as f32,
+                                (y * height / 2) as f32,
+                                (width / 8) as f32,
+                                (height / 2) as f32
+                            );
+                            snapshot.append_color(&gdk::RGBA::new(color.0, color.1, color.2, 1.0), &bounds);
+                        }
+                    }
+                }
+            };
             let attribute = editor.cursor.get_attribute();
             let marker_width = 6.0;
             let x = (attribute.get_foreground() % 8) as i32;

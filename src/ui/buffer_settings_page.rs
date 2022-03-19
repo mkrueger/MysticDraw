@@ -46,7 +46,6 @@ impl BufferSettingsPage {
         editor.buf.width = self.width_spin_button.value() as u16;
         editor.buf.height = self.height_spin_button.value() as u16;
 
-
         let row  = self.extended_font_dropdown.selected();
         if row == 0 { 
             editor.buf.extended_font = None;
@@ -212,7 +211,6 @@ pub fn get_settings_page(main_window: Rc<MainWindow>, editor_ref: Rc<RefCell<Edi
     }
     let row = ActionRow::builder()
         .title("Extended font")
-        .subtitle("Only for .xbin extended fonts. No one can read that.")
         .build();
     row.add_suffix(&extended_font_dropdown);
     
@@ -225,7 +223,9 @@ pub fn get_settings_page(main_window: Rc<MainWindow>, editor_ref: Rc<RefCell<Edi
     if is_custom_extended_font {
         row.add_suffix(&export_extended_font_button);
     }
-    group.add(&row);
+    if editor.buf.buffer_type.use_extended_font() {
+        group.add(&row);
+    }
     // END extended font row
     
     content_area.append(&group);

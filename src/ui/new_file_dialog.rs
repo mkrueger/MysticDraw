@@ -9,9 +9,9 @@ pub struct NewFileDialog {
     pub open_button: gtk4::Button,
 
     pub width_spin_button: SpinButton,
-    pub height_spin_button: SpinButton
+    pub height_spin_button: SpinButton,
+    pub type_dropdown: gtk4::DropDown
 }
-
 
 pub fn display_newfile_dialog(main_window: &MainWindow) -> NewFileDialog
 {
@@ -20,7 +20,7 @@ pub fn display_newfile_dialog(main_window: &MainWindow) -> NewFileDialog
     .build();
 
     let dialog = libadwaita::Window::builder()
-        .default_width(280)
+        .default_width(480)
         .default_height(240)
         .modal(true)
         .resizable(false)
@@ -79,14 +79,44 @@ pub fn display_newfile_dialog(main_window: &MainWindow) -> NewFileDialog
     row.add_suffix(&height_spin_button);
     group.add(&row);
 
+    let type_names = [
+        "VGA",
+        "iCE",
+        "2 fonts",
+        "2 fonts + iCE",
+        "RGB"
+    ];
+
+    let description = [
+        "16 fore, 8 back, blink mode",
+        "16 colors, no blink",
+        "8 fore, 8 back, blink mode, 2 fonts",
+        "8 fore, 16 back, no blink, 2 fonts",
+        "unlimited colors and blink"
+    ];
+    
+    let type_dropdown = gtk4::DropDown::from_strings(&type_names);
+    type_dropdown.set_valign(Align::Center);
+
+    let row = ActionRow::builder()
+        .title("Type")
+        .build();
+    row.set_subtitle(description[0]);
+    row.add_suffix(&type_dropdown);
+    group.add(&row);
     content_area.append(&group);
     main_area.append(&content_area);
     dialog.show();
+
+    type_dropdown.connect_selected_notify(move |d| {
+        row.set_subtitle(description[d.selected() as usize]);
+    });
 
     NewFileDialog {
         dialog,
         open_button,
         width_spin_button,
-        height_spin_button
+        height_spin_button,
+        type_dropdown
     }
 }

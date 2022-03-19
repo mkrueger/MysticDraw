@@ -15,7 +15,7 @@ pub struct GtkAttributeSwitcher {
 }
 
 impl GtkAttributeSwitcher {
-    pub fn set_editor(&self, handle: &Rc<RefCell<Editor>>) {
+    pub fn set_editor(&self, obj: &super::AttributeSwitcher, handle: &Rc<RefCell<Editor>>) {
         self.editor.replace(Some(handle.clone()));
     }
 }
