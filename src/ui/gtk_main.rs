@@ -29,6 +29,7 @@ pub struct MainWindow {
     fg_button: gtk4::CheckButton,
     bg_button: gtk4::CheckButton,
 
+    pub pipette_update: RefCell<std::boxed::Box<dyn Fn(Option<DosChar>)>>,
     pub char_buttons: RefCell<Vec<Rc<RefCell<CharButton>>>>,
     mini_map: minimap::MinimapAnsiView
 }
@@ -81,7 +82,8 @@ impl MainWindow {
                 .active(true)
                 .build(),
             mini_map: minimap::MinimapAnsiView::new(),
-            char_buttons: RefCell::new(Vec::new())
+            char_buttons: RefCell::new(Vec::new()),
+            pipette_update: RefCell::new(std::boxed::Box::new(|_| {})),
         });
 
         content.append(&header_bar);
@@ -1220,27 +1222,27 @@ impl MainWindow {
         } else if tool.get_icon_name() == "md-tool-pipette" {
             super::add_pipette_tool_page(my_box,&mut page_content);
         }
-        
-        let page_num = self.tool_notebook.append_page(&page_content, Option::<&gtk4::Widget>::None);
-        let nb = &self.tool_notebook;
-        
-        /* 
-        button.connect_toggled(glib::clone!(@weak nb => move |_| {
-            unsafe {
-                crate::WORKSPACE.selected_tool = page_num as usize;
-            }
-            nb.set_page(page_num as i32);
-        }));*/
         button
     }
 
     fn load_page(&self, my_box: Rc<MainWindow>, buf: Buffer) -> Rc<RefCell<Editor>> {
-        let child2 = AnsiView::new();
+        let editor_view = AnsiView::new();
         let scroller = gtk4::ScrolledWindow::builder()
             .hexpand(true)
             .vexpand(true)
-            .child(&child2)
+            .child(&editor_view)
             .build();
+
+        let gesture = gtk4::EventControllerMotion::new();
+        gesture.connect_motion(glib::clone!(@strong editor_view as this, @weak my_box => move |_, x, y| {
+            if let Some(view) = my_box.get_current_ansi_view() {
+                let editor = view.get_editor();
+                (my_box.pipette_update.borrow())(editor.borrow().get_char(view.get_position(x, y)));
+            }
+        }));
+        editor_view.add_controller(&gesture);
+        
+
         let handle = Rc::new(RefCell::new(Editor::new(0, buf)));
 
         let my_box2 = my_box.clone();
@@ -1321,12 +1323,12 @@ impl MainWindow {
         // force outline update.
         handle.borrow_mut().set_cur_outline(0);
 
-        child2.set_editor_handle(handle);
+        editor_view.set_editor_handle(handle);
 
         self.tab_view.set_selected_page(&page);
-        child2.grab_focus();
+        editor_view.grab_focus();
 
-        self.tab_to_view.borrow_mut().insert(page.clone(), Rc::new(child2));
+        self.tab_to_view.borrow_mut().insert(page.clone(), Rc::new(editor_view));
         self.page_swap();
 
 

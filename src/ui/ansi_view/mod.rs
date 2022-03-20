@@ -56,6 +56,10 @@ impl AnsiView {
         self.imp().editor.borrow().clone()
     }
 
+    pub fn get_position(&self, x: f64, y: f64) -> Position {
+        self.calc_xy(&*self.imp().editor.borrow(), (x, y))
+    }
+
     fn calc_xy(&self, c: &Rc<RefCell<Editor>>, xy: (f64, f64)) -> Position {
 
         let (sx, sy) = self.imp().get_start_pos(self);

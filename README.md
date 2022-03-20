@@ -23,7 +23,6 @@ It's shaping up but still not finished…
  * Tools
     * Brush & Shading need a configuration dialog
     * Outline mode for rectangle/circle/line
-    * Pipette tool needs better functionality and look
 
  * Settings
     * Change F key sets - key sets should be able to be defined for font name.

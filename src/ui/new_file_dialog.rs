@@ -88,10 +88,10 @@ pub fn display_newfile_dialog(main_window: &MainWindow) -> NewFileDialog
     ];
 
     let description = [
-        "16 fore, 8 back, blink mode",
+        "16 fg + 8 bg colors, blink mode",
         "16 colors, no blink",
-        "8 fore, 8 back, blink mode, 2 fonts",
-        "8 fore, 16 back, no blink, 2 fonts",
+        "8 colors, blink mode, 2 fonts",
+        "8 fg + 16 bg colors, no blink, 2 fonts",
         "unlimited colors and blink"
     ];
     
@@ -111,6 +111,8 @@ pub fn display_newfile_dialog(main_window: &MainWindow) -> NewFileDialog
     type_dropdown.connect_selected_notify(move |d| {
         row.set_subtitle(description[d.selected() as usize]);
     });
+
+    type_dropdown.set_selected(1);
 
     NewFileDialog {
         dialog,
