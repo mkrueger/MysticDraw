@@ -7,7 +7,7 @@ use libadwaita as adw;
 
 use adw::{prelude::*, TabBar, TabPage, TabView};
 use adw::{ApplicationWindow, HeaderBar};
-use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, MessageType, ButtonsType, DialogFlags, FileFilter };
+use gtk4::{Application, Box, FileChooserAction, Orientation, ResponseType, MessageType, ButtonsType, DialogFlags, FileFilter, Align, SelectionMode };
 
 use crate::WORKSPACE;
 use crate::model::{Buffer, DosChar, Editor, Position, TextAttribute, Tool, TOOLS, Layer, SaveOptions, BufferType};
@@ -58,9 +58,15 @@ impl MainWindow {
             title,
             layer_listbox_model: layer_view::Model::new(),
             layer_listbox: gtk4::ListBox::new(),
-            tool_container_box: gtk4::FlowBox::builder()
-                .valign(gtk4::Align::Start)
-                .selection_mode(gtk4::SelectionMode::None)
+            tool_container_box:  gtk4::FlowBox::builder()
+                .valign(Align::Start)
+                .max_children_per_line(5)
+                .min_children_per_line(1)
+                .margin_start(4)
+                .margin_end(4)
+                .margin_top(12)
+                .margin_bottom(12)
+                .selection_mode(SelectionMode::Single)
                 .build(),
             tool_notebook: gtk4::Notebook::builder()
                 .show_tabs(false)
@@ -1046,13 +1052,26 @@ impl MainWindow {
         result.append(&self.attribute_switcher);
         result.append(&self.color_picker);
         unsafe {
-            let first = self.add_tool(my_box.clone(), TOOLS[0]);
-            for t in TOOLS.iter().skip(1) {
-                self.add_tool(my_box.clone(), *t).set_group(Some(&first));
+            for t in &TOOLS {
+                self.add_tool(my_box.clone(), *t);
             }
-            first.set_active(true);
         }
         self.tool_notebook.set_page(0);
+
+        self.tool_container_box.connect_selected_children_changed(move |x| {
+            if let Some(child) = x.selected_children().first() {
+                let page_num = child.index();
+                unsafe {
+                    crate::WORKSPACE.selected_tool = page_num as usize;
+                }
+                my_box.tool_notebook.set_page(page_num as i32);
+            }
+        });
+
+        if let Some(child) = &self.tool_container_box.child_at_index(0) {
+            self.tool_container_box.select_child(child);
+        }
+
         result.append(&self.tool_container_box);
         result.append(&self.tool_notebook);
         result
@@ -1172,11 +1191,10 @@ impl MainWindow {
         &self,
         my_box: Rc<MainWindow>,
         tool: &dyn Tool,
-    ) -> gtk4::ToggleButton {
-        let button = gtk4::ToggleButton::builder()
-            .icon_name(tool.get_icon_name())
-            .build();
-        self.tool_container_box.insert(&button, -1);
+    ) -> gtk4::Image {
+        let button = gtk4::Image::from_icon_name(tool.get_icon_name());
+        
+        self.tool_container_box.append(&button);
         let mut page_content = Box::new(Orientation::Vertical, 0);
 
         if tool.get_icon_name() == "md-tool-click" {
@@ -1205,12 +1223,14 @@ impl MainWindow {
         
         let page_num = self.tool_notebook.append_page(&page_content, Option::<&gtk4::Widget>::None);
         let nb = &self.tool_notebook;
+        
+        /* 
         button.connect_toggled(glib::clone!(@weak nb => move |_| {
             unsafe {
                 crate::WORKSPACE.selected_tool = page_num as usize;
             }
             nb.set_page(page_num as i32);
-        }));
+        }));*/
         button
     }
 
