@@ -1,1 +1,40 @@
-<?xml version="1.0" ?><svg width="20px" height="20px" viewBox="0 0 20 20" version="1.1" xmlns="http://www.w3.org/2000/svg"><g id="layer1"><path d="M 10 3 C 7.5494704 3 5.3212279 3.7550444 3.6855469 5.0058594 C 2.0498658 6.2566743 1 8.0283922 1 10 C 1 11.971608 2.0498658 13.743326 3.6855469 14.994141 C 5.3212279 16.244956 7.5494704 17 10 17 C 12.45053 17 14.678772 16.244956 16.314453 14.994141 C 17.950134 13.743326 19 11.971608 19 10 C 19 8.0283922 17.950134 6.2566743 16.314453 5.0058594 C 14.678772 3.7550444 12.45053 3 10 3 z M 10 4 C 12.243891 4 14.266317 4.6990589 15.707031 5.8007812 C 17.147745 6.9025036 18 8.3817569 18 10 C 18 11.618243 17.147745 13.097496 15.707031 14.199219 C 14.266317 15.300941 12.243891 16 10 16 C 7.7561092 16 5.7336826 15.300941 4.2929688 14.199219 C 2.8522549 13.097496 2 11.618243 2 10 C 2 8.3817569 2.8522549 6.9025036 4.2929688 5.8007812 C 5.7336826 4.6990589 7.7561092 4 10 4 z " style="fill:#222222; fill-opacity:1; stroke:none; stroke-width:0px;"/></g></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="48"
+   height="48"
+   viewBox="0 0 48 48"
+   fill="none"
+   version="1.1"
+   id="svg4"
+   sodipodi:docname="md-tool-circle.svg"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04, custom)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs8" />
+  <sodipodi:namedview
+     id="namedview6"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     showgrid="false"
+     inkscape:zoom="16.1875"
+     inkscape:cx="23.969112"
+     inkscape:cy="24"
+     inkscape:window-width="3840"
+     inkscape:window-height="1015"
+     inkscape:window-x="0"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg4" />
+  <path
+     d="m 24.051463,3.0547908 c -11.596162,0 -20.9966722,9.4005102 -20.9966722,20.9966722 0,11.596161 9.4005102,20.996672 20.9966722,20.996672 11.596161,0 20.996672,-9.400511 20.996672,-20.996672 0,-11.596162 -9.400511,-20.9966722 -20.996672,-20.9966722 z M 0.05526627,24.051463 c 0,-13.25274 10.74345673,-23.99619673 23.99619673,-23.99619673 13.252739,0 23.996196,10.74345673 23.996196,23.99619673 0,13.252739 -10.743457,23.996196 -23.996196,23.996196 -13.25274,0 -23.99619673,-10.743457 -23.99619673,-23.996196 z"
+     fill="#212121"
+     id="path2"
+     style="stroke-width:1.19981" />
+</svg>

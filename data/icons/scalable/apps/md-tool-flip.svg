@@ -1,18 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-  width="24"
-  height="24"
-  viewBox="0 0 24 24"
-  fill="none"
-  xmlns="http://www.w3.org/2000/svg"
->
-  <path
-    d="M18 7C18.5523 7 19 7.44772 19 8V16C19 16.5523 18.5523 17 18 17H15V19H18C19.6569 19 21 17.6569 21 16V8C21 6.34315 19.6569 5 18 5H15V7H18Z"
-    fill="currentColor"
-    fill-opacity="0.5"
-  />
-  <path d="M13 3H11V21H13V3Z" fill="currentColor" />
-  <path
-    d="M5 8C5 7.44772 5.44772 7 6 7H9V5H6C4.34315 5 3 6.34315 3 8V16C3 17.6569 4.34315 19 6 19H9V17H6C5.44772 17 5 16.5523 5 16V8Z"
-    fill="currentColor"
-  />
+   width="48"
+   height="48"
+   viewBox="0 0 48 48"
+   fill="none"
+   version="1.1"
+   id="svg4"
+   sodipodi:docname="md-tool-flip.svg"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04, custom)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs8" />
+  <sodipodi:namedview
+     id="namedview6"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     showgrid="false"
+     inkscape:zoom="16.1875"
+     inkscape:cx="23.598456"
+     inkscape:cy="24"
+     inkscape:window-width="2457"
+     inkscape:window-height="995"
+     inkscape:window-x="0"
+     inkscape:window-y="32"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg4" />
+  <g
+     id="g824"
+     transform="matrix(1.1984847,0,0,1.1984847,-4.7535461,-4.7535461)">
+    <path
+       d="M 25.5,5.25 C 25.5,4.55964 24.9404,4 24.25,4 23.5596,4 23,4.55964 23,5.25 v 37.5 c 0,0.6904 0.5596,1.25 1.25,1.25 0.6904,0 1.25,-0.5596 1.25,-1.25 z M 39.75,37.5 H 27.5 V 40 H 39.75 C 42.0972,40 44,38.0972 44,35.75 V 12.25 C 44,9.90279 42.0972,8 39.75,8 H 27.5 v 2.5 h 12.25 c 0.9665,0 1.75,0.7835 1.75,1.75 v 23.5 c 0,0.9665 -0.7835,1.75 -1.75,1.75 z M 21,8 H 8.25 C 5.90279,8 4,9.90279 4,12.25 v 23.5 C 4,38.0972 5.90279,40 8.25,40 H 21 V 37.5 H 8.25 C 7.2835,37.5 6.5,36.7165 6.5,35.75 V 12.25 C 6.5,11.2835 7.2835,10.5 8.25,10.5 H 21 Z"
+       fill="#212121"
+       id="path2" />
+    <path
+       d="M 27.5,40 C 9.1666667,13.333333 18.333333,26.666667 27.5,40 Z M 21,8 H 8.25 C 5.90279,8 4,9.90279 4,12.25 v 23.5 C 4,38.0972 5.90279,40 8.25,40 H 21 Z"
+       fill="#212121"
+       id="path2-5"
+       sodipodi:nodetypes="cccsssscc" />
+  </g>
 </svg>
