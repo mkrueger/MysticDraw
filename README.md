@@ -9,15 +9,22 @@ Now I learn rust and as a medium sized UI project - why not ressurrect my 25 yea
 
 ![Screenshot](/assets/images/screenshot.png)
 
+# How to get
+
+https://github.com/mkrueger/MysticDraw/releases/tag/%23alpha
+
+Just use the AppImage - it's a pre release. Need some break and user input. I can really need some help - I'm not an ansi artist.
+
 # Features
 
  * File formats: Ansi, Ascii, Artworx ADF, Avatar, BIN, XBIN, PCBoard, iCE, Tundra Draw
    - Ansi files can be written to be used in modern terminals on linux or macOs
  * Own custom file format: .mdf
- * Layer model & transparent pixels
+ * Layer model & transparent pixels - like modern graphic programs
  * Support for 256 char fonts of various sizes - fonts can be exported and imported.
  * Support for the draw fonts
  * Can open multiple files at once
+ * Is able to create extended mode .XBIN files (afaik the only ANSI editor capable of that)
 
 # Status
 
@@ -26,6 +33,10 @@ So I suppose Mystic Draw 2.0 will have the same fate than it's predecessors…
 
 I would really like to get feedback.
 
+Some still awkward things:
+
++ The file settings can be opened by clicking on the line & column marker. I still need a good UI solution where to put that thing in.
+
 # TODO
 
  * Tools
@@ -33,6 +44,10 @@ I would really like to get feedback.
     * Outline mode for rectangle/circle/line
  * Settings
     * Change Function key sets not fully implemented
+ * Performance. ANSI View and Minimap needs a rework
+    - Minimap should render in background using multiple CPUs
+    - ANSI View should just render the visible content not all. ATM it renders everything and scrolling is done by GTK.
+      Scrolling needs to be customized and only the visible part should be rendered. However it feels "fast enoug" so it's something for a 2.1
     
  * 1.6 features missing
     * .TDF font editor (1.6 had this featuree)

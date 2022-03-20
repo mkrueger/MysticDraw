@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Mystic Draw
+Exec=mystic_draw
+Icon=icon
+Type=Application
+Categories=Utility;
+X-AppImage-Version=70b1a67
