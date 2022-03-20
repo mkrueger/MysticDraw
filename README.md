@@ -7,6 +7,8 @@ Doesn't matter - I know why: Because it was not written in rust :). First I used
 
 Now I learn rust and as a medium sized UI project - why not ressurrect my 25 year old ANSI editor?
 
+![Screenshot](/assets/images/screenshot.png)
+
 # Features
 
  * File formats: Ansi, Ascii, Artworx ADF, Avatar, BIN, XBIN, PCBoard, iCE, Tundra Draw
@@ -17,15 +19,20 @@ Now I learn rust and as a medium sized UI project - why not ressurrect my 25 yea
  * Support for the draw fonts
  * Can open multiple files at once
 
+# Status
+
+I would say it's alhpa software and ready for testing. However there are not many people around still drawing ANSI art and even fewer Linux users do…
+So I suppose Mystic Draw 2.0 will have the same fate than it's predecessors…
+
+I would really like to get feedback.
+
 # TODO
 
-It's shaping up but still not finished… 
  * Tools
     * Brush & Shading need a configuration dialog
     * Outline mode for rectangle/circle/line
-
  * Settings
-    * Change F key sets - key sets should be able to be defined for font name.
+    * Change Function key sets not fully implemented
     
  * 1.6 features missing
     * .TDF font editor (1.6 had this featuree)
@@ -47,6 +54,8 @@ http://www.roysac.com/thedrawfonts-tdf.html
 Enjoy
 
 If I get enough users I'll may be in the mood to bring back a the draw font creation tool. However the one in the MysticDraw 1.6 should still work.
+
+![Screenshot](/assets/images/screenshot_font.png)
 
 # Building
 
