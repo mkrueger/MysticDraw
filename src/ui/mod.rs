@@ -35,3 +35,4 @@ pub mod export_file_dialog;
 pub mod font_manager_dialog;
 
 pub mod shortcut_dialog;
+pub mod about_dialog;

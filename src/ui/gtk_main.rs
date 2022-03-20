@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use glib::{clone};
-use gtk4::gio::SimpleAction;
+use glib::{clone, Variant};
+use gtk4::gio::{SimpleAction, MenuItem};
 use libadwaita as adw;
 
 use adw::{prelude::*, TabBar, TabPage, TabView};
@@ -98,7 +98,7 @@ impl MainWindow {
             .resize_end_child(false)
             .end_child(&main_window.construct_right_toolbar())
             .build();
-        right_pane.set_position(1024 - 380);
+        right_pane.set_position(1024 - 280);
 
         let left_pane = Box::new(Orientation::Horizontal, 0);
         left_pane.append(&main_window.construct_left_toolbar(main_window.clone()));
@@ -649,6 +649,12 @@ impl MainWindow {
             }));
             app.add_action(&action);
 
+            let action = SimpleAction::new("about", None);
+            action.connect_activate(clone!(@weak main_window => move |_,_| {
+                super::about_dialog::show_about_dialog(&main_window);
+            }));
+            app.add_action(&action);
+
             let action = SimpleAction::new("erase_line", None);
             action.connect_activate(clone!(@weak main_window => move |_,_| {
                 if let Some(editor) = main_window.get_current_editor() {
@@ -1028,6 +1034,9 @@ impl MainWindow {
         let menu = gtk4::gio::Menu::new();
         menu.append(Some("Export"), Some("app.export"));
         menu.append(Some("Save as…"), Some("app.saveas"));
+
+        // how to get a separator menu item - gtk4 is counter intuitive to me. Weak API design.
+        // menu.append(Some("-"), None);
         menu.append(Some("Preferences"), Some("app.preferences"));
         menu.append(Some("Keyboard Map"), Some("app.keymap"));
         menu.append(Some("Send bug report"), Some("app.bugreport"));
@@ -1110,7 +1119,7 @@ impl MainWindow {
             .resize_end_child(false)
             .end_child(&layer_box)
             .build();
-            right_pane.set_position(1024 - 380);
+        right_pane.set_position(500);
 
         let layer_box = Box::new(Orientation::Vertical, 0);
         layer_box.set_vexpand(false);
@@ -1222,6 +1231,9 @@ impl MainWindow {
         } else if tool.get_icon_name() == "md-tool-pipette" {
             super::add_pipette_tool_page(my_box,&mut page_content);
         }
+        
+        self.tool_notebook.append_page(&page_content, Option::<&gtk4::Widget>::None);
+
         button
     }
 
