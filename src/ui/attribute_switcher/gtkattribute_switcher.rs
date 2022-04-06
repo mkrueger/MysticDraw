@@ -97,7 +97,7 @@ impl WidgetImpl for GtkAttributeSwitcher {
             snapshot.append_color(&gdk::RGBA::new(color.0 as f32, color.1 as f32, color.2 as f32, 1.0), &bounds);
 
 
-            let texture = Texture::from_resource("/com/github/mkrueger/MysticDraw/icons/scalable/apps/md-switch-color.svg");
+            let texture = Texture::from_resource("/com/github/mkrueger/MysticDraw/icons/scalable/actions/md-switch-color.svg");
             let s = 18.0;
             snapshot.append_texture(&texture,  &graphene::Rect::new(
                 PICKER_WIDTH - s - 2.0,

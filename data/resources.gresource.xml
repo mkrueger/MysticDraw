@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/com/github/mkrueger/MysticDraw/">
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-click.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-circle.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-draw.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-erase.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-fill.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-font.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-line.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-rectangle.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-pipette.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-flip.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-move-layer.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-circle-filled.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-tool-rectangle-filled.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-tool-click.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-tool-circle.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-tool-draw.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-tool-erase.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-tool-fill.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-tool-font.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-tool-line.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-tool-rectangle.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-tool-pipette.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-tool-flip.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-tool-move-layer.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-tool-circle-filled.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-tool-rectangle-filled.svg</file>
 
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-layer-add.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-layer-delete.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-layer-down.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-layer-up.svg</file>
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-layer-copy.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-layer-add.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-layer-delete.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-layer-down.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-layer-up.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-layer-copy.svg</file>
 
-    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/apps/md-switch-color.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">icons/scalable/actions/md-switch-color.svg</file>
 
-    <file >icons/scalable/apps/about.png</file>
+    <file >icons/scalable/actions/about.png</file>
   </gresource>
 </gresources>
