@@ -1,17 +1,192 @@
-use std::fs;
-
-use gtk4::{gio::{ApplicationFlags, self}};
-use libadwaita as adw;
-use directories::{ ProjectDirs};
-use adw::{prelude::*};
-use gtk4::{Application};
-use model::{init_tools, Tool, TOOLS, Size};
-use ui::MainWindow;
-
 mod model;
-pub mod ui;
 
-pub struct Settings {
+mod circle {
+    use iced_native::layout::{self, Layout};
+    use iced_native::renderer;
+    use iced_native::{Color, Element, Length, Point, Rectangle, Size, Widget};
+
+    use crate::model::Editor;
+
+    pub struct Circle {
+        editor: Editor
+    }
+
+    impl Circle {
+        pub fn new(editor: Editor) -> Self {
+            Self { editor }
+        }
+    }
+
+    impl<Message, Renderer> Widget<Message, Renderer> for Circle
+    where
+        Renderer: renderer::Renderer,
+    {
+        fn width(&self) -> Length {
+            Length::Shrink
+        }
+
+        fn height(&self) -> Length {
+            Length::Shrink
+        }
+
+        fn layout(
+            &self,
+            _renderer: &Renderer,
+            _limits: &layout::Limits,
+        ) -> layout::Node {
+            layout::Node::new(Size::new(self.editor.buf.width as f32 * 16.0, self.editor.buf.height as f32 * 8.0))
+        }
+
+        fn draw(
+            &self,
+            renderer: &mut Renderer,
+            _style: &renderer::Style,
+            layout: Layout<'_>,
+            _cursor_position: Point,
+            _viewport: &Rectangle,
+        ) {
+            let buffer = &self.editor.buf;
+            let font_dimensions = buffer.get_font_dimensions();
+
+            let x1 = (_viewport.x as usize) / font_dimensions.width as usize;
+            let x2 = ((_viewport.x + _viewport.width) as usize) / font_dimensions.width as usize + 1;
+            let y1 = (_viewport.y as usize) / font_dimensions.height as usize;
+            let y2 = ((_viewport.y + _viewport.height) as usize) / font_dimensions.height as usize + 1;
+
+            for y in y1..=y2 {
+                for x in x1..=x2 {
+                    let rect  = Rectangle::new(
+                        Point::new((x * font_dimensions.width as usize) as f32 + 0.5,  
+                        (y * font_dimensions.height as usize) as f32 + 0.5), 
+                        Size::new(
+                        ((x + 1) * font_dimensions.width as usize) as f32 + 0.5, 
+                        ((y + 1) * font_dimensions.height as usize) as f32 + 0.5));
+                        if let Some(ch) = buffer.get_char(crate::model::Position::from(x as i32, y as i32)) {
+                            let bg = buffer.palette.colors[ch.attribute.get_background() as usize];
+                            let (r, g, b) = bg.get_rgb_f32();
+
+                            let color = Color::new(r, g, b, 1.0);
+        
+                            renderer.fill_quad(
+                                renderer::Quad {
+                                    bounds: rect,
+                                    border_width: 0.0,
+                                    border_color: Color::TRANSPARENT,
+                                    border_radius: 0.0,
+                                },
+                                color,
+                            );
+                        }
+
+                        /* 
+                    let ch = buffer.get_char(Position::from(x as i32, y as i32));
+                    let bg = buffer.get_rgba_u32(ch.attribute.get_background());
+                    ctx.fill(rect, &Color::from_rgba32_u32(bg));
+
+                    let key = (ch.char_code, ch.attribute.as_u8());
+                    if let std::collections::hash_map::Entry::Vacant(e) = self.hash.entry(key) {
+                        let image_data = &self.chars[ch.attribute.get_foreground() as usize * 256 + ch.char_code as usize];
+                        let image = ctx
+                            .make_image(font_dimensions.width, font_dimensions.height, image_data, ImageFormat::RgbaSeparate)
+                            .unwrap();
+                        e.insert(image);
+                    }
+                    ctx.draw_image(self.hash.get(&key).unwrap(), rect, InterpolationMode::Bilinear);*/
+                }
+            }
+            /* 
+            renderer.fill_quad(
+                renderer::Quad {
+                    bounds: layout.bounds(),
+                    border_radius: self.radius,
+                    border_width: 0.0,
+                    border_color: Color::TRANSPARENT,
+                },
+                Color::BLACK,
+            );*/
+        }
+    }
+
+    impl<'a, Message, Renderer> Into<Element<'a, Message, Renderer>> for Circle
+    where
+        Renderer: renderer::Renderer,
+    {
+        fn into(self) -> Element<'a, Message, Renderer> {
+            Element::new(self)
+        }
+    }
+}
+
+use std::path::Path;
+
+use circle::Circle;
+use iced::{
+    slider, Alignment, Column, Container, Element, Length, Sandbox, Settings,
+    Slider, Text,
+};
+use model::{TOOLS, Size, Tool, Editor};
+
+pub fn main() -> iced::Result {
+    Example::run(Settings::default())
+}
+
+struct Example {
+    radius: f32,
+    slider: slider::State
+
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Message {
+    RadiusChanged(f32),
+}
+
+impl Sandbox for Example {
+    type Message = Message;
+
+    fn new() -> Self {
+
+        Example {
+            radius: 50.0,
+            slider: slider::State::new(),
+        }
+    }
+
+    fn title(&self) -> String {
+        String::from("Custom widget - Iced")
+    }
+
+    fn update(&mut self, message: Message) {
+        match message {
+            Message::RadiusChanged(radius) => {
+                self.radius = radius;
+            }
+        }
+    }
+
+    fn view(&mut self) -> Element<Message> {
+        println!("foo!!!");
+        let buffer = model::Buffer::load_buffer(Path::new("/home/mkrueger/Dokumente/SAC0696A/ROY-COMI.ANS")).unwrap();
+
+        let content = Column::new()
+            .padding(20)
+            .spacing(20)
+            .max_width(500)
+            .align_items(Alignment::Center)
+            .push(Circle::new(Editor::new(0, buffer)))
+            .push(Text::new(format!("Radius: {:.2}", self.radius)))
+          ;
+
+        Container::new(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .center_x()
+            .center_y()
+            .into()
+    }
+}
+
+pub struct AnsiSettings {
     font_path: Option<std::path::PathBuf>,
     console_font_path: Option<std::path::PathBuf>,
     tab_size: i32,
@@ -41,7 +216,7 @@ pub enum Guide {
 }
 
 pub struct Workspace {
-    pub settings: Settings,
+    pub settings: AnsiSettings,
     selected_tool: usize,
 
     pub show_fg_color: bool,
@@ -82,7 +257,7 @@ impl Workspace {
 }
 
 pub static mut WORKSPACE: Workspace = Workspace {
-    settings: Settings { tab_size: 8, font_path: None, console_font_path: None, outline_font_style: 0},
+    settings: AnsiSettings { tab_size: 8, font_path: None, console_font_path: None, outline_font_style: 0},
     selected_tool: 0,
     show_fg_color: true,
     show_bg_color: true,
@@ -91,8 +266,8 @@ pub static mut WORKSPACE: Workspace = Workspace {
 };
 
 const RESOURCES_BYTES:&[u8] = include_bytes!("../data/resources.gresource");
-
-fn main() {
+/* 
+pub fn main() {
 
     if let Some(proj_dirs) = ProjectDirs::from("github.com", "mkrueger",  "Mystic Draw") {
         unsafe {
@@ -107,23 +282,8 @@ fn main() {
             }
         }
     }
-
     init_tools();
-    gtk4::init().expect("failed to init gtk");
-
-    let resource_data = glib::Bytes::from_static(RESOURCES_BYTES);
-    let res = gio::Resource::from_data(&resource_data).unwrap();
-    gio::resources_register(&res);
-
-    let app = Application::new(Some("mystic.draw"), ApplicationFlags::FLAGS_NONE);
-    app.set_resource_base_path(Some("/com/github/mkrueger/MysticDraw/"));
-    app.connect_startup(|_| {
-        adw::init();
-    });
-    app.connect_activate(|app| {
-        MainWindow::build_ui(app);
-    });
-    app.run();
+    Counter::run(Settings::default());
 }
 
 #[cfg(test)]
@@ -201,3 +361,4 @@ mod tests {
         }
     }
 }
+*/

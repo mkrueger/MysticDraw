@@ -8,9 +8,8 @@ edition = "2021"
 [dependencies]
 
 # UI libraries
-gtk4 = { version = "0.4.6", features = ["v4_6"] }
-libadwaita = "0.1.0"
-glib = "0.15.6"
+iced = "0.4.0"
+iced_native = "0.5.1"
 
 # Used for determining platform specfic directories
 directories = "4.0.1"
