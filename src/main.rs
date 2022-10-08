@@ -122,7 +122,7 @@ use std::path::Path;
 use circle::Circle;
 use iced::{
     slider, Alignment, Column, Container, Element, Length, Sandbox, Settings,
-    Slider, Text,
+    Slider, Text, pane_grid::Pane,
 };
 use model::{TOOLS, Size, Tool, Editor};
 
