@@ -171,7 +171,7 @@ impl BitFont {
         }
     }
 
-    pub fn get_scanline(&self, ch: u8, y: usize) -> u32
+    pub fn get_scanline(&self, ch: u16, y: usize) -> u32
     {
         if let Some(data_32) = &self.data_32 {
             data_32[ch as usize * self.size.height as usize + y]

@@ -32,7 +32,7 @@ impl Sandbox for Example {
     }
 
     fn title(&self) -> String {
-        String::from("Bezier tool - Iced")
+        String::from("Mystic Draw - iCED")
     }
 
     fn update(&mut self, message: Message) {
@@ -48,12 +48,8 @@ impl Sandbox for Example {
 
     fn view(&self) -> Element<Message> {
         column![
-            text("Bezier tool example").width(Length::Shrink).size(50),
             self.bezier.view(&self.bezier).map(Message::AddCurve),
-            button("Clear").padding(8).on_press(Message::Clear),
         ]
-        .padding(20)
-        .spacing(20)
         .align_items(Alignment::Center)
         .into()
     }
@@ -68,6 +64,7 @@ mod bezier {
         self, Canvas, Cursor, Frame, Geometry, Path, Stroke,
     };
     use iced::{Element, Length, Point, Rectangle, Theme};
+    use iced_native::Widget;
     use iced_native::image::Handle;
 
     use crate::model::Editor;
@@ -80,7 +77,7 @@ mod bezier {
     
     impl State {
         pub fn new() -> Self {
-            let buffer = crate::model::Buffer::load_buffer(std::path::Path::new("/home/mkrueger/Dokumente/SAC0696A/ROY-COMI.ANS")).unwrap();
+            let buffer = crate::model::Buffer::load_buffer(std::path::Path::new("/home/mkrueger/Downloads/2m-blockfury_spaceinvaders2015.xb")).unwrap();
             let editor = Editor::new(0, buffer);
     
             let mut chars = Vec::new();
@@ -127,12 +124,17 @@ mod bezier {
         }
         pub fn view<'a>(&'a self, state: &State) -> Element<'a, Curve> {
 
-            Canvas::new(Bezier {
+            let c = Canvas::new(Bezier {
                 state: self
             })
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .into()
+                .width(Length::Units(state.editor.buf.width * 8))
+                .height(Length::Units(state.editor.buf.height * 16));
+
+
+            let scrollable = iced::widget::scrollable(c)
+                .height(Length::Fill);
+
+            scrollable.into()
         }
 
         pub fn request_redraw(&mut self) {
@@ -195,7 +197,7 @@ mod bezier {
                         _ => None,
                     };
 
-                    (event::Status::Captured, message)
+                    (event::Status::Ignored, None)
                 }
                 _ => (event::Status::Ignored, None),
             }
@@ -210,7 +212,6 @@ mod bezier {
         ) -> Vec<Geometry> {
             let content =
             self.state.cache.draw(bounds.size(), |frame: &mut Frame| {
-
                 let buffer = &self.state.editor.buf;
                 let font_dimensions = buffer.get_font_dimensions();
 
@@ -218,7 +219,7 @@ mod bezier {
                 let x2 = ((bounds.x + bounds.width) as usize) / font_dimensions.width as usize + 1;
                 let y1 = (bounds.y as usize) / font_dimensions.height as usize;
                 let y2 = ((bounds.y + bounds.height) as usize) / font_dimensions.height as usize + 1;
-
+                
                 for y in y1..=y2 {
                     for x in x1..=x2 {
                         let rect  = Rectangle::new(
@@ -234,14 +235,21 @@ mod bezier {
                                 let color = iced::Color::new(r, g, b, 1.0);
                                 frame.fill_rectangle(rect.position(), rect.size(), color);
 
-                                let image_data = &self.state.chars[ch.attribute.get_foreground() as usize * 256 + ch.char_code as usize];
-                                let image = iced_native::image::Handle::from_pixels(8, 16, image_data.clone());
-                                let image = iced::widget::Image::new(image);
-                                
-                                frame.
-                                //renderer.draw(image, rect);
+                                let fg = buffer.palette.colors[ch.attribute.get_foreground() as usize];
+                                let (r, g, b) = fg.get_rgb_f32();
+                                let color = iced::Color::new(r, g, b, 1.0);
+                                for y in 0..font_dimensions.height {
+                                    let line = buffer.get_font_scanline(ch.char_code, y as usize);
+                                    for x in 0..font_dimensions.width {
+                                        if (line & (128 >> x)) != 0 {
 
-                            //    renderer.draw(&image, rect);
+                                            frame.fill_rectangle(Point::new(rect.x + x as f32, rect.y + y as f32), iced::Size::new(1_f32, 1_f32), color);
+
+                                        //    let path = canvas::Path::rectangle(Point::new(rect.x + x as f32 + 0.5, rect.y + y as f32 + 0.5), iced::Size::new(1_f32, 1_f32));
+                                          //  frame.stroke(&path, canvas::Stroke::default().with_line_cap(canvas::LineCap::Square).with_line_join(canvas::LineJoin::Miter).with_color(iced::Color::new(r, g, b, 1.0)));
+                                        }
+                                    }
+                                }
                             }
                     }
                 }
@@ -249,7 +257,6 @@ mod bezier {
 
             if let Some(pending) = state {
                 let pending_curve = pending.draw(bounds, cursor);
-
                 vec![content, pending_curve]
             } else {
                 vec![content]
