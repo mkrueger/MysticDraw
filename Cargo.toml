@@ -8,8 +8,11 @@ edition = "2021"
 [dependencies]
 
 # UI libraries
-iced = "0.4.0"
-iced_native = "0.5.1"
+iced = { path = "../iced", features = ["canvas", "tokio", "debug"] }
+iced_native = { path = "../iced/native" }
+
+time = { version = "0.3.5", features = ["local-offset"] }
+tokio = { version = "1.0", features = ["sync"] }
 
 # Used for determining platform specfic directories
 directories = "4.0.1"

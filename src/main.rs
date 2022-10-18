@@ -2,19 +2,57 @@ mod model;
 
 mod circle {
     use iced_native::layout::{self, Layout};
-    use iced_native::renderer;
+    use iced_native::{renderer, image};
     use iced_native::{Color, Element, Length, Point, Rectangle, Size, Widget};
-
+    use std::collections::HashMap;
     use crate::model::Editor;
-
+    use iced_native::image::Handle;
     pub struct Circle {
-        editor: Editor
+        editor: Editor,
+        chars: Vec<Vec<u8>>,
+        hash : HashMap<(u16, u8), Handle>
     }
 
     impl Circle {
         pub fn new(editor: Editor) -> Self {
-            Self { editor }
-        }
+            let mut chars = Vec::new();
+            let font_dimensions = editor.buf.get_font_dimensions();
+            for color in 0..16 {
+                let fg = editor.buf.palette.colors[color];
+                for ch in 0..=255 {
+                    let mut result = vec![0; font_dimensions.width as usize * font_dimensions.height as usize * 4];
+                    let mut i = 0;
+                    for y in 0..font_dimensions.height {
+                        let line = editor.buf.get_font_scanline(ch, y as usize);
+                        for x in 0..font_dimensions.width {
+                            if (line & (128 >> x)) != 0 {
+                                result[i] = 255;
+                                i += 1;
+                                result[i] = 255;
+                                i += 1;
+                                result[i] = 255;
+                                i += 1;
+                                result[i] = 255;
+                                i += 1;
+                            } else {
+                                result[i] = 0;
+                                i += 1;
+                                result[i] = 0;
+                                i += 1;
+                                result[i] = 0;
+                                i += 1;
+                                result[i] = 0;
+                                i += 1;
+                            }
+                        }
+                    }
+                    chars.push(result);    
+                }
+            }
+
+            Self {             
+                editor, chars, hash: HashMap::new() }
+            }
     }
 
     impl<Message, Renderer> Widget<Message, Renderer> for Circle
@@ -39,7 +77,9 @@ mod circle {
 
         fn draw(
             &self,
+            _state: &iced_native::widget::Tree,
             renderer: &mut Renderer,
+            _theme: &Renderer::Theme,
             _style: &renderer::Style,
             layout: Layout<'_>,
             _cursor_position: Point,
@@ -76,40 +116,19 @@ mod circle {
                                 },
                                 color,
                             );
+
+                            let image_data = &self.chars[ch.attribute.get_foreground() as usize * 256 + ch.char_code as usize];
+                            let image = image::Handle::from_pixels(8, 16, image_data.clone());
+                        //    renderer.draw(&image, rect);
                         }
-
-                        /* 
-                    let ch = buffer.get_char(Position::from(x as i32, y as i32));
-                    let bg = buffer.get_rgba_u32(ch.attribute.get_background());
-                    ctx.fill(rect, &Color::from_rgba32_u32(bg));
-
-                    let key = (ch.char_code, ch.attribute.as_u8());
-                    if let std::collections::hash_map::Entry::Vacant(e) = self.hash.entry(key) {
-                        let image_data = &self.chars[ch.attribute.get_foreground() as usize * 256 + ch.char_code as usize];
-                        let image = ctx
-                            .make_image(font_dimensions.width, font_dimensions.height, image_data, ImageFormat::RgbaSeparate)
-                            .unwrap();
-                        e.insert(image);
-                    }
-                    ctx.draw_image(self.hash.get(&key).unwrap(), rect, InterpolationMode::Bilinear);*/
                 }
             }
-            /* 
-            renderer.fill_quad(
-                renderer::Quad {
-                    bounds: layout.bounds(),
-                    border_radius: self.radius,
-                    border_width: 0.0,
-                    border_color: Color::TRANSPARENT,
-                },
-                Color::BLACK,
-            );*/
         }
     }
 
     impl<'a, Message, Renderer> Into<Element<'a, Message, Renderer>> for Circle
     where
-        Renderer: renderer::Renderer,
+        Renderer: renderer::Renderer
     {
         fn into(self) -> Element<'a, Message, Renderer> {
             Element::new(self)
@@ -121,8 +140,7 @@ use std::path::Path;
 
 use circle::Circle;
 use iced::{
-    slider, Alignment, Column, Container, Element, Length, Sandbox, Settings,
-    Slider, Text, pane_grid::Pane,
+    Alignment, Element, Length, Sandbox, Settings,
 };
 use model::{TOOLS, Size, Tool, Editor};
 
@@ -132,8 +150,6 @@ pub fn main() -> iced::Result {
 
 struct Example {
     radius: f32,
-    slider: slider::State
-
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -147,8 +163,7 @@ impl Sandbox for Example {
     fn new() -> Self {
 
         Example {
-            radius: 50.0,
-            slider: slider::State::new(),
+            radius: 50.0
         }
     }
 
@@ -164,20 +179,19 @@ impl Sandbox for Example {
         }
     }
 
-    fn view(&mut self) -> Element<Message> {
+    fn view(&self) -> Element<Message> {
         println!("foo!!!");
         let buffer = model::Buffer::load_buffer(Path::new("/home/mkrueger/Dokumente/SAC0696A/ROY-COMI.ANS")).unwrap();
 
-        let content = Column::new()
+        let content = iced::widget::Column::new()
             .padding(20)
             .spacing(20)
             .max_width(500)
             .align_items(Alignment::Center)
             .push(Circle::new(Editor::new(0, buffer)))
-            .push(Text::new(format!("Radius: {:.2}", self.radius)))
           ;
 
-        Container::new(content)
+        iced::widget::Container::new(content)
             .width(Length::Fill)
             .height(Length::Fill)
             .center_x()
