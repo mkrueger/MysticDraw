@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 
 # UI libraries
-iced = { path = "../iced", features = ["canvas", "tokio", "debug"] }
+iced = { path = "../iced", features = ["canvas", "image", "tokio", "debug"] }
 iced_native = { path = "../iced/native" }
 
 time = { version = "0.3.5", features = ["local-offset"] }

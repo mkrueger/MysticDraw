@@ -1,20 +1,88 @@
-mod model;
+//! This example showcases an interactive `Canvas` for drawing Bézier curves.
+use iced::widget::{button, column, text};
+use iced::{Alignment, Element, Length, Sandbox, Settings};
+use std::collections::HashMap;
 
-mod circle {
-    use iced_native::layout::{self, Layout};
-    use iced_native::{renderer, image};
-    use iced_native::{Color, Element, Length, Point, Rectangle, Size, Widget};
-    use std::collections::HashMap;
-    use crate::model::Editor;
-    use iced_native::image::Handle;
-    pub struct Circle {
-        editor: Editor,
-        chars: Vec<Vec<u8>>,
-        hash : HashMap<(u16, u8), Handle>
+use std::path::Path;
+mod model;
+use model::{TOOLS, Size, Tool, Editor};
+
+pub fn main() -> iced::Result {
+    Example::run(Settings {
+        antialiasing: true,
+        ..Settings::default()
+    })
+}
+
+struct Example {
+    bezier: bezier::State
+}
+
+#[derive(Debug, Clone, Copy)]
+enum Message {
+    AddCurve(bezier::Curve),
+    Clear,
+}
+
+impl Sandbox for Example {
+    type Message = Message;
+
+    fn new() -> Self {
+        Example { bezier: bezier::State::new() }
     }
 
-    impl Circle {
-        pub fn new(editor: Editor) -> Self {
+    fn title(&self) -> String {
+        String::from("Bezier tool - Iced")
+    }
+
+    fn update(&mut self, message: Message) {
+        match message {
+            Message::AddCurve(curve) => {
+                self.bezier.request_redraw();
+            }
+            Message::Clear => {
+                self.bezier = bezier::State::new();
+            }
+        }
+    }
+
+    fn view(&self) -> Element<Message> {
+        column![
+            text("Bezier tool example").width(Length::Shrink).size(50),
+            self.bezier.view(&self.bezier).map(Message::AddCurve),
+            button("Clear").padding(8).on_press(Message::Clear),
+        ]
+        .padding(20)
+        .spacing(20)
+        .align_items(Alignment::Center)
+        .into()
+    }
+}
+
+mod bezier {
+    use std::collections::HashMap;
+
+    use iced::mouse;
+    use iced::widget::canvas::event::{self, Event};
+    use iced::widget::canvas::{
+        self, Canvas, Cursor, Frame, Geometry, Path, Stroke,
+    };
+    use iced::{Element, Length, Point, Rectangle, Theme};
+    use iced_native::image::Handle;
+
+    use crate::model::Editor;
+    pub struct State {
+        cache: canvas::Cache,
+        pub editor: Editor,
+        pub chars: Vec<Vec<u8>>,
+        pub hash : HashMap<(u16, u8), Handle>
+    }
+    
+    impl State {
+        pub fn new() -> Self {
+            let buffer = crate::model::Buffer::load_buffer(std::path::Path::new("/home/mkrueger/Dokumente/SAC0696A/ROY-COMI.ANS")).unwrap();
+            let editor = Editor::new(0, buffer);
+    
             let mut chars = Vec::new();
             let font_dimensions = editor.buf.get_font_dimensions();
             for color in 0..16 {
@@ -49,6 +117,229 @@ mod circle {
                     chars.push(result);    
                 }
             }
+            State {
+                cache: canvas::Cache::default(),
+                editor,
+                chars,
+                hash: HashMap::new()
+            }
+
+        }
+        pub fn view<'a>(&'a self, state: &State) -> Element<'a, Curve> {
+
+            Canvas::new(Bezier {
+                state: self
+            })
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into()
+        }
+
+        pub fn request_redraw(&mut self) {
+            self.cache.clear()
+        }
+    }
+
+    struct Bezier<'a> {
+        state: &'a State,
+    }
+
+    impl<'a> canvas::Program<Curve> for Bezier<'a> {
+        type State = Option<Pending>;
+
+        fn update(
+            &self,
+            state: &mut Self::State,
+            event: Event,
+            bounds: Rectangle,
+            cursor: Cursor,
+        ) -> (event::Status, Option<Curve>) {
+            let cursor_position =
+                if let Some(position) = cursor.position_in(&bounds) {
+                    position
+                } else {
+                    return (event::Status::Ignored, None);
+                };
+
+            match event {
+                Event::Mouse(mouse_event) => {
+                    let message = match mouse_event {
+                        mouse::Event::ButtonPressed(mouse::Button::Left) => {
+                            match *state {
+                                None => {
+                                    *state = Some(Pending::One {
+                                        from: cursor_position,
+                                    });
+
+                                    None
+                                }
+                                Some(Pending::One { from }) => {
+                                    *state = Some(Pending::Two {
+                                        from,
+                                        to: cursor_position,
+                                    });
+
+                                    None
+                                }
+                                Some(Pending::Two { from, to }) => {
+                                    *state = None;
+
+                                    Some(Curve {
+                                        from,
+                                        to,
+                                        control: cursor_position,
+                                    })
+                                }
+                            }
+                        }
+                        _ => None,
+                    };
+
+                    (event::Status::Captured, message)
+                }
+                _ => (event::Status::Ignored, None),
+            }
+        }
+
+        fn draw(
+            &self,
+            state: &Self::State,
+            _theme: &Theme,
+            bounds: Rectangle,
+            cursor: Cursor,
+        ) -> Vec<Geometry> {
+            let content =
+            self.state.cache.draw(bounds.size(), |frame: &mut Frame| {
+
+                let buffer = &self.state.editor.buf;
+                let font_dimensions = buffer.get_font_dimensions();
+
+                let x1 = (bounds.x as usize) / font_dimensions.width as usize;
+                let x2 = ((bounds.x + bounds.width) as usize) / font_dimensions.width as usize + 1;
+                let y1 = (bounds.y as usize) / font_dimensions.height as usize;
+                let y2 = ((bounds.y + bounds.height) as usize) / font_dimensions.height as usize + 1;
+
+                for y in y1..=y2 {
+                    for x in x1..=x2 {
+                        let rect  = Rectangle::new(
+                            Point::new((x * font_dimensions.width as usize) as f32 + 0.5,  
+                            (y * font_dimensions.height as usize) as f32 + 0.5), 
+                            iced::Size::new(
+                            ((x + 1) * font_dimensions.width as usize) as f32 + 0.5, 
+                            ((y + 1) * font_dimensions.height as usize) as f32 + 0.5));
+                            if let Some(ch) = buffer.get_char(crate::model::Position::from(x as i32, y as i32)) {
+                                let bg = buffer.palette.colors[ch.attribute.get_background() as usize];
+                                let (r, g, b) = bg.get_rgb_f32();
+
+                                let color = iced::Color::new(r, g, b, 1.0);
+                                frame.fill_rectangle(rect.position(), rect.size(), color);
+
+                                let image_data = &self.state.chars[ch.attribute.get_foreground() as usize * 256 + ch.char_code as usize];
+                                let image = iced_native::image::Handle::from_pixels(8, 16, image_data.clone());
+                                let image = iced::widget::Image::new(image);
+                                
+                                frame.
+                                //renderer.draw(image, rect);
+
+                            //    renderer.draw(&image, rect);
+                            }
+                    }
+                }
+                });
+
+            if let Some(pending) = state {
+                let pending_curve = pending.draw(bounds, cursor);
+
+                vec![content, pending_curve]
+            } else {
+                vec![content]
+            }
+        }
+
+        fn mouse_interaction(
+            &self,
+            _state: &Self::State,
+            bounds: Rectangle,
+            cursor: Cursor,
+        ) -> mouse::Interaction {
+            if cursor.is_over(&bounds) {
+                mouse::Interaction::Crosshair
+            } else {
+                mouse::Interaction::default()
+            }
+        }
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct Curve {
+        from: Point,
+        to: Point,
+        control: Point,
+    }
+
+    impl Curve {
+        fn draw_all( frame: &mut Frame) {/*
+            let curves = Path::new(|p| {
+                for curve in curves {
+                    p.move_to(curve.from);
+                    p.quadratic_curve_to(curve.control, curve.to);
+                }
+            });
+
+            frame.stroke(&curves, Stroke::default().with_width(2.0));*/
+        }
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    enum Pending {
+        One { from: Point },
+        Two { from: Point, to: Point },
+    }
+
+    impl Pending {
+        fn draw(&self, bounds: Rectangle, cursor: Cursor) -> Geometry {
+            let mut frame = Frame::new(bounds.size());
+
+            if let Some(cursor_position) = cursor.position_in(&bounds) {
+                match *self {
+                    Pending::One { from } => {
+                        let line = Path::line(from, cursor_position);
+                        frame.stroke(&line, Stroke::default().with_width(2.0));
+                    }
+                    Pending::Two { from, to } => {
+                        let curve = Curve {
+                            from,
+                            to,
+                            control: cursor_position,
+                        };
+
+                        Curve::draw_all( &mut frame);
+                    }
+                };
+            }
+
+            frame.into_geometry()
+        }
+    }
+}
+
+/*
+
+mod circle {
+    use iced_native::layout::{self, Layout};
+    use iced_native::{renderer, image};
+    use iced_native::{Color, Element, Length, Point, Rectangle, Size, Widget};
+    use crate::model::Editor;
+    use iced_native::image::Handle;
+    pub struct Circle {
+        editor: Editor,
+        chars: Vec<Vec<u8>>,
+        hash : HashMap<(u16, u8), Handle>
+    }
+
+    impl Circle {
+        pub fn new(editor: Editor) -> Self {
+            
 
             Self {             
                 editor, chars, hash: HashMap::new() }
@@ -85,44 +376,7 @@ mod circle {
             _cursor_position: Point,
             _viewport: &Rectangle,
         ) {
-            let buffer = &self.editor.buf;
-            let font_dimensions = buffer.get_font_dimensions();
-
-            let x1 = (_viewport.x as usize) / font_dimensions.width as usize;
-            let x2 = ((_viewport.x + _viewport.width) as usize) / font_dimensions.width as usize + 1;
-            let y1 = (_viewport.y as usize) / font_dimensions.height as usize;
-            let y2 = ((_viewport.y + _viewport.height) as usize) / font_dimensions.height as usize + 1;
-
-            for y in y1..=y2 {
-                for x in x1..=x2 {
-                    let rect  = Rectangle::new(
-                        Point::new((x * font_dimensions.width as usize) as f32 + 0.5,  
-                        (y * font_dimensions.height as usize) as f32 + 0.5), 
-                        Size::new(
-                        ((x + 1) * font_dimensions.width as usize) as f32 + 0.5, 
-                        ((y + 1) * font_dimensions.height as usize) as f32 + 0.5));
-                        if let Some(ch) = buffer.get_char(crate::model::Position::from(x as i32, y as i32)) {
-                            let bg = buffer.palette.colors[ch.attribute.get_background() as usize];
-                            let (r, g, b) = bg.get_rgb_f32();
-
-                            let color = Color::new(r, g, b, 1.0);
-        
-                            renderer.fill_quad(
-                                renderer::Quad {
-                                    bounds: rect,
-                                    border_width: 0.0,
-                                    border_color: Color::TRANSPARENT,
-                                    border_radius: 0.0,
-                                },
-                                color,
-                            );
-
-                            let image_data = &self.chars[ch.attribute.get_foreground() as usize * 256 + ch.char_code as usize];
-                            let image = image::Handle::from_pixels(8, 16, image_data.clone());
-                        //    renderer.draw(&image, rect);
-                        }
-                }
-            }
+            
         }
     }
 
@@ -135,14 +389,6 @@ mod circle {
         }
     }
 }
-
-use std::path::Path;
-
-use circle::Circle;
-use iced::{
-    Alignment, Element, Length, Sandbox, Settings,
-};
-use model::{TOOLS, Size, Tool, Editor};
 
 pub fn main() -> iced::Result {
     Example::run(Settings::default())
@@ -199,7 +445,7 @@ impl Sandbox for Example {
             .into()
     }
 }
-
+*/
 pub struct AnsiSettings {
     font_path: Option<std::path::PathBuf>,
     console_font_path: Option<std::path::PathBuf>,
