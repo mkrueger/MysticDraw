@@ -172,20 +172,15 @@ impl Widget<AppState> for AnsiWidget {
             }*/
         }
 
-        for r in rects {
-            let x1 = (r.x0 as usize) / font_dimensions.width;
-            let x2 = (r.x1 as usize) / font_dimensions.width + 1;
-            let y1 = (r.y0 as usize) / font_dimensions.height;
-            let y2 = (r.y1 as usize) / font_dimensions.height + 1;
+        let size = Size::new(font_dimensions.width as f64, font_dimensions.height as f64);
 
-            for y in y1..=y2 {
-                for x in x1..=x2 {
-                    let rect  = Rect::new(
-                        (x * font_dimensions.width) as f64 + 0.5,  
-                        (y * font_dimensions.height) as f64 + 0.5, 
-                        ((x + 1) * font_dimensions.width) as f64 + 0.5, 
-                        ((y + 1) * font_dimensions.height) as f64 + 0.5);
-                    let ch = buffer.get_char(Position::from(x as i32, y as i32));
+        for r in rects {
+            let mut y = r.y0;
+            while y < r.y1 {
+                let mut x = r.x0;
+                while x < r.x1 {
+                    let rect  = Rect::from_origin_size(Point::new(x + 0.5, y + 0.5), size);
+                    let ch = buffer.get_char(Position::from(x as i32  / font_dimensions.width as i32 , y as i32  / font_dimensions.height as i32 ));
                     let bg = buffer.get_rgba_u32(ch.attribute.get_background());
                     ctx.fill(rect, &Color::from_rgba32_u32(bg));
 
@@ -197,8 +192,10 @@ impl Widget<AppState> for AnsiWidget {
                             .unwrap();
                         e.insert(image);
                     }
-                    ctx.draw_image(self.hash.get(&key).unwrap(), rect, InterpolationMode::Bilinear);
+                    ctx.draw_image(self.hash.get(&key).unwrap(), rect, InterpolationMode::NearestNeighbor);
+                    x += font_dimensions.width as f64;
                 }
+                y += font_dimensions.height as f64;
             }
         }
         let x = editor.cursor.pos.x as usize;
