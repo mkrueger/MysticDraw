@@ -1,7 +1,7 @@
 use std::{collections::HashMap};
-use eframe::{egui::{self, ScrollArea, Sense}, epaint::{Rect, Pos2, Rounding, Color32, ColorImage, Shape, TextureHandle, Vec2, Mesh, pos2}, App, Frame};
-use crate::model::{Buffer, Editor, Position};
+use bevy_egui::egui::{TextureHandle, Ui, Rect, Vec2, pos2, Pos2, Shape, Color32, Rounding, ColorImage, self, Mesh, Sense, ScrollArea};
 
+use crate::model::{Buffer, Editor, Position};
 pub struct MysticDrawApp {
     editor: Editor,
     chars: Vec<Vec<u8>>,
@@ -53,31 +53,11 @@ impl Default for MysticDrawApp {
     }
 }
 
-impl eframe::App for MysticDrawApp {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+pub fn draw_paint_area(ui: &mut Ui, state: &mut MysticDrawApp) {
+    let editor = &state.editor;
+    let  hash = &mut state.hash;
+    let chars = &state.chars;
 
-        let Self { editor, chars, hash } = self;
-
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            // The top panel is often a good place for a menu bar:
-            egui::menu::bar(ui, |ui| {
-                ui.menu_button("File", |ui| {
-                    if ui.button("Quit").clicked() {
-                        frame.quit();
-                    }
-                });
-            });
-        });
-
-        egui::CentralPanel::default().show(ctx, |ui| {
-            draw_paint_area(ui, editor, chars, hash);
-        });
-
-    }
-
-}
-
-fn draw_paint_area(ui: &mut egui::Ui, editor: &Editor, chars: &Vec<Vec<u8>>, hash: &mut HashMap<u16, TextureHandle>) {
     let buffer = &editor.buf;
     let font_dimensions = buffer.get_font_dimensions();
     let width = (buffer.width * font_dimensions.width) as f32;
@@ -91,16 +71,15 @@ fn draw_paint_area(ui: &mut egui::Ui, editor: &Editor, chars: &Vec<Vec<u8>>, has
 
             let used_rect = Rect::NOTHING;
             
-            let x1 = (viewport.min.x as usize) / font_dimensions.width;
-            let x2 = (viewport.max.x / font_dimensions.width as f32).ceil() as usize + 1;
-            let y1 = (viewport.min.y as usize) / font_dimensions.height;
-            let y2 = (viewport.max.y / font_dimensions.height as f32).ceil() as usize + 1;
+            let x1 = (0 as usize) / font_dimensions.width;
+            let x2 = (500.0 / font_dimensions.width as f32).ceil() as usize + 1;
+            let y1 = (0 as usize) / font_dimensions.height;
+            let y2 = (500.0 / font_dimensions.height as f32).ceil() as usize + 1;
 
             let left = ui.min_rect().left();
             let top =  ui.min_rect().top();
 
             let (_, painter) = ui.allocate_painter(ui.available_size_before_wrap(), Sense::drag());
-
 
             let size = Vec2 {
                 x: font_dimensions.width as f32, 
@@ -110,8 +89,8 @@ fn draw_paint_area(ui: &mut egui::Ui, editor: &Editor, chars: &Vec<Vec<u8>>, has
             for y in y1..=y2 {
                 for x in x1..=x2 {
                     let rect  = Rect::from_min_size(Pos2 {
-                        x: (left + (x * font_dimensions.width) as f32).floor() + 0.5,  
-                        y: (top + (y * font_dimensions.height) as f32).floor() + 0.5},
+                        x: (left + (x * font_dimensions.width) as f32).floor(),  
+                        y: (top + (y * font_dimensions.height) as f32).floor()},
                         size
                     );
                     let ch = buffer.get_char(Position::from(x as i32, y as i32));
@@ -133,7 +112,6 @@ fn draw_paint_area(ui: &mut egui::Ui, editor: &Editor, chars: &Vec<Vec<u8>>, has
 
                     let mut mesh = Mesh::with_texture(tex.id());
                     mesh.add_rect_with_uv(rect, uv, Color32::from_rgb(fg.0, fg.1, fg.2));
-
                     painter.add(Shape::mesh(mesh));
                 }
             }
