@@ -7,5 +7,9 @@
 fn main() {
     let app = mystic_draw::MysticDrawApp::default();
     let native_options = eframe::NativeOptions::default();
-    eframe::run_native(Box::new(app), native_options);
+    eframe::run_native(
+        "eframe template",
+        native_options,
+        Box::new(|cc| Box::new(app)),
+    );
 }

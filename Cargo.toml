@@ -7,8 +7,9 @@ edition = "2021"
 
 [dependencies]
 walkdir = "2"
-eframe = "0.17.0" # Gives us egui, epi and web+native backends
+eframe = "0.19.0" # Gives us egui, epi and web+native backends
 serde = { version = "1", features = ["derive"], optional = true }
+egui_extras = "0.19.0"
 
 [features]
 default = []

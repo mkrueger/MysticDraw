@@ -1,5 +1,5 @@
 use std::{collections::HashMap};
-use eframe::{egui::{self, ScrollArea, Sense}, epi, epaint::{Rect, Pos2, Rounding, Color32, ColorImage, Shape, TextureHandle, Vec2, Mesh, pos2}};
+use eframe::{egui::{self, ScrollArea, Sense}, epaint::{Rect, Pos2, Rounding, Color32, ColorImage, Shape, TextureHandle, Vec2, Mesh, pos2}, App, Frame};
 use crate::model::{Buffer, Editor, Position};
 
 pub struct MysticDrawApp {
@@ -53,20 +53,9 @@ impl Default for MysticDrawApp {
     }
 }
 
-impl epi::App for MysticDrawApp {
-    fn name(&self) -> &str {
-        "Mystic Draw"
-    }
+impl eframe::App for MysticDrawApp {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
 
-    fn setup(
-        &mut self,
-        _ctx: &egui::Context,
-        _frame: &epi::Frame,
-        _storage: Option<&dyn epi::Storage>,
-    ) {
-    }
-
-    fn update(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
         let Self { editor, chars, hash } = self;
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -138,7 +127,7 @@ fn draw_paint_area(ui: &mut egui::Ui, editor: &Editor, chars: &Vec<Vec<u8>>, has
                             .map(|p| Color32::from_rgba_unmultiplied(p[0], p[1], p[2], p[3]))
                             .collect();
                         let image = ColorImage { size: [8, 16], pixels };
-                        let handle = painter.ctx().load_texture("name", image);
+                        let handle = painter.ctx().load_texture("name", image, egui::TextureFilter::Linear);
                         handle
                     });
 
