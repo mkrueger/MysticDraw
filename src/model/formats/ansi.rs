@@ -144,6 +144,28 @@ pub fn display_ans(buf: &mut Buffer, data: &mut ParseStates, ch: u8) -> io::Resu
                 }
                 return Ok(None);
             }
+            b'K' => { // erase text
+                if data.ans_numbers.len() > 0 {
+                    match data.ans_numbers[0] {
+                        0 => { // Clear line from current cursor position to end of line 
+                            buf.clear_line_end(0, &data.cur_pos);
+                        },
+                        1 => { // Clear line from beginning to current cursor position 
+                            buf.clear_line_start(0, &data.cur_pos);
+                        },
+                        2 => { // Clear whole line
+                            buf.clear_line(0, data.cur_pos.y);
+                        },
+                        _ => {
+                            return Err(io::Error::new(io::ErrorKind::InvalidData, format!("unknown ANSI K sequence {}", data.ans_numbers[0])));
+                        }
+                    }
+                } else {
+                    buf.clear_line_end(0, &data.cur_pos);
+                }
+                data.ans_code = false;
+                return Ok(None);
+            }
             _ => {
                 if (0x40..=0x7E).contains(&ch) {
                     // unknown control sequence, terminate reading

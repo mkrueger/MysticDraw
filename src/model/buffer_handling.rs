@@ -124,6 +124,24 @@ impl Buffer {
 
         res
     }
+
+    pub fn clear_line(&mut self, layer: usize, y: i32) {
+        for x in 0..self.width as i32 {
+            self.set_char(layer, Position::from(x, y), Some(DosChar::new()));
+        }
+    }
+
+    pub fn clear_line_end(&mut self, layer: usize, pos: &Position) {
+        for x in pos.x..self.width as i32 {
+            self.set_char(layer, Position::from(x, pos.y), Some(DosChar::new()));
+        }
+    }
+
+    pub fn clear_line_start(&mut self, layer: usize, pos: &Position) {
+        for x in 0..pos.x {
+            self.set_char(layer, Position::from(x, pos.y), Some(DosChar::new()));
+        }
+    }
     
     pub fn get_overlay_layer(&mut self) -> &mut Option<Layer>
     {
