@@ -3,7 +3,7 @@ use crate::model::{Buffer, Position, TextAttribute, Rectangle};
 
 use super::{DosChar, UndoSetChar, Layer, Size, SaveOptions};
 
-pub struct Cursor {
+pub struct Caret {
     pos: Position,
     attr: TextAttribute,
     pub insert_mode: bool,
@@ -11,7 +11,7 @@ pub struct Cursor {
     pub attr_changed: std::boxed::Box<dyn Fn(TextAttribute)>
 }
 
-impl Cursor {
+impl Caret {
     pub fn get_attribute(&self) -> TextAttribute
     {
         self.attr
@@ -34,13 +34,13 @@ impl Cursor {
     }
 }
 
-impl std::fmt::Debug for Cursor {
+impl std::fmt::Debug for Caret {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Cursor").field("pos", &self.pos).field("attr", &self.attr).field("insert_mode", &self.insert_mode).finish()
     }
 }
 
-impl Default for Cursor {
+impl Default for Caret {
     fn default() -> Self {
         Self {
             pos: Position::default(),
@@ -52,8 +52,8 @@ impl Default for Cursor {
     }
 }
 
-impl PartialEq for Cursor {
-    fn eq(&self, other: &Cursor) -> bool {
+impl PartialEq for Caret {
+    fn eq(&self, other: &Caret) -> bool {
         self.pos == other.pos && self.attr == other.attr
     }
 }
@@ -98,7 +98,7 @@ pub struct Editor {
     pub id: usize,
     pub buf: Buffer,
     
-    pub cursor: Cursor,
+    pub cursor: Caret,
     pub cur_selection: Option<Selection>,
 
     cur_outline: i32,
@@ -132,7 +132,7 @@ impl Editor
         Editor {
             id,
             buf, 
-            cursor: Cursor::default(),
+            cursor: Caret::default(),
             cur_selection: None,
             cur_outline: 0,
             is_inactive: false,

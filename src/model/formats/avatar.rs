@@ -29,7 +29,7 @@ pub fn display_avt(result: &Buffer, data: &mut ParseStates, ch: u8) -> io::Resul
         AvtReadState::Chars => {
             match ch {
                 AVT_CLR => {
-                    data.cur_pos = Position::new();
+                    data.caret_pos = Position::new();
                     data.text_attr = TextAttribute::DEFAULT;
                 }
                 AVT_REP => {
@@ -55,17 +55,17 @@ pub fn display_avt(result: &Buffer, data: &mut ParseStates, ch: u8) -> io::Resul
                     data.text_attr.set_blink(true);
                 }
                 3 => {
-                    data.cur_pos.y = max(0, data.cur_pos.y - 1);
+                    data.caret_pos.y = max(0, data.caret_pos.y - 1);
                 }
                 4 => {
-                    data.cur_pos.y += 1;
+                    data.caret_pos.y += 1;
                 }  
                 
                 5 => {
-                    data.cur_pos.x = max(0, data.cur_pos.x - 1);
+                    data.caret_pos.x = max(0, data.caret_pos.x - 1);
                 }
                 6 => {
-                    data.cur_pos.x = min(79, data.cur_pos.x + 1);
+                    data.caret_pos.x = min(79, data.caret_pos.x + 1);
                 }           
                 7 => {
                     return Err(io::Error::new(io::ErrorKind::InvalidData, "todo: avt cleareol."));
@@ -124,8 +124,8 @@ pub fn display_avt(result: &Buffer, data: &mut ParseStates, ch: u8) -> io::Resul
                     Ok((None, false))
                 }
                 2 => {
-                    data.cur_pos.x = data.avt_repeat_char as i32;
-                    data.cur_pos.y = ch as i32;
+                    data.caret_pos.x = data.avt_repeat_char as i32;
+                    data.caret_pos.y = ch as i32;
                     
                     data.avt_state = AvtReadState::Chars;
                     Ok((None, false))

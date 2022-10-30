@@ -39,7 +39,7 @@ pub struct ParseStates {
     // ANSI
     pub ans_esc: bool,
     pub ans_code: bool,
-    pub cur_pos: Position,
+    pub caret_pos: Position,
     pub saved_pos: Position,
     pub text_attr: TextAttribute,
 
@@ -65,7 +65,7 @@ impl ParseStates {
             cur_input_pos: Position::from(1,1),
             ans_code: false,
             ans_esc: false,
-            cur_pos: Position::new(),
+            caret_pos: Position::new(),
             saved_pos: Position::new(),
             text_attr: super::TextAttribute::DEFAULT,
             ans_numbers: Vec::new(),

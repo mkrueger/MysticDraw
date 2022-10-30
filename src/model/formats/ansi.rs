@@ -54,90 +54,96 @@ pub fn display_ans(buf: &mut Buffer, data: &mut ParseStates, ch: u8) -> io::Resu
             b'H' | b'f' => { // Cursor Position + Horizontal Vertical Position ('f')
                 if !data.ans_numbers.is_empty() {
                     if data.ans_numbers[0] > 0 { 
-                        data.cur_pos.y =  max(0, data.ans_numbers[0] - 1);
+                        data.caret_pos.y =  max(0, data.ans_numbers[0] - 1);
                     }
                     if data.ans_numbers.len() > 1 {
                         if data.ans_numbers[1] > 0 {
-                            data.cur_pos.x =  max(0, data.ans_numbers[1] - 1);
+                            data.caret_pos.x =  max(0, data.ans_numbers[1] - 1);
                         }
                     } else {
-                        data.cur_pos.x = 0;
+                        data.caret_pos.x = 0;
                     }
                 }
                 data.ans_code = false;
                 return Ok(None);
             }
             b'C' => { // Cursor Forward 
-                let old_x = data.cur_pos.x;
+                let old_x = data.caret_pos.x;
                 if data.ans_numbers.is_empty() {
-                    data.cur_pos.x += 1;
+                    data.caret_pos.x += 1;
                 } else {
-                    data.cur_pos.x += data.ans_numbers[0];
+                    data.caret_pos.x += data.ans_numbers[0];
                 }
-                data.cur_pos.x = min(data.screen_width as i32 - 1, data.cur_pos.x);
-                for x in old_x..=data.cur_pos.x {
-                    let p =Position::from(x, data.cur_pos.y);
+                data.caret_pos.x = min(data.screen_width as i32 - 1, data.caret_pos.x);
+                for x in old_x..=data.caret_pos.x {
+                    let p =Position::from(x, data.caret_pos.y);
                     if buf.get_char(p).is_none() {
                         buf.set_char(0, p, Some(DosChar::new()));
                     }
                 }
                 data.ans_code = false;
-                buf.height = max( buf.height, data.cur_pos.y as u16 + 1);
+                buf.height = max( buf.height, data.caret_pos.y as u16 + 1);
                 return Ok(None);
             }
             b'D' => { // Cursor Back 
                 if data.ans_numbers.is_empty() {
-                    data.cur_pos.x = max(0, data.cur_pos.x - 1);
+                    data.caret_pos.x = max(0, data.caret_pos.x - 1);
                 } else {
-                    data.cur_pos.x =  max(0, data.cur_pos.x.saturating_sub(data.ans_numbers[0]));
+                    data.caret_pos.x =  max(0, data.caret_pos.x.saturating_sub(data.ans_numbers[0]));
                 }
-                data.cur_pos.x = max(0, data.cur_pos.x);
+                data.caret_pos.x = max(0, data.caret_pos.x);
                 data.ans_code = false;
                 return Ok(None);
             }
             b'A' => { // Cursor Up 
                 if data.ans_numbers.is_empty() {
-                    data.cur_pos.y =  max(0, data.cur_pos.y - 1);
+                    data.caret_pos.y =  max(0, data.caret_pos.y - 1);
                 } else {
-                    data.cur_pos.y = max(0, data.cur_pos.y.saturating_sub(data.ans_numbers[0]));
+                    data.caret_pos.y = max(0, data.caret_pos.y.saturating_sub(data.ans_numbers[0]));
                 }
-                data.cur_pos.y = max(0, data.cur_pos.y);
+                data.caret_pos.y = max(0, data.caret_pos.y);
                 data.ans_code = false;
                 return Ok(None);
             }
             b'B' => { // Cursor Down 
                 if data.ans_numbers.is_empty() {
-                    data.cur_pos.y += 1;
+                    data.caret_pos.y += 1;
                 } else {
-                    data.cur_pos.y += data.ans_numbers[0];
+                    data.caret_pos.y += data.ans_numbers[0];
                 }
                 data.ans_code = false;
                 return Ok(None);
             }
             b's' => { // Save Current Cursor Position
-                data.saved_pos = data.cur_pos;
+                data.saved_pos = data.caret_pos;
                 data.ans_code = false;
                 return Ok(None);
             }
             b'u' => { // Restore Saved Cursor Position 
-                data.cur_pos = data.saved_pos;
+                data.caret_pos = data.saved_pos;
                 data.ans_code = false;
                 return Ok(None);
             }
             b'J' => { // Erase in Display 
                 data.ans_code = false;
                 if data.ans_numbers.is_empty() {
-                    data.cur_pos = Position::new();
+                    data.caret_pos = Position::new();
                 } else {
                     match data.ans_numbers.get(0).unwrap() {
-                        0 => {} // TODO: clear from cursor to the end of the screen 
+                        0 => {
+                            buf.clear_buffer_down(0, data.caret_pos.y);
+                        }
+                        1 => {
+                            buf.clear_buffer_up(0, data.caret_pos.y);
+                        }
                         2 |  // clear entire screen
                         3 // TODO: clear entire screen and delete all lines saved in the scrollback buffer
                         => {
-                            data.cur_pos = Position::new();
+                            data.caret_pos = Position::new();
                             // TODO: Clear
                         } 
                         _ => {
+                            buf.clear_buffer_down(0, data.caret_pos.y);
                             return Err(io::Error::new(io::ErrorKind::InvalidData, format!("unknown ANSI J sequence {}", data.ans_numbers[0])));
                         }
                     }
@@ -148,20 +154,20 @@ pub fn display_ans(buf: &mut Buffer, data: &mut ParseStates, ch: u8) -> io::Resu
                 if data.ans_numbers.len() > 0 {
                     match data.ans_numbers[0] {
                         0 => { // Clear line from current cursor position to end of line 
-                            buf.clear_line_end(0, &data.cur_pos);
+                            buf.clear_line_end(0, &data.caret_pos);
                         },
                         1 => { // Clear line from beginning to current cursor position 
-                            buf.clear_line_start(0, &data.cur_pos);
+                            buf.clear_line_start(0, &data.caret_pos);
                         },
                         2 => { // Clear whole line
-                            buf.clear_line(0, data.cur_pos.y);
+                            buf.clear_line(0, data.caret_pos.y);
                         },
                         _ => {
                             return Err(io::Error::new(io::ErrorKind::InvalidData, format!("unknown ANSI K sequence {}", data.ans_numbers[0])));
                         }
                     }
                 } else {
-                    buf.clear_line_end(0, &data.cur_pos);
+                    buf.clear_line_end(0, &data.caret_pos);
                 }
                 data.ans_code = false;
                 return Ok(None);

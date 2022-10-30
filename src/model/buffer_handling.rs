@@ -125,6 +125,21 @@ impl Buffer {
         res
     }
 
+    pub fn clear_buffer_down(&mut self, layer: usize, y: i32) {
+        for y in y..self.height as i32 {
+            for x in 0..self.width as i32 {
+                self.set_char(layer, Position::from(x, y), Some(DosChar::new()));
+            }
+        }
+    }
+
+    pub fn clear_buffer_up(&mut self, layer: usize, y: i32) {
+        for y in 0..y {
+            for x in 0..self.width as i32 {
+                self.set_char(layer, Position::from(x, y), Some(DosChar::new()));
+            }
+        }
+    }
     pub fn clear_line(&mut self, layer: usize, y: i32) {
         for x in 0..self.width as i32 {
             self.set_char(layer, Position::from(x, y), Some(DosChar::new()));
@@ -379,41 +394,41 @@ impl Buffer {
         if let Some(ch) = ch {
             match ch {
                 10 => {
-                    for x in data.cur_pos.x..(result.width as i32) {
-                        let p =Position::from(x, data.cur_pos.y);
+                    for x in data.caret_pos.x..(result.width as i32) {
+                        let p =Position::from(x, data.caret_pos.y);
                         if result.get_char(p).is_none() {
                             result.set_char(0, p, Some(DosChar::new()));
                         }
                     }
     
-                    data.cur_pos.x = 0;
-                    data.cur_pos.y += 1;
+                    data.caret_pos.x = 0;
+                    data.caret_pos.y += 1;
                     data.cur_input_pos.y += 1;
-                    result.height = data.cur_pos.y as u16 + 1;
+                    result.height = data.caret_pos.y as u16 + 1;
                     data.cur_input_pos.x = 1;
                 }
                 12 => {
-                    data.cur_pos.x = 0;
-                    data.cur_pos.y = 1;
+                    data.caret_pos.x = 0;
+                    data.caret_pos.y = 1;
                     data.text_attr = TextAttribute::DEFAULT;
                 }
                 13 => {
-                    data.cur_pos.x = 0;
+                    data.caret_pos.x = 0;
                 }
                 _ => {
-                    result.height = data.cur_pos.y as u16 + 1;
+                    result.height = data.caret_pos.y as u16 + 1;
                     result.set_char(
                         0,
-                        data.cur_pos,
+                        data.caret_pos,
                         Some(DosChar {
                             char_code: ch as u16,
                             attribute: data.text_attr,
                         }),
                     );
-                    data.cur_pos.x += 1;
-                    if data.cur_pos.x >= result.width as i32 {
-                        data.cur_pos.x = 0;
-                        data.cur_pos.y += 1;
+                    data.caret_pos.x += 1;
+                    if data.caret_pos.x >= result.width as i32 {
+                        data.caret_pos.x = 0;
+                        data.caret_pos.y += 1;
                     }
                 }
             }
