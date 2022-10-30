@@ -44,7 +44,7 @@ impl Tool for DrawRectangleTool {
         let mut lines = ScanLines::new(1);
         lines.add_rectangle(Rectangle::from_pt(start, cur));
 
-        let col = editor.borrow().cursor.get_attribute().get_foreground();
+        let col = editor.borrow().caret.get_attribute().get_foreground();
         let draw = move |rect: Rectangle| {
             for y in 0..rect.size.height {
                 for x in 0..rect.size.width {

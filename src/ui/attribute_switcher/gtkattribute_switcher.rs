@@ -56,7 +56,7 @@ impl WidgetImpl for GtkAttributeSwitcher {
                     let mut editor = editor.borrow_mut();
                     let s = PADDING + DEFAULT_COLOR_RECTSIZE * 1.5;
                     if ((x as f32) < s) && y as f32 > PICKER_HEIGHT - s {
-                        editor.cursor.set_attribute(TextAttribute::DEFAULT);
+                        editor.set_caret_attribute(TextAttribute::DEFAULT);
                     } else if ((x as f32) > PICKER_WIDTH - s) && (y as f32) < s  {
                         editor.switch_fg_bg_color();
                     }
@@ -72,8 +72,8 @@ impl WidgetImpl for GtkAttributeSwitcher {
     {
         if let Some(editor) = &*self.editor.borrow() {
             let editor = editor.borrow_mut();
-            let fg = editor.buf.palette.colors[editor.cursor.get_attribute().get_foreground() as usize].get_rgb_f64();
-            let bg = editor.buf.palette.colors[editor.cursor.get_attribute().get_background() as usize].get_rgb_f64();
+            let fg = editor.buf.palette.colors[editor.caret.get_attribute().get_foreground() as usize].get_rgb_f64();
+            let bg = editor.buf.palette.colors[editor.caret.get_attribute().get_background() as usize].get_rgb_f64();
 
             draw_color_rectangle(snapshot, PICKER_WIDTH - RECTANGLE_SIZE - PADDING, PICKER_HEIGHT - RECTANGLE_SIZE - PADDING, bg);
             draw_color_rectangle(snapshot, PADDING, PADDING, fg);

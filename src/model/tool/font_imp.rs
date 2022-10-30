@@ -61,7 +61,7 @@ impl Tool for FontTool
 
     fn handle_click(&mut self, editor: Rc<RefCell<Editor>>, button: u32, pos: Position) -> Event {
         if button == 1 {
-            editor.borrow_mut().set_cursor_position(pos);
+            editor.borrow_mut().set_caret_position(pos);
         }
         let mut editor = editor.borrow_mut();
         self.sizes.clear();
@@ -75,55 +75,55 @@ impl Tool for FontTool
             return Event::None;
         }
         let font = &self.fonts[self.selected_font as usize];
-        let pos = editor.borrow().get_cursor_position();
+        let pos = editor.borrow().get_caret_position();
         let mut editor = editor.borrow_mut();
 
         match key {
             MKey::Down => {
-                editor.set_cursor(pos.x, pos.y + 1);
+                editor.set_caret(pos.x, pos.y + 1);
             }
             MKey::Up => {
-                editor.set_cursor(pos.x, pos.y - 1);
+                editor.set_caret(pos.x, pos.y - 1);
             }
             MKey::Left => {
-                editor.set_cursor(pos.x - 1, pos.y);
+                editor.set_caret(pos.x - 1, pos.y);
             }
             MKey::Right => {
-                editor.set_cursor(pos.x + 1, pos.y);
+                editor.set_caret(pos.x + 1, pos.y);
             }
             
             MKey::Home  => {
                 if let MModifiers::Control = modifier {
                     for i in 0..editor.buf.width {
                         if !editor.get_char_from_cur_layer(pos.with_x(i as i32)).unwrap_or_default().is_transparent() {
-                            editor.set_cursor(i as i32, pos.y);
+                            editor.set_caret(i as i32, pos.y);
                             return Event::None;
                         }
                     }
                 }
-                editor.set_cursor(0, pos.y);
+                editor.set_caret(0, pos.y);
             }
 
             MKey::End => {
                 if let MModifiers::Control = modifier {
                     for i in (0..editor.buf.width).rev()  {
                         if !editor.get_char_from_cur_layer(pos.with_x(i as i32)).unwrap_or_default().is_transparent() {
-                            editor.set_cursor(i as i32, pos.y);
+                            editor.set_caret(i as i32, pos.y);
                             return Event::None;
                         }
                     }
                 }
                 let w = editor.buf.width as i32;
-                editor.set_cursor(w - 1, pos.y);
+                editor.set_caret(w - 1, pos.y);
             }
 
             MKey::Return => {
-                editor.set_cursor(0,pos.y + font.get_font_height() as i32);
+                editor.set_caret(0,pos.y + font.get_font_height() as i32);
 /* 
                 if let Some(size) = self.sizes.last() {
-                    editor.set_cursor(0,pos.y + size.height as i32);
+                    editor.set_caret(0,pos.y + size.height as i32);
                 } else {
-                    editor.set_cursor(0,pos.y + 1);
+                    editor.set_caret(0,pos.y + 1);
                 }*/
                 self.sizes.clear();
             }
@@ -131,10 +131,10 @@ impl Tool for FontTool
             MKey::Backspace => {
                 let letter_size= self.sizes.pop().unwrap_or_else(|| Size::from(1,1));
                 editor.cur_selection = None;
-                let pos = editor.get_cursor_position();
+                let pos = editor.get_caret_position();
                 if pos.x > 0 {
-                    editor.set_cursor_position(pos + Position::from(-(letter_size.width as i32), 0));
-                    if editor.cursor.insert_mode {
+                    editor.set_caret_position(pos + Position::from(-(letter_size.width as i32), 0));
+                    if editor.caret.insert_mode {
                         for i in pos.x..(editor.buf.width as i32 - (letter_size.width as i32)) {
                             let next = editor.get_char_from_cur_layer( Position::from(i + (letter_size.width as i32), pos.y));
                             editor.set_char(Position::from(i, pos.y), next);
@@ -142,20 +142,20 @@ impl Tool for FontTool
                         let last_pos = Position::from(editor.buf.width as i32 - (letter_size.width as i32), pos.y);
                         editor.fill(Rectangle{ start: last_pos, size: letter_size }, Some(super::DosChar { char_code: b' ' as u16, attribute: TextAttribute::DEFAULT }));
                     } else {
-                        let pos = editor.get_cursor_position();
+                        let pos = editor.get_caret_position();
                         editor.fill(Rectangle{ start: pos, size: letter_size }, Some(super::DosChar { char_code: b' ' as u16, attribute: TextAttribute::DEFAULT }));
                     } 
                 }
             }
 
             MKey::Character(ch) => { 
-                let c_pos = editor.get_cursor_position();
+                let c_pos = editor.get_caret_position();
                 editor.begin_atomic_undo();
-                let attr = editor.cursor.get_attribute();
+                let attr = editor.caret.get_attribute();
                 let opt_size = font.render(&mut editor, c_pos, attr, ch as u8);
                 if let Some(size) = opt_size  {
-                    editor.set_cursor(c_pos.x + size.width as i32 + font.spaces, c_pos.y);
-                    let new_pos = editor.get_cursor_position();
+                    editor.set_caret(c_pos.x + size.width as i32 + font.spaces, c_pos.y);
+                    let new_pos = editor.get_caret_position();
                     self.sizes.push(Size { width: (new_pos.x - c_pos.x), height: size.height });
                 } else {
                     editor.type_key(ch);

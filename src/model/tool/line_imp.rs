@@ -57,7 +57,7 @@ impl LineTool {
 
     pub fn get_old_horiz_char(&self, editor: &std::cell::RefMut<Editor>, old_char: u16, to_left: bool) -> Option<u16>
     {
-        let pos = editor.get_cursor_position();
+        let pos = editor.get_caret_position();
         if old_char == editor.get_outline_char_code(VERTICAL_CHAR).unwrap() {
             match self.old_pos.y.cmp(&pos.y) {
                 std::cmp::Ordering::Greater => Some(editor.get_outline_char_code(if to_left {CORNER_UPPER_RIGHT} else { CORNER_UPPER_LEFT}).unwrap()),
@@ -94,7 +94,7 @@ impl LineTool {
 
     pub fn get_old_vert_char(&self, editor: &std::cell::RefMut<Editor>, old_char: u16, to_left: bool) -> Option<u16>
     {
-        let pos = editor.get_cursor_position();
+        let pos = editor.get_caret_position();
         if old_char == editor.get_outline_char_code(HORIZONTAL_CHAR).unwrap() {
             match self.old_pos.x.cmp(&pos.x) {
                 std::cmp::Ordering::Greater => Some(editor.get_outline_char_code(if to_left {CORNER_LOWER_RIGHT} else { CORNER_UPPER_RIGHT}).unwrap()),
@@ -128,19 +128,19 @@ impl Tool for LineTool {
         modifier: MModifiers,
     ) -> Event {
         let mut e = editor.borrow_mut();
-        let old_pos = e.get_cursor_position();
+        let old_pos = e.get_caret_position();
         match key {
             MKey::Down => {
-                e.set_cursor(old_pos.x, old_pos.y + 1);
+                e.set_caret(old_pos.x, old_pos.y + 1);
             }
             MKey::Up => {
-                e.set_cursor(old_pos.x, old_pos.y - 1);
+                e.set_caret(old_pos.x, old_pos.y - 1);
             }
             MKey::Left => {
-                e.set_cursor(old_pos.x - 1, old_pos.y);
+                e.set_caret(old_pos.x - 1, old_pos.y);
             }
             MKey::Right => {
-                e.set_cursor(old_pos.x + 1, old_pos.y);
+                e.set_caret(old_pos.x + 1, old_pos.y);
             }
 
             _ => {
@@ -182,7 +182,7 @@ impl Tool for LineTool {
             }
         }
 
-        let new_pos = e.get_cursor_position();
+        let new_pos = e.get_caret_position();
         let new_char = e.get_char_from_cur_layer(new_pos).unwrap_or_default();
         let old_char = e.get_char_from_cur_layer(old_pos).unwrap_or_default();
 
@@ -191,7 +191,7 @@ impl Tool for LineTool {
         if a == 1 || a == -1 {
             let c = LineTool::get_new_vert_char(&e, new_char.char_code, a == -1 );
             let char_code = e.get_outline_char_code(c).unwrap();
-            let attribute = e.cursor.get_attribute();
+            let attribute = e.caret.get_attribute();
             e.set_char(
                 new_pos,
                 Some(crate::model::DosChar {
@@ -224,7 +224,7 @@ impl Tool for LineTool {
         if b == 1 || b == -1 { // horizontal movement
             let c = LineTool::get_new_horiz_char(&e, new_char.char_code, b == -1 );
             let char_code = e.get_outline_char_code(c).unwrap();
-            let attribute = e.cursor.get_attribute();
+            let attribute = e.caret.get_attribute();
             e.set_char(
                 new_pos,
                 Some(crate::model::DosChar {
@@ -261,7 +261,7 @@ impl Tool for LineTool {
         let mut editor = editor.borrow_mut();
         if button == 1 {
             std::borrow::BorrowMut::borrow_mut(&mut editor)
-                .set_cursor_position(pos);
+                .set_caret_position(pos);
         }
         Event::None
     }
@@ -276,7 +276,7 @@ impl Tool for LineTool {
         let mut lines = ScanLines::new(1);
         if self.draw_mode == DrawMode::Line {
             lines.add_line(Position::from(start.x, start.y * 2), Position::from(cur.x, cur.y * 2));
-            let col = editor.borrow().cursor.get_attribute().get_foreground();
+            let col = editor.borrow().caret.get_attribute().get_foreground();
             let draw = move |rect: Rectangle| {
                 for y in 0..rect.size.height {
                     for x in 0..rect.size.width {

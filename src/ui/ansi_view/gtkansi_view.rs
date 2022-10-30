@@ -228,7 +228,7 @@ impl WidgetImpl for GtkAnsiView {
         } else { false };
         let is_blink = *self.blink.borrow();
         let should_draw_caret = unsafe { WORKSPACE.cur_tool().use_caret() && widget.has_focus() && is_blink };
-        let caret_pos = editor.get_cursor_position();
+        let caret_pos = editor.get_caret_position();
         for y in 0..buffer.height {
             for x in 0..buffer.width {
                 let ch = buffer.get_char(Position::from(x as i32, y as i32));
@@ -280,7 +280,7 @@ impl WidgetImpl for GtkAnsiView {
                     } else {
                         gdk::RGBA::new(fg.0 as f32, fg.1 as f32, fg.2 as f32, 1.0)
                     };
-                    draw_caret(start_x, start_y, caret_pos, snapshot, font_dimensions, editor.cursor.insert_mode, &fg_rgb);
+                    draw_caret(start_x, start_y, caret_pos, snapshot, font_dimensions, editor.caret.insert_mode, &fg_rgb);
                     snapshot.pop();
                 }
             }
@@ -447,9 +447,9 @@ fn draw_preview_rectangle(start_x: f32, start_y: f32, rect: &crate::model::Recta
 
 const CARET_HEIGHT: f32 = 3.0;
 
-fn draw_caret(start_x: f32, start_y: f32, cursor_pos: Position, snapshot: &gtk4::Snapshot, font_dimensions: Size<u8>, insert_mode: bool, color: &gdk::RGBA) {
-    let x = cursor_pos.x;
-    let y = cursor_pos.y;
+fn draw_caret(start_x: f32, start_y: f32, caret_pos: Position, snapshot: &gtk4::Snapshot, font_dimensions: Size<u8>, insert_mode: bool, color: &gdk::RGBA) {
+    let x = caret_pos.x;
+    let y = caret_pos.y;
     
     let bounds = if insert_mode { graphene::Rect::new(
         start_x + x as f32 * font_dimensions.width as f32,

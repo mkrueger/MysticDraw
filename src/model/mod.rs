@@ -42,6 +42,9 @@ pub use palette_handling::*;
 mod fonts;
 pub use fonts::*;
 
+mod caret;
+pub use caret::*;
+
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Size<T> 
 {

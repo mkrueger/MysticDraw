@@ -151,7 +151,7 @@ pub fn convert_to_avt(buf: &Buffer, options: &SaveOptions) -> io::Result<Vec<u8>
         super::ScreenPreperation::ClearScreen => { result.push(AVT_CLR); },
         super::ScreenPreperation::Home => { 
             result.push(AVT_CMD); 
-            result.push(8);  // move cursor
+            result.push(8);  // move caret
             result.push(1);  // x
             result.push(1);  // y
         },

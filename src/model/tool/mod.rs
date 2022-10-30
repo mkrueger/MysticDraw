@@ -104,41 +104,41 @@ pub trait Tool
 
         // ctrl+pgup  - upper left corner
         // ctrl+pgdn  - lower left corner
-        let pos = editor.borrow().get_cursor_position();
+        let pos = editor.borrow().get_caret_position();
         let mut editor = editor.borrow_mut();
         match key {
             MKey::Down => {
                 if let MModifiers::Control = modifier {
-                    let fg = (editor.cursor.get_attribute().get_foreground() + 14) % 16;
-                    editor.cursor.get_attribute().set_foreground(fg);
+                    let fg = (editor.caret.get_attribute().get_foreground() + 14) % 16;
+                    editor.caret.get_attribute().set_foreground(fg);
                 } else {
-                    editor.set_cursor(pos.x, pos.y + 1);
+                    editor.set_caret(pos.x, pos.y + 1);
                 }
             }
             MKey::Up => {
                 if let MModifiers::Control = modifier {
-                    let fg = (editor.cursor.get_attribute().get_foreground() + 1) % 16;
-                    editor.cursor.get_attribute().set_foreground(fg);
+                    let fg = (editor.caret.get_attribute().get_foreground() + 1) % 16;
+                    editor.caret.get_attribute().set_foreground(fg);
                 } else {
-                    editor.set_cursor(pos.x, pos.y - 1);
+                    editor.set_caret(pos.x, pos.y - 1);
                 }
             }
             MKey::Left => {
                 // TODO: ICE Colors
                 if let MModifiers::Control = modifier {
-                    let bg = (editor.cursor.get_attribute().get_background() + 7) % 8;
-                    editor.cursor.get_attribute().set_background(bg);
+                    let bg = (editor.caret.get_attribute().get_background() + 7) % 8;
+                    editor.caret.get_attribute().set_background(bg);
                 } else {
-                    editor.set_cursor(pos.x - 1, pos.y);
+                    editor.set_caret(pos.x - 1, pos.y);
                 }
             }
             MKey::Right => {
                 // TODO: ICE Colors
                 if let MModifiers::Control = modifier {
-                    let bg = (editor.cursor.get_attribute().get_background() + 1) % 8;
-                    editor.cursor.get_attribute().set_background(bg);
+                    let bg = (editor.caret.get_attribute().get_background() + 1) % 8;
+                    editor.caret.get_attribute().set_background(bg);
                 } else {
-                    editor.set_cursor(pos.x + 1, pos.y);
+                    editor.set_caret(pos.x + 1, pos.y);
                 }
             }
             MKey::PageDown => {
@@ -155,44 +155,44 @@ pub trait Tool
                 if let MModifiers::Control = modifier {
                     let tabs = max(0, (pos.x / tab_size) - 1);
                     let next_tab = tabs * tab_size;
-                    editor.set_cursor(next_tab, pos.y);
+                    editor.set_caret(next_tab, pos.y);
                 } else {
                     let tabs = 1 + pos.x / tab_size;
                     let next_tab = min(editor.buf.width as i32 - 1, tabs * tab_size);
-                    editor.set_cursor(next_tab, pos.y);
+                    editor.set_caret(next_tab, pos.y);
                 }
             }
             MKey::Home  => {
                 if let MModifiers::Control = modifier {
                     for i in 0..editor.buf.width {
                         if !editor.get_char_from_cur_layer(pos.with_x(i as i32)).unwrap_or_default().is_transparent() {
-                            editor.set_cursor(i as i32, pos.y);
+                            editor.set_caret(i as i32, pos.y);
                             return Event::None;
                         }
                     }
                 }
-                editor.set_cursor(0, pos.y);
+                editor.set_caret(0, pos.y);
             }
             MKey::End => {
                 if let MModifiers::Control = modifier {
                     for i in (0..editor.buf.width).rev()  {
                         if !editor.get_char_from_cur_layer(pos.with_x(i as i32)).unwrap_or_default().is_transparent() {
-                            editor.set_cursor(i as i32, pos.y);
+                            editor.set_caret(i as i32, pos.y);
                             return Event::None;
                         }
                     }
                 }
                 let w = editor.buf.width as i32;
-                editor.set_cursor(w - 1, pos.y);
+                editor.set_caret(w - 1, pos.y);
             }
             MKey::Return => {
-                editor.set_cursor(0,pos.y + 1);
+                editor.set_caret(0,pos.y + 1);
             }
             MKey::Delete => {
                 if editor.cur_selection.is_some() {
                     editor.delete_selection(); 
                 } else {
-                    let pos = editor.get_cursor_position();
+                    let pos = editor.get_caret_position();
                     for i in pos.x..(editor.buf.width as i32 - 1) {
                         let next = editor.get_char_from_cur_layer( Position::from(i + 1, pos.y));
                         editor.set_char(Position::from(i, pos.y), next);
@@ -202,11 +202,11 @@ pub trait Tool
                 }
             }
             MKey::Insert => {
-                editor.cursor.insert_mode = !editor.cursor.insert_mode;
+                editor.caret.insert_mode = !editor.caret.insert_mode;
             }
             MKey::Backspace => {
                 editor.cur_selection = None;
-                let pos = editor.get_cursor_position();
+                let pos = editor.get_caret_position();
                 if pos.x> 0 {
                    /* if (caret.fontMode() && FontTyped && cpos > 0)  {
                         caret.getX() -= CursorPos[cpos] - 1;
@@ -217,8 +217,8 @@ pub trait Tool
                         }
                         cpos--;
                     } else {*/	
-                        editor.set_cursor_position(pos + Position::from(-1, 0));
-                    if editor.cursor.insert_mode {
+                        editor.set_caret_position(pos + Position::from(-1, 0));
+                    if editor.caret.insert_mode {
                         for i in pos.x..(editor.buf.width as i32 - 1) {
                             let next = editor.get_char_from_cur_layer( Position::from(i + 1, pos.y));
                             editor.set_char(Position::from(i, pos.y), next);
@@ -226,7 +226,7 @@ pub trait Tool
                         let last_pos = Position::from(editor.buf.width as i32 - 1, pos.y);
                         editor.set_char(last_pos, None);
                     } else  {
-                        let pos = editor.get_cursor_position();
+                        let pos = editor.get_caret_position();
                         editor.set_char(pos, None);
                     } 
                 }
@@ -340,7 +340,7 @@ trait Plottable {
 fn plot_point(editor: &Rc<RefCell<Editor>>, tool: &dyn Plottable, pos: Position)
 {
     let ch = editor.borrow().get_char_from_cur_layer(pos).unwrap_or_default();
-    let editor_attr = editor.borrow().cursor.get_attribute();
+    let editor_attr = editor.borrow().caret.get_attribute();
     let mut attribute= ch.attribute;
     if tool.get_use_back() {
         attribute.set_background(editor_attr.get_background());

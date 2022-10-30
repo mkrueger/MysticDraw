@@ -574,10 +574,10 @@ impl MainWindow {
             let action = SimpleAction::new("prev_fg_color", None);
             action.connect_activate(clone!(@strong main_window => move |_,_| {
                 if let Some(editor) = main_window.get_current_editor() {
-                    let mut attr = editor.borrow().cursor.get_attribute();
+                    let mut attr = editor.borrow().caret.get_attribute();
                     let l = editor.borrow().buf.buffer_type.get_fg_colors();
                     attr.set_foreground((attr.get_foreground() + l - 1) % l);
-                    editor.borrow_mut().cursor.set_attribute(attr);
+                    editor.borrow_mut().set_caret_attribute(attr);
                 }
             }));
             app.add_action(&action);
@@ -585,10 +585,10 @@ impl MainWindow {
             let action = SimpleAction::new("next_fg_color", None);
             action.connect_activate(clone!(@strong main_window => move |_,_| {
                 if let Some(editor) = main_window.get_current_editor() {
-                    let mut attr = editor.borrow().cursor.get_attribute();
+                    let mut attr = editor.borrow().caret.get_attribute();
                     let l = editor.borrow().buf.buffer_type.get_fg_colors();
                     attr.set_foreground((attr.get_foreground() + 1) % l);
-                    editor.borrow_mut().cursor.set_attribute(attr);
+                    editor.borrow_mut().set_caret_attribute(attr);
                 }
             }));
             app.add_action(&action);
@@ -596,10 +596,10 @@ impl MainWindow {
             let action = SimpleAction::new("prev_bg_color", None);
             action.connect_activate(clone!(@strong main_window => move |_,_| {
                 if let Some(editor) = main_window.get_current_editor() {
-                    let mut attr = editor.borrow().cursor.get_attribute();
+                    let mut attr = editor.borrow().caret.get_attribute();
                     let l = editor.borrow().buf.buffer_type.get_bg_colors();
                     attr.set_background((attr.get_background() + l - 1) % l);
-                    editor.borrow_mut().cursor.set_attribute(attr);
+                    editor.borrow_mut().set_caret_attribute(attr);
                 }
             }));
             app.add_action(&action);
@@ -607,10 +607,10 @@ impl MainWindow {
             let action = SimpleAction::new("next_bg_color", None);
             action.connect_activate(clone!(@strong main_window => move |_,_| {
                 if let Some(editor) = main_window.get_current_editor() {
-                    let mut attr = editor.borrow().cursor.get_attribute();
+                    let mut attr = editor.borrow().caret.get_attribute();
                     let l = editor.borrow().buf.buffer_type.get_bg_colors();
                     attr.set_background((attr.get_background() + 1) % l);
-                    editor.borrow_mut().cursor.set_attribute(attr);
+                    editor.borrow_mut().set_caret_attribute(attr);
                 }
             }));
             app.add_action(&action);
@@ -619,8 +619,8 @@ impl MainWindow {
             action.connect_activate(clone!(@strong main_window => move |_,_| {
                 if let Some(editor) = main_window.get_current_editor() {
                     let mut editor = editor.borrow_mut();
-                    let l = editor.get_char_from_cur_layer(editor.get_cursor_position()).unwrap_or_default();
-                    editor.cursor.set_attribute(l.attribute);
+                    let l = editor.get_char_from_cur_layer(editor.caret.get_position()).unwrap_or_default();
+                    editor.set_caret_attribute(l.attribute);
                 }
             }));
             app.add_action(&action);
@@ -629,7 +629,7 @@ impl MainWindow {
             action.connect_activate(clone!(@weak main_window => move |_,_| {
                 if let Some(editor) = main_window.get_current_editor() {
                     let mut editor = editor.borrow_mut();
-                    editor.cursor.set_attribute(TextAttribute::DEFAULT);
+                    editor.set_caret_attribute(TextAttribute::DEFAULT);
                 }
             }));
             app.add_action(&action);
@@ -849,7 +849,7 @@ impl MainWindow {
                 if let Some(data) = clipboard.data::<ClipboardLayer>("MysticDraw.Layer") {
                     let layer = data.as_ref();
                     let mut opos = Position::new();
-                    let mut pos = editor.borrow_mut().get_cursor_position();
+                    let mut pos = editor.borrow_mut().get_caret_position();
                     let x1 = pos.x;
                     editor.borrow_mut().begin_atomic_undo();
                     for _ in 0..layer.size.height {
@@ -882,7 +882,7 @@ impl MainWindow {
             if editor.borrow().cur_selection.is_some() {
                 editor.borrow_mut().delete_selection();
             }
-            editor.borrow_mut().set_cursor_position(pos);
+            editor.borrow_mut().set_caret_position(pos);
             editor.borrow_mut().end_atomic_undo();
         } 
     }
@@ -1258,7 +1258,7 @@ impl MainWindow {
         let handle = Rc::new(RefCell::new(Editor::new(0, buf)));
 
         let my_box2 = my_box.clone();
-        handle.borrow_mut().cursor.attr_changed = std::boxed::Box::new(move |_| {
+        handle.borrow_mut().attr_changed = std::boxed::Box::new(move |_| {
             my_box2.color_picker.queue_draw();
             my_box2.attribute_switcher.queue_draw();
         });
@@ -1315,7 +1315,7 @@ impl MainWindow {
         }));
         size_label.add_controller(&gesture);
 
-        handle.borrow_mut().cursor.pos_changed = std::boxed::Box::new(move |e, p| {
+        handle.borrow_mut().pos_changed = std::boxed::Box::new(move |e, p| {
             caret_pos_label.set_text(format!("Ln {}, Col {}", p.x + 1, p.y + 1).as_str());
             if let Some(sel) = &e.cur_selection {
                 size_label.set_text(format!("{} Colums x {} Rows", sel.rectangle.size.width, sel.rectangle.size.height).as_str());
@@ -1348,7 +1348,7 @@ impl MainWindow {
         handle2.borrow_mut().buf.file_name_changed = std::boxed::Box::new(move || {
             MainWindow::set_file_name_for_page(&page, &handle3);
         });
-        handle2.borrow_mut().set_cursor_position(Position::from(0, 0));
+        handle2.borrow_mut().set_caret_position(Position::from(0, 0));
         handle2
     }
 

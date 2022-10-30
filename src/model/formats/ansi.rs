@@ -153,10 +153,10 @@ pub fn display_ans(buf: &mut Buffer, data: &mut ParseStates, ch: u8) -> io::Resu
             b'K' => { // erase text
                 if data.ans_numbers.len() > 0 {
                     match data.ans_numbers[0] {
-                        0 => { // Clear line from current cursor position to end of line 
+                        0 => { // Clear line from current caret position to end of line 
                             buf.clear_line_end(0, &data.caret_pos);
                         },
-                        1 => { // Clear line from beginning to current cursor position 
+                        1 => { // Clear line from beginning to current caret position 
                             buf.clear_line_start(0, &data.caret_pos);
                         },
                         2 => { // Clear whole line
@@ -491,7 +491,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cursor_forward() {
+    fn test_caret_forward() {
         let buf = Buffer::from_bytes(&PathBuf::from("test.ans"), b"\x1B[70Ctest_me\x1B[20CF").unwrap();
         let ch = buf.get_char(Position::from(79, 0)).unwrap_or_default();
         assert_eq!(b'F', ch.char_code as u8);
@@ -499,7 +499,7 @@ mod tests {
     }
     
     #[test]
-    fn test_cursor_forward_at_eol() {
+    fn test_caret_forward_at_eol() {
         let buf = Buffer::from_bytes(&PathBuf::from("test.ans"),  b"\x1B[75CTEST_\x1B[2CF").unwrap();
         let ch = buf.get_char(Position::from(2, 1)).unwrap_or_default();
         assert_eq!(b'F', ch.char_code as u8);

@@ -26,7 +26,7 @@ impl Tool for FillTool
         if button == 1 {
             let mut editor = editor.borrow_mut();
             if editor.cur_layer >= editor.buf.layers.len() as i32 { return Event::None; }
-            let attr = editor.cursor.get_attribute();
+            let attr = editor.caret.get_attribute();
             let ch = editor.buf.get_char(pos);
             if self.use_back || self.use_fore || self.use_char {
                 editor.begin_atomic_undo();

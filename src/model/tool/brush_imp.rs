@@ -33,7 +33,7 @@ impl BrushTool {
                     BrushType::Shade => {    
                         let ch = editor.get_char_from_cur_layer(center + Position::from(x, y)).unwrap_or_default();
                        
-                        let attribute= editor.cursor.get_attribute();
+                        let attribute= editor.caret.get_attribute();
 
                         let mut char_code = gradient[0];
                         if ch.char_code == gradient[gradient.len() -1] {
@@ -53,7 +53,7 @@ impl BrushTool {
 
                     },
                     BrushType::Solid => {
-                        let attribute= editor.cursor.get_attribute();
+                        let attribute= editor.caret.get_attribute();
                         editor.set_char(center + Position::from(x, y), Some(crate::model::DosChar { char_code: self.char_code, attribute }));
                     },
                     BrushType::Color => {
@@ -61,10 +61,10 @@ impl BrushTool {
                         let mut attribute = ch.attribute;
 
                         if self.use_fore {
-                            attribute.set_foreground(editor.cursor.get_attribute().get_foreground());
+                            attribute.set_foreground(editor.caret.get_attribute().get_foreground());
                         }
                         if self.use_back {
-                            attribute.set_background(editor.cursor.get_attribute().get_background());
+                            attribute.set_background(editor.caret.get_attribute().get_background());
                         }
 
                         editor.set_char(center + Position::from(x, y), Some(crate::model::DosChar { 

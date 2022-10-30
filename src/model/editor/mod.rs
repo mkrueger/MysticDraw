@@ -1,62 +1,7 @@
 use std::{cmp::{max, min}, path::{Path, PathBuf}, io::{Write, self}, fs::File, ffi::OsStr};
 use crate::model::{Buffer, Position, TextAttribute, Rectangle};
 
-use super::{DosChar, UndoSetChar, Layer, Size, SaveOptions};
-
-pub struct Caret {
-    pos: Position,
-    attr: TextAttribute,
-    pub insert_mode: bool,
-    pub pos_changed: std::boxed::Box<dyn Fn(&Editor, Position)>,
-    pub attr_changed: std::boxed::Box<dyn Fn(TextAttribute)>
-}
-
-impl Caret {
-    pub fn get_attribute(&self) -> TextAttribute
-    {
-        self.attr
-    }
-
-    pub fn set_attribute(&mut self, attr: TextAttribute)
-    {
-        if attr == self.attr {
-            return;
-        }
-        self.attr = attr;
-
-        // HACK: FILL tool needs the current editor color, 
-        unsafe {
-            super::LINE_TOOL.attr = attr;
-            super::RECT_TOOL.attr = attr;
-            super::FILL_TOOL.attr = attr;
-        }
-        (self.attr_changed)(attr);
-    }
-}
-
-impl std::fmt::Debug for Caret {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Cursor").field("pos", &self.pos).field("attr", &self.attr).field("insert_mode", &self.insert_mode).finish()
-    }
-}
-
-impl Default for Caret {
-    fn default() -> Self {
-        Self {
-            pos: Position::default(),
-            attr: TextAttribute::DEFAULT,
-            insert_mode: Default::default(),
-            pos_changed: Box::new(|_, _| {}),
-            attr_changed: Box::new(|_| {}) 
-        }
-    }
-}
-
-impl PartialEq for Caret {
-    fn eq(&self, other: &Caret) -> bool {
-        self.pos == other.pos && self.attr == other.attr
-    }
-}
+use super::{DosChar, UndoSetChar, Layer, Size, SaveOptions, Caret};
 
 pub enum Event {
     None,
@@ -98,7 +43,7 @@ pub struct Editor {
     pub id: usize,
     pub buf: Buffer,
     
-    pub cursor: Caret,
+    pub caret: Caret,
     pub cur_selection: Option<Selection>,
 
     cur_outline: i32,
@@ -108,12 +53,15 @@ pub struct Editor {
     pub cur_layer: i32,
     pub outline_changed: std::boxed::Box<dyn Fn(&Editor)>,
     pub request_refresh: Box<dyn Fn ()>,
-    atomic_undo_stack: Vec<usize>
+    atomic_undo_stack: Vec<usize>,
+
+    pub pos_changed: std::boxed::Box<dyn Fn(&Editor, Position)>,
+    pub attr_changed: std::boxed::Box<dyn Fn(TextAttribute)>
 }
 
 impl std::fmt::Debug for Editor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Editor").field("id", &self.id).field("buf", &self.buf).field("cursor", &self.cursor).field("cur_selection", &self.cur_selection).field("cur_outline", &self.cur_outline).field("is_inactive", &self.is_inactive).finish()
+        f.debug_struct("Editor").field("id", &self.id).field("buf", &self.buf).field("caret", &self.caret).field("cur_selection", &self.cur_selection).field("cur_outline", &self.cur_outline).field("is_inactive", &self.is_inactive).finish()
     }
 }
 
@@ -132,7 +80,7 @@ impl Editor
         Editor {
             id,
             buf, 
-            cursor: Caret::default(),
+            caret: Caret::default(),
             cur_selection: None,
             cur_outline: 0,
             is_inactive: false,
@@ -140,23 +88,41 @@ impl Editor
             outline_changed: Box::new(|_| {}),
             request_refresh: Box::new(|| {}),
             cur_layer: 0,
-            atomic_undo_stack: Vec::new()
+            atomic_undo_stack: Vec::new(),
+            pos_changed: Box::new(|_, _| {}),
+            attr_changed: Box::new(|_| {}) 
         }
     }
 
-    pub fn get_cursor_position(&self) -> Position
+    pub fn get_caret_position(&self) -> Position
     {
-        self.cursor.pos
+        self.caret.pos
     }
 
-    pub fn set_cursor_position(&mut self, pos: Position)
+    pub fn set_caret_position(&mut self, pos: Position)
     {
         let pos = Position::from(
             min(self.buf.width as i32 - 1, max(0, pos.x)),
             min(self.buf.height as i32 - 1, max(0, pos.y))
         );
-        self.cursor.pos = pos;
-        (self.cursor.pos_changed)(self, pos);
+        self.caret.pos = pos;
+        (self.pos_changed)(self, pos);
+    }
+
+    pub fn set_caret_attribute(&mut self, attr: TextAttribute)
+    {
+        if attr == self.caret.attr {
+            return;
+        }
+        // HACK: FILL tool needs the current editor color, 
+        unsafe {
+            super::LINE_TOOL.attr = attr;
+            super::RECT_TOOL.attr = attr;
+            super::FILL_TOOL.attr = attr;
+        }
+
+        self.caret.attr = attr;
+        (self.attr_changed)(attr);
     }
 
     pub fn get_cur_layer(&mut self) -> Option<&super::Layer>
@@ -210,17 +176,17 @@ impl Editor
     {
         let ch = self.buf.get_char(pos);
         if let Some(ch) = ch {
-            self.cursor.attr = ch.attribute;
+            self.caret.attr = ch.attribute;
         }
     }
 
-    pub fn set_cursor(&mut self, x: i32, y: i32) -> Event
+    pub fn set_caret(&mut self, x: i32, y: i32) -> Event
     {
-        let old = self.cursor.pos;
-        self.set_cursor_position(Position::from(
+        let old = self.caret.pos;
+        self.set_caret_position(Position::from(
             min(max(0, x), self.buf.width as i32 - 1),
             min(max(0, y), self.buf.height as i32 - 1)));
-        Event::CursorPositionChange(old, self.cursor.pos)
+        Event::CursorPositionChange(old, self.caret.pos)
     }
     
     pub fn get_cur_outline(&self) -> i32
@@ -348,8 +314,8 @@ impl Editor
     }
 
     pub fn type_key(&mut self, char_code: u16) {
-        let pos = self.cursor.pos;
-        if self.cursor.insert_mode {
+        let pos = self.caret.pos;
+        if self.caret.insert_mode {
             for i in (self.buf.width as i32 - 1)..=pos.x {
                 let next = self.get_char_from_cur_layer( Position::from(i - 1, pos.y));
                 self.set_char(Position::from(i, pos.y), next);
@@ -358,9 +324,9 @@ impl Editor
 
         self.set_char(pos, Some(crate::model::DosChar {
             char_code,
-            attribute: self.cursor.attr,
+            attribute: self.caret.attr,
         }));
-        self.set_cursor(pos.x + 1, pos.y);
+        self.set_caret(pos.x + 1, pos.y);
     }
 
     pub fn delete_selection(&mut self) {
@@ -394,7 +360,7 @@ impl Editor
             let r = &selection.rectangle;
             (r.start.x, r.start.y, r.start.x + r.size.width as i32 - 1, r.start.y + r.size.height as i32 - 1)
         } else {
-            (0, self.cursor.pos.y, self.buf.width as i32 - 1, self.cursor.pos.y)
+            (0, self.caret.pos.y, self.buf.width as i32 - 1, self.caret.pos.y)
         }
     }
 
@@ -588,11 +554,11 @@ impl Editor
     }
     pub fn switch_fg_bg_color(&mut self) 
     {
-        let mut attr = self.cursor.get_attribute();
+        let mut attr = self.caret.get_attribute();
         let bg = attr.get_background();
         attr.set_background(attr.get_foreground());
         attr.set_foreground(bg);
-        self.cursor.set_attribute(attr);
+        self.set_caret_attribute(attr);
     }
 
     pub fn erase_line(&mut self) 

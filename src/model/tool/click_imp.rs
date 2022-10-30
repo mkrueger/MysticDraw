@@ -13,7 +13,7 @@ impl Tool for ClickTool
 
     fn handle_click(&mut self, editor: Rc<RefCell<Editor>>, button: u32, pos: Position) -> Event {
         if button == 1 {
-            editor.borrow_mut().set_cursor_position(pos);
+            editor.borrow_mut().set_caret_position(pos);
             editor.borrow_mut().cur_selection = None;
         }
         Event::None
@@ -35,7 +35,7 @@ impl Tool for ClickTool
                 shape: crate::model::Shape::Rectangle
             });
         }
-        editor.set_cursor_position(cur);
+        editor.set_caret_position(cur);
         Event::None
     }
 
@@ -55,7 +55,7 @@ impl Tool for ClickTool
                 shape: crate::model::Shape::Rectangle
             });
         }
-        editor.set_cursor_position(cur);
+        editor.set_caret_position(cur);
 
         Event::None
     }

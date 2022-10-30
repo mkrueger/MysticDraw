@@ -84,9 +84,9 @@ impl WidgetImpl for GtkColorPicker {
                     };
                     let color = (col + row * 8) as u8;
     
-                    let mut attr = editor.cursor.get_attribute();
+                    let mut attr = editor.caret.get_attribute();
                     attr.set_foreground(color);
-                    editor.cursor.set_attribute(attr);
+                    editor.set_caret_attribute(attr);
                     widget.queue_draw();
                 }
             }),
@@ -112,9 +112,9 @@ impl WidgetImpl for GtkColorPicker {
 
                 if let Some(editor) = widget.get_editor() {
                     let mut editor = editor.borrow_mut();
-                    let mut attr = editor.cursor.get_attribute();
+                    let mut attr = editor.caret.get_attribute();
                     attr.set_background(color);
-                    editor.cursor.set_attribute(attr);
+                    editor.set_caret_attribute(attr);
                     widget.queue_draw();
                 }
             }),
@@ -160,7 +160,7 @@ impl WidgetImpl for GtkColorPicker {
                     }
                 }
             };
-            let attribute = editor.cursor.get_attribute();
+            let attribute = editor.caret.get_attribute();
             let marker_width = 6.0;
             let x = (attribute.get_foreground() % 8) as i32;
             let y = (attribute.get_foreground() / 8) as i32;
